@@ -1,16 +1,16 @@
 import { CanActivate, ExecutionContext, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { PERMISSION_KEY, PermissionPass } from '../decorators/permission.decorator';
 import { Context } from '../context';
 import { CodeException } from '../lib/exceptions/exceptions';
-import { UnauthorizedErrorCode } from '../config/types';
+import { DefaultUserRole, UnauthorizedErrorCode } from '../config/types';
+import { ROLE_KEY } from '../decorators/role.decorator';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(@Inject(Reflector.name) private readonly reflector: Reflector) {}
 
   public async canActivate(execCtx: ExecutionContext): Promise<boolean> {
-    const requiredPermissions = this.reflector.getAllAndMerge<PermissionPass[]>(PERMISSION_KEY, [execCtx.getHandler(), execCtx.getClass()]);
+    const requiredRoles = this.reflector.getAllAndMerge<DefaultUserRole[]>(ROLE_KEY, [execCtx.getHandler(), execCtx.getClass()]);
 
     const context: Context = execCtx.getArgByIndex(0).context;
     // eslint-disable-next-line sonarjs/prefer-single-boolean-return
@@ -43,6 +43,9 @@ export class AuthGuard implements CanActivate {
     //     errorMessage: 'Insufficient permissions',
     //   });
     // }
+
+    // TODO: Add role support.
+
     return true;
   }
 }

@@ -8,6 +8,8 @@ export enum AppEnvironment {
 
 export enum DbTables {
   USER = 'user',
+  ROLES = 'roles',
+  USER_ROLES = 'user_roles',
   JOB = 'job',
   WORKER_LOG = 'workerLog'
 }
@@ -18,9 +20,9 @@ export enum DbTables {
 export enum ValidatorErrorCode {
   DEFAULT_VALIDATION_ERROR = 422_00_000,
   TOKEN_NOT_PRESENT = 422_00_001,
-  USER_ID_NOT_PRESENT = 422_00_101,
-  STATUS_NOT_PRESENT = 422_00_104,
-  TYPE_NOT_PRESENT = 422_00_105
+  USER_ID_NOT_PRESENT = 422_00_002,
+  STATUS_NOT_PRESENT = 422_00_003,
+  TYPE_NOT_PRESENT = 422_00_004
 }
 
 /**
@@ -150,11 +152,7 @@ export enum PermissionLevel {
 }
 
 export enum DefaultUserRole {
-  // values should not overlap with api key roles!!!
-
-  // Admin roles
   ADMIN = 1, // System's admin
-
   USER = 99 // user with access to platform (published features)
 }
 

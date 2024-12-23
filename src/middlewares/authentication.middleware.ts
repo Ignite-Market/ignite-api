@@ -12,7 +12,7 @@ const AUTHORIZATION_HEADER = 'Authorization';
  */
 @Injectable()
 export class AuthenticateUserMiddleware implements NestMiddleware {
-  async use(req: IRequest, res, next) {
+  async use(req: IRequest, _res, next) {
     const { context } = req;
     const token = (req.get(AUTHORIZATION_HEADER) || '').split(' ').reverse()[0];
     if (token) {

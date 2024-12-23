@@ -1,14 +1,13 @@
-import { JwtTokenType, PopulateFrom } from './config/types';
+import { v4 as uuid } from 'uuid';
+import { JwtTokenType } from './config/types';
 import { MySql } from './lib/database/mysql';
 import { parseJwtToken } from './lib/utils';
 import { User } from './modules/user/models/user.model';
-import { v4 as uuid } from 'uuid';
 
 export class Context {
   public mysql: MySql;
   public user: User;
   public requestId: string;
-  public apiKey: any;
 
   constructor(reqId: string = null) {
     this.requestId = reqId || uuid();
@@ -21,6 +20,10 @@ export class Context {
     return !!this.user && this.user.exists() && this.user.isEnabled();
   }
 
+  /**
+   *
+   * @param mysql
+   */
   public setMySql(mysql: MySql): void {
     this.mysql = mysql;
   }
@@ -34,8 +37,8 @@ export class Context {
     if (!token) {
       return;
     }
-    const { id } = parseJwtToken(JwtTokenType.USER_LOGIN, token);
 
+    const { id } = parseJwtToken(JwtTokenType.USER_LOGIN, token);
     if (id) {
       this.user = await new User({}, this).populateById(id);
     }
@@ -44,15 +47,12 @@ export class Context {
   }
 
   /**
-   * Check if user or apiKey has required roles - normally to call an endpoint
+   * Check if user has required roles - normally to call an endpoint
    * @param role
    * @returns
    */
   // public hasRole(role: number | number[]) {
-  //   if (this.apiKey) {
-  //     //Check API roles
-  //     return !!this.apiKey.apiKeyRoles.find((x) => x.role_id == role);
-  //   } else if (this.user) {
+  //   if (this.user) {
   //     //Check user roles
   //     if (Array.isArray(role)) {
   //       //Check if user has one of required roles
@@ -65,19 +65,10 @@ export class Context {
   //     }
   //     //Check if user has specific role
   //     else {
-  //       return !!this.user.authUser.authUserRoles.find(
-  //         (x) => x.role.id == role
-  //       );
+  //       return !!this.user.authUser.authUserRoles.find((x) => x.role.id == role);
   //     }
   //   }
 
-  //   return false;
-  // }
-
-  // public hasPermission(permission: number) {
-  //   if (this.user) {
-  //     return !!this.user.userPermissions.find((x) => x == permission);
-  //   }
   //   return false;
   // }
 }
