@@ -1,0 +1,1 @@
+serverless deploy --stage dev --aws-profile kalmia
