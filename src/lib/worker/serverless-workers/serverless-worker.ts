@@ -55,9 +55,7 @@ export abstract class ServerlessWorker {
    * invokes lambdas and/or send messages to queue (for example for async invocations of lambdas)
    * @param options lambda and/or sqs que definitions
    */
-  public async launchWorkers(
-    workersDefinitions: Array<WorkerDefinition>
-  ): Promise<any> {
+  public async launchWorkers(workersDefinitions: Array<WorkerDefinition>): Promise<any> {
     const promises = [];
     for (const def of workersDefinitions) {
       const serviceDefinition = def.serviceDefinition;
@@ -69,12 +67,12 @@ export abstract class ServerlessWorker {
           //   accessKeyId: env.AWS_KEY,
           //   secretAccessKey: env.AWS_SECRET,
           // },
-          region: env.AWS_REGION,
+          region: env.AWS_REGION
         });
 
         const params: SendMessageCommandInput = {
           ...(serviceDefinition.params as SendMessageCommandInput),
-          MessageBody: JSON.stringify(def),
+          MessageBody: JSON.stringify(def)
         };
         const command = new SendMessageCommand(params);
 
@@ -103,13 +101,13 @@ export abstract class ServerlessWorker {
           //   accessKeyId: env.AWS_KEY,
           //   secretAccessKey: env.AWS_SECRET,
           // },
-          region: env.AWS_REGION,
+          region: env.AWS_REGION
         });
 
         const params: InvokeCommandInput = {
           ...(serviceDefinition.params as InvokeCommandInput),
           InvocationType: 'Event',
-          Payload: Buffer.from(JSON.stringify(def)),
+          Payload: Buffer.from(JSON.stringify(def))
         };
 
         const command = new InvokeCommand(params);
@@ -193,53 +191,32 @@ export abstract class ServerlessWorker {
     }
   }
 
-  public async resetExecutorCount(
-    mysql: MySql,
-    conn?: PoolConnection
-  ): Promise<void> {
+  public async resetExecutorCount(mysql: MySql, conn?: PoolConnection): Promise<void> {
     const query = `UPDATE \`${DbTables.JOB}\` SET executorCount = 0 WHERE id = @id`;
     await mysql.paramExecute(query, { id: this.workerDefinition.id }, conn);
   }
 
-  public async addToExecutorCount(
-    mysql: MySql,
-    conn?: PoolConnection
-  ): Promise<any> {
+  public async addToExecutorCount(mysql: MySql, conn?: PoolConnection): Promise<any> {
     try {
       if (!this.workerDefinition.id) {
         return;
       }
       const query = 'CALL `addAndSelect`(@id);';
-      const response = await mysql.paramExecute(
-        query,
-        { id: this.workerDefinition.id },
-        conn
-      );
-      return response && response[0] && response[0][0]
-        ? response[0][0]?.executorCount
-        : null;
+      const response = await mysql.paramExecute(query, { id: this.workerDefinition.id }, conn);
+      return response && response[0] && response[0][0] ? response[0][0]?.executorCount : null;
     } catch (err) {
       console.log('Unable to add to executor count!', err);
     }
   }
 
-  public async subtractExecutorCount(
-    mysql: MySql,
-    conn?: PoolConnection
-  ): Promise<any> {
+  public async subtractExecutorCount(mysql: MySql, conn?: PoolConnection): Promise<any> {
     try {
       if (!this.workerDefinition.id) {
         return;
       }
       const query = 'CALL `subtractAndSelect`(@id);';
-      const response = await mysql.paramExecute(
-        query,
-        { id: this.workerDefinition.id },
-        conn
-      );
-      return response && response[0] && response[0][0]
-        ? response[0][0]?.executorCount
-        : null;
+      const response = await mysql.paramExecute(query, { id: this.workerDefinition.id }, conn);
+      return response && response[0] && response[0][0] ? response[0][0]?.executorCount : null;
     } catch (err) {
       console.log('Unable to subtract from executor count!', err);
     }

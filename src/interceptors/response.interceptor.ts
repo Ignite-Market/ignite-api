@@ -1,9 +1,4 @@
-import {
-  CallHandler,
-  ExecutionContext,
-  Injectable,
-  NestInterceptor,
-} from '@nestjs/common';
+import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
 
 import { map, Observable } from 'rxjs';
 import { IRequest } from '../interfaces/i-request';
@@ -34,7 +29,7 @@ export class ResponseInterceptor implements NestInterceptor {
 
         const response: ApiResponse = {
           id: req?.context?.requestId,
-          status: res.statusCode,
+          status: res.statusCode
         };
 
         let responseData = data;
@@ -44,15 +39,13 @@ export class ResponseInterceptor implements NestInterceptor {
         }
 
         if (responseData instanceof AdvancedSQLModel) {
-          response.data = isAdmin
-            ? responseData.serialize(SerializeFor.ADMIN)
-            : responseData.serialize(SerializeFor.USER);
+          response.data = isAdmin ? responseData.serialize(SerializeFor.ADMIN) : responseData.serialize(SerializeFor.USER);
         } else if (Array.isArray(responseData)) {
           response.data = responseData.map((d) =>
             d instanceof AdvancedSQLModel
               ? {
                   ...d.serialize(SerializeFor.USER),
-                  ...(isAdmin ? d.serialize(SerializeFor.ADMIN) : {}),
+                  ...(isAdmin ? d.serialize(SerializeFor.ADMIN) : {})
                 }
               : d
           );

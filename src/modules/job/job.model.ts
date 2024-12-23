@@ -1,33 +1,17 @@
-import {
-  booleanParser,
-  dateParser,
-  integerParser,
-  stringParser,
-} from '@rawmodel/parsers';
+import { booleanParser, dateParser, integerParser, stringParser } from '@rawmodel/parsers';
 
-import {
-  DbTables,
-  PopulateFrom,
-  SerializeFor,
-  ValidatorErrorCode,
-} from '../../config/types';
-import {
-  AdvancedSQLModel,
-  prop,
-} from '../../lib/base-models/advanced-sql.model';
+import { DbTables, PopulateFrom, SerializeFor, ValidatorErrorCode } from '../../config/types';
+import { AdvancedSQLModel, prop } from '../../lib/base-models/advanced-sql.model';
 import { presenceValidator } from '../../lib/validators';
 import { JSONParser } from '../../lib/parsers';
 import { Context } from '../../context';
-import {
-  IWorkerDefinitionOptions,
-  WorkerDefinition,
-} from '../../lib/worker/serverless-workers';
+import { IWorkerDefinitionOptions, WorkerDefinition } from '../../lib/worker/serverless-workers';
 
 export enum JobStatus {
   INCOMPLETE = 1,
   ACTIVE = 5,
   LOCKED = 6,
-  DEACTIVATED = 9,
+  DEACTIVATED = 9
 }
 
 export class Job extends AdvancedSQLModel {
@@ -40,7 +24,7 @@ export class Job extends AdvancedSQLModel {
     parser: { resolver: integerParser() },
     populatable: [PopulateFrom.DB],
     serializable: [SerializeFor.WORKER],
-    validators: [],
+    validators: []
   })
   public id: number;
 
@@ -50,17 +34,13 @@ export class Job extends AdvancedSQLModel {
   @prop({
     parser: { resolver: stringParser() },
     populatable: [PopulateFrom.DB, PopulateFrom.WORKER],
-    serializable: [
-      SerializeFor.INSERT_DB,
-      SerializeFor.UPDATE_DB,
-      SerializeFor.WORKER,
-    ],
+    serializable: [SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB, SerializeFor.WORKER],
     validators: [
       {
         resolver: presenceValidator(),
-        code: ValidatorErrorCode.DEFAULT_VALIDATION_ERROR,
-      },
-    ],
+        code: ValidatorErrorCode.DEFAULT_VALIDATION_ERROR
+      }
+    ]
   })
   public name: string;
 
@@ -70,11 +50,7 @@ export class Job extends AdvancedSQLModel {
   @prop({
     parser: { resolver: integerParser() },
     populatable: [PopulateFrom.DB, PopulateFrom.WORKER],
-    serializable: [
-      SerializeFor.INSERT_DB,
-      SerializeFor.UPDATE_DB,
-      SerializeFor.WORKER,
-    ],
+    serializable: [SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB, SerializeFor.WORKER]
   })
   public channel: number;
 
@@ -84,11 +60,7 @@ export class Job extends AdvancedSQLModel {
   @prop({
     parser: { resolver: stringParser() },
     populatable: [PopulateFrom.DB, PopulateFrom.WORKER],
-    serializable: [
-      SerializeFor.INSERT_DB,
-      SerializeFor.UPDATE_DB,
-      SerializeFor.WORKER,
-    ],
+    serializable: [SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB, SerializeFor.WORKER]
   })
   public interval: string;
 
@@ -98,11 +70,7 @@ export class Job extends AdvancedSQLModel {
   @prop({
     parser: { resolver: dateParser() },
     populatable: [PopulateFrom.DB, PopulateFrom.WORKER],
-    serializable: [
-      SerializeFor.INSERT_DB,
-      SerializeFor.UPDATE_DB,
-      SerializeFor.WORKER,
-    ],
+    serializable: [SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB, SerializeFor.WORKER]
   })
   public lastRun: Date;
 
@@ -112,11 +80,7 @@ export class Job extends AdvancedSQLModel {
   @prop({
     parser: { resolver: dateParser() },
     populatable: [PopulateFrom.DB, PopulateFrom.WORKER],
-    serializable: [
-      SerializeFor.INSERT_DB,
-      SerializeFor.UPDATE_DB,
-      SerializeFor.WORKER,
-    ],
+    serializable: [SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB, SerializeFor.WORKER]
   })
   public nextRun: Date;
 
@@ -126,12 +90,8 @@ export class Job extends AdvancedSQLModel {
   @prop({
     parser: { resolver: integerParser() },
     populatable: [PopulateFrom.DB, PopulateFrom.WORKER],
-    serializable: [
-      SerializeFor.INSERT_DB,
-      SerializeFor.UPDATE_DB,
-      SerializeFor.WORKER,
-    ],
-    defaultValue: 15 * 60,
+    serializable: [SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB, SerializeFor.WORKER],
+    defaultValue: 15 * 60
   })
   public timeout: number;
 
@@ -141,11 +101,7 @@ export class Job extends AdvancedSQLModel {
   @prop({
     parser: { resolver: stringParser() },
     populatable: [PopulateFrom.DB, PopulateFrom.WORKER],
-    serializable: [
-      SerializeFor.INSERT_DB,
-      SerializeFor.UPDATE_DB,
-      SerializeFor.WORKER,
-    ],
+    serializable: [SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB, SerializeFor.WORKER]
   })
   public input: string;
 
@@ -155,11 +111,7 @@ export class Job extends AdvancedSQLModel {
   @prop({
     parser: { resolver: integerParser() },
     populatable: [PopulateFrom.DB, PopulateFrom.WORKER],
-    serializable: [
-      SerializeFor.INSERT_DB,
-      SerializeFor.UPDATE_DB,
-      SerializeFor.WORKER,
-    ],
+    serializable: [SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB, SerializeFor.WORKER]
   })
   public retries: number;
 
@@ -169,11 +121,7 @@ export class Job extends AdvancedSQLModel {
   @prop({
     parser: { resolver: integerParser() },
     populatable: [PopulateFrom.DB, PopulateFrom.WORKER],
-    serializable: [
-      SerializeFor.INSERT_DB,
-      SerializeFor.UPDATE_DB,
-      SerializeFor.WORKER,
-    ],
+    serializable: [SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB, SerializeFor.WORKER]
   })
   public lastDuration: number;
 
@@ -183,11 +131,7 @@ export class Job extends AdvancedSQLModel {
   @prop({
     parser: { resolver: stringParser() },
     populatable: [PopulateFrom.DB, PopulateFrom.WORKER],
-    serializable: [
-      SerializeFor.INSERT_DB,
-      SerializeFor.UPDATE_DB,
-      SerializeFor.WORKER,
-    ],
+    serializable: [SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB, SerializeFor.WORKER]
   })
   public lastError: string;
 
@@ -197,11 +141,7 @@ export class Job extends AdvancedSQLModel {
   @prop({
     parser: { resolver: dateParser() },
     populatable: [PopulateFrom.DB, PopulateFrom.WORKER],
-    serializable: [
-      SerializeFor.INSERT_DB,
-      SerializeFor.UPDATE_DB,
-      SerializeFor.WORKER,
-    ],
+    serializable: [SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB, SerializeFor.WORKER]
   })
   public lastCompleted: Date;
 
@@ -211,11 +151,7 @@ export class Job extends AdvancedSQLModel {
   @prop({
     parser: { resolver: dateParser() },
     populatable: [PopulateFrom.DB, PopulateFrom.WORKER],
-    serializable: [
-      SerializeFor.INSERT_DB,
-      SerializeFor.UPDATE_DB,
-      SerializeFor.WORKER,
-    ],
+    serializable: [SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB, SerializeFor.WORKER]
   })
   public lastFailed: Date;
 
@@ -225,12 +161,8 @@ export class Job extends AdvancedSQLModel {
   @prop({
     parser: { resolver: JSONParser() },
     populatable: [PopulateFrom.DB, PopulateFrom.WORKER],
-    serializable: [
-      SerializeFor.INSERT_DB,
-      SerializeFor.UPDATE_DB,
-      SerializeFor.WORKER,
-    ],
-    defaultValue: {},
+    serializable: [SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB, SerializeFor.WORKER],
+    defaultValue: {}
   })
   public parameters: any;
 
@@ -240,11 +172,7 @@ export class Job extends AdvancedSQLModel {
   @prop({
     parser: { resolver: booleanParser() },
     populatable: [PopulateFrom.DB, PopulateFrom.WORKER],
-    serializable: [
-      SerializeFor.INSERT_DB,
-      SerializeFor.UPDATE_DB,
-      SerializeFor.WORKER,
-    ],
+    serializable: [SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB, SerializeFor.WORKER]
   })
   public autoRemove: boolean;
 
@@ -254,11 +182,7 @@ export class Job extends AdvancedSQLModel {
   @prop({
     parser: { resolver: integerParser() },
     populatable: [PopulateFrom.DB, PopulateFrom.WORKER],
-    serializable: [
-      SerializeFor.INSERT_DB,
-      SerializeFor.UPDATE_DB,
-      SerializeFor.WORKER,
-    ],
+    serializable: [SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB, SerializeFor.WORKER]
   })
   public executorCount: number;
 
@@ -298,7 +222,7 @@ export class Job extends AdvancedSQLModel {
     }
     this.parameters.channel = this.channel;
     return {
-      ...this.serialize(SerializeFor.WORKER),
+      ...this.serialize(SerializeFor.WORKER)
     };
   }
 
@@ -311,17 +235,12 @@ export class Job extends AdvancedSQLModel {
   public async getExecutorCount() {
     const query = `SELECT executorCount FROM ${this.tableName} WHERE id = @id;`;
     const response = await this.getContext().mysql.paramExecute(query, {
-      id: this.id,
+      id: this.id
     });
     return response && response.length ? response[0] : null;
   }
 
-  public async getJobsWithParameters(
-    workerName: string,
-    parameters: any,
-    nextRunBefore: Date = null,
-    nextRunAfter: Date = new Date()
-  ) {
+  public async getJobsWithParameters(workerName: string, parameters: any, nextRunBefore: Date = null, nextRunAfter: Date = new Date()) {
     let jsonQuery = '';
     for (const key of Object.keys(parameters)) {
       if (jsonQuery) {

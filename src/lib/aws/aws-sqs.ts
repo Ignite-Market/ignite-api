@@ -8,7 +8,7 @@ export function createSqsClient() {
     //   accessKeyId: env.AWS_KEY,
     //   secretAccessKey: env.AWS_SECRET,
     // },
-    region: env.AWS_REGION,
+    region: env.AWS_REGION
   });
 }
 
@@ -31,28 +31,26 @@ export async function sendToWorkerQueue(
       MessageAttributes: {
         workerName: {
           DataType: 'String',
-          StringValue: workerName,
+          StringValue: workerName
         },
         ...(id
           ? {
               jobId: {
                 DataType: 'String',
-                StringValue: id.toString(),
-              },
+                StringValue: id.toString()
+              }
             }
           : {}),
         parameters: {
           DataType: 'String',
-          StringValue: JSON.stringify(parameters),
-        },
+          StringValue: JSON.stringify(parameters)
+        }
       },
-      MessageBody: JSON.stringify(
-        typeof msg.serialize == 'function' ? msg.serialize() : msg
-      ),
+      MessageBody: JSON.stringify(typeof msg.serialize == 'function' ? msg.serialize() : msg),
       // MessageDeduplicationId: 'TheWhistler',  // Required for FIFO queues
       // MessageGroupId: 'Group1',  // Required for FIFO queues
       QueueUrl: queueUrl,
-      DelaySeconds: delaySeconds,
+      DelaySeconds: delaySeconds
     };
     if (!parameters) {
       delete message.MessageAttributes.parameters;
@@ -68,13 +66,10 @@ export async function sendToWorkerQueue(
   }
   await Promise.all(promises);
   if (errCount) {
-    console.log(
-      'sendToWorkerQueue: Errors detected while sending messages to queue',
-      {
-        errCount,
-        errMsgs: JSON.stringify(errMsgs),
-      }
-    );
+    console.log('sendToWorkerQueue: Errors detected while sending messages to queue', {
+      errCount,
+      errMsgs: JSON.stringify(errMsgs)
+    });
   }
   return { errCount, errMsgs };
 }

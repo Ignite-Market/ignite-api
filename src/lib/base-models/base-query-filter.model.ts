@@ -11,7 +11,7 @@ export class BaseQueryFilter extends ModelBase {
     setter(v) {
       return v < 0 ? 1 : v;
     },
-    defaultValue: 1,
+    defaultValue: 1
   })
   public page: number;
 
@@ -21,7 +21,7 @@ export class BaseQueryFilter extends ModelBase {
     setter(v) {
       return v < 1 ? 20 : v;
     },
-    defaultValue: 20,
+    defaultValue: 20
   })
   public limit: number;
 
@@ -31,7 +31,7 @@ export class BaseQueryFilter extends ModelBase {
   @prop({
     parser: { resolver: stringParser(), array: true },
     populatable: [PopulateFrom.USER, PopulateFrom.ADMIN],
-    defaultValue: [],
+    defaultValue: []
   })
   public orderBy: string[];
 
@@ -41,14 +41,14 @@ export class BaseQueryFilter extends ModelBase {
   @prop({
     parser: { resolver: stringParser(), array: true },
     populatable: [PopulateFrom.USER, PopulateFrom.ADMIN],
-    defaultValue: [],
+    defaultValue: []
   })
   public desc: string[];
 
   @prop({
     parser: { resolver: stringParser() },
     populatable: [PopulateFrom.USER, PopulateFrom.ADMIN],
-    validators: [],
+    validators: []
   })
   public search?: string;
 

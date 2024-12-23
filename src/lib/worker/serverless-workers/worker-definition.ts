@@ -54,11 +54,7 @@ export class WorkerDefinition {
   public lastDuration: number;
   public lastError: string;
 
-  public constructor(
-    serviceDefinition: ServiceDefinition,
-    workerName: string,
-    options?: IWorkerDefinitionOptions,
-  ) {
+  public constructor(serviceDefinition: ServiceDefinition, workerName: string, options?: IWorkerDefinitionOptions) {
     this.workerName = workerName;
     this.serviceDefinition = serviceDefinition;
     if (options) {
@@ -79,7 +75,7 @@ export class WorkerDefinition {
       try {
         this.nextRun = cronParser
           .parseExpression(this.interval, {
-            currentDate: this.lastRun || new Date(),
+            currentDate: this.lastRun || new Date()
           })
           .next()
           .toDate();

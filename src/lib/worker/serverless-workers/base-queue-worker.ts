@@ -8,7 +8,7 @@ import { Job } from '../../../modules/job/job.model';
 
 export enum QueueWorkerType {
   PLANNER = 'PLANNER',
-  EXECUTOR = 'EXECUTOR',
+  EXECUTOR = 'EXECUTOR'
 }
 
 export abstract class BaseQueueWorker extends BaseWorker {
@@ -17,12 +17,7 @@ export abstract class BaseQueueWorker extends BaseWorker {
   protected workerName: string;
   protected workerQueueUrl: string;
 
-  public constructor(
-    workerDefinition: WorkerDefinition,
-    context: Context,
-    type: QueueWorkerType,
-    queueUrl: string
-  ) {
+  public constructor(workerDefinition: WorkerDefinition, context: Context, type: QueueWorkerType, queueUrl: string) {
     super(workerDefinition, context);
     this.workerType = type;
     this.context = context;
@@ -45,16 +40,10 @@ export abstract class BaseQueueWorker extends BaseWorker {
       const msgData = await this.runPlanner(data);
 
       if (!msgData || !msgData.length) {
-        await this.writeLogToDb(
-          WorkerLogStatus.INFO,
-          'No data for SQS messaging!'
-        );
+        await this.writeLogToDb(WorkerLogStatus.INFO, 'No data for SQS messaging!');
         return;
       }
-      await this.writeLogToDb(
-        WorkerLogStatus.INFO,
-        `Sending ${msgData.length} messages to queue!`
-      );
+      await this.writeLogToDb(WorkerLogStatus.INFO, `Sending ${msgData.length} messages to queue!`);
 
       const { errCount, errMsgs } = await sendToWorkerQueue(
         this.workerQueueUrl,
@@ -64,22 +53,12 @@ export abstract class BaseQueueWorker extends BaseWorker {
         this.workerDefinition.parameters
       );
       if (errCount) {
-        await this.writeLogToDb(
-          WorkerLogStatus.ERROR,
-          'Errors detected while sending messages to queue!',
-          errMsgs,
-          null
-        );
+        await this.writeLogToDb(WorkerLogStatus.ERROR, 'Errors detected while sending messages to queue!', errMsgs, null);
       }
     } else if (this.workerType === QueueWorkerType.EXECUTOR) {
       await this.writeLogToDb(WorkerLogStatus.START, 'Started EXECUTOR worker');
       if (!data) {
-        await this.writeLogToDb(
-          WorkerLogStatus.ERROR,
-          'No data found in queue message!',
-          null,
-          null
-        );
+        await this.writeLogToDb(WorkerLogStatus.ERROR, 'No data found in queue message!', null, null);
         return;
       }
       // await this.writeLogToDb(WorkerLogStatus.INFO, 'SQS message', JSON.parse(data));
@@ -91,9 +70,7 @@ export abstract class BaseQueueWorker extends BaseWorker {
   public async onUpdateWorkerDefinition(): Promise<void> {
     // this.logFn(`MailerWorker event - update definition: ${this.workerDefinition}`);
     if (this.workerType === QueueWorkerType.PLANNER) {
-      await new Job({}, this.context).updateWorkerDefinition(
-        this.workerDefinition
-      );
+      await new Job({}, this.context).updateWorkerDefinition(this.workerDefinition);
     }
   }
 
@@ -107,9 +84,6 @@ export abstract class BaseQueueWorker extends BaseWorker {
   }
 
   public async onAutoRemove(): Promise<any> {
-    await this.context.mysql.paramExecute(
-      `DELETE FROM ${DbTables.JOB} WHERE id = @id`,
-      { id: this.workerDefinition.id }
-    );
+    await this.context.mysql.paramExecute(`DELETE FROM ${DbTables.JOB} WHERE id = @id`, { id: this.workerDefinition.id });
   }
 }

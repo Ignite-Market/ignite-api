@@ -1,4 +1,13 @@
 {
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.maxTokenizationLineLength": 1000000000,
+  "[typescript]": {
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "javascript.preferences.importModuleSpecifier": "relative",
+  "typescript.preferences.importModuleSpecifier": "relative",
   "cSpell.words": [
     "CURDATE",
     "leaderboard",

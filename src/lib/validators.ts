@@ -28,13 +28,7 @@ export function enumInclusionValidator(enumerator: any, allowNull = false) {
 /**
  * Validates uniqueness of field value.
  */
-export function uniqueFieldValue(
-  sqlTableName: string,
-  fieldName: string,
-  allowStatuses = [],
-  idField = 'id',
-  checkNull = false,
-) {
+export function uniqueFieldValue(sqlTableName: string, fieldName: string, allowStatuses = [], idField = 'id', checkNull = false) {
   return async function (this: AdvancedSQLModel, value: any) {
     if ((!checkNull && value === null) || value === undefined) {
       return true;
@@ -45,12 +39,8 @@ export function uniqueFieldValue(
       SELECT COUNT(*) as Count FROM \`${sqlTableName}\`
       WHERE \`${fieldName}\` = @value
       AND (@id IS NULL OR (@id IS NOT NULL AND \`${idField}\` <> @id ))
-      ${
-        allowStatuses.length
-          ? `AND NOT FIND_IN_SET(status, @allowStatuses)`
-          : ''
-      }`,
-        { value, id: this?.id || null, allowStatuses },
+      ${allowStatuses.length ? `AND NOT FIND_IN_SET(status, @allowStatuses)` : ''}`,
+        { value, id: this?.id || null, allowStatuses }
       )
       .then((rows) => rows[0].Count);
 
@@ -84,10 +74,7 @@ export function arrayLengthValidator() {
  * @param fieldName field for passing to condition
  * @param condition condition used to enable presenceValidator
  */
-export function conditionalPresenceValidator(
-  fieldName: string,
-  condition: (fieldValue: any) => boolean,
-) {
+export function conditionalPresenceValidator(fieldName: string, condition: (fieldValue: any) => boolean) {
   return async function (this: ModelBase, value: any): Promise<boolean> {
     if (condition(this[fieldName])) {
       return presenceValidator()(value);
@@ -107,7 +94,7 @@ export function urlValidator() {
         '(\\/[-a-z\\d%_.~+]*)*' + // path
         '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
         '(\\#[-a-z\\d_]*)?$',
-      'i', // fragment locator
+      'i' // fragment locator
     );
     return !!urlPattern.test(value);
   };
@@ -123,7 +110,7 @@ export function urlDomainValidator(validDomains: string[]) {
         `(\\/[-a-z\\d%_.~+]*)*` + // path
         `(\\?[;&a-z\\d%_.~+=-]*)?` + // query string
         `(\\#[-a-z\\d_]*)?$`,
-      'i', // fragment locator
+      'i' // fragment locator
     );
     return !!urlPattern.test(value);
   };

@@ -1,10 +1,6 @@
 import { Context } from '../context';
 import { WorkerLogStatus } from '../lib/worker/logger';
-import {
-  WorkerScheduler,
-  ServiceDefinition,
-  WorkerDefinition,
-} from '../lib/worker/serverless-workers';
+import { WorkerScheduler, ServiceDefinition, WorkerDefinition } from '../lib/worker/serverless-workers';
 import { Job } from '../modules/job/job.model';
 
 export class Scheduler extends WorkerScheduler {
@@ -25,13 +21,7 @@ export class Scheduler extends WorkerScheduler {
       //   `${job.name} scheduled to run`,
       //   job,
       // );
-      defs.push(
-        new WorkerDefinition(
-          this.workerDefinition.serviceDefinition,
-          job.name,
-          job.getWorkerDefinition()
-        )
-      );
+      defs.push(new WorkerDefinition(this.workerDefinition.serviceDefinition, job.name, job.getWorkerDefinition()));
     }
 
     return defs;

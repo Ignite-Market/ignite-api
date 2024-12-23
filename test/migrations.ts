@@ -121,7 +121,7 @@ async function initTestMigrations() {
       port: env.MYSQL_PORT_TEST,
       user: env.MYSQL_USER_TEST,
       // debug: true,
-      connectionLimit: 1,
+      connectionLimit: 1
     };
 
     if (!/(test|testing)/i.test(poolConfig.database)) {
@@ -134,7 +134,7 @@ async function initTestMigrations() {
       conn: pool as unknown as MigrationConnection,
       tableName: 'migrations',
       dir: './src/migration-scripts/migrations',
-      silent: env.APP_ENV === AppEnvironment.TEST,
+      silent: env.APP_ENV === AppEnvironment.TEST
     });
 
     await dbTestMigration.initialize();
@@ -155,7 +155,7 @@ async function initTestSeed() {
       port: env.MYSQL_PORT_TEST,
       user: env.MYSQL_USER_TEST,
       // debug: true,
-      connectionLimit: 1,
+      connectionLimit: 1
     };
 
     if (!/(test|testing)/i.test(poolConfig.database)) {
@@ -168,7 +168,7 @@ async function initTestSeed() {
       conn: pool as unknown as MigrationConnection,
       tableName: 'seeds',
       dir: './src/migration-scripts/seeds',
-      silent: env.APP_ENV === AppEnvironment.TEST,
+      silent: env.APP_ENV === AppEnvironment.TEST
     });
 
     await dbTestSeed.initialize();

@@ -1,14 +1,6 @@
-import {
-  ArgumentsHost,
-  Catch,
-  ExceptionFilter,
-  HttpStatus,
-} from '@nestjs/common';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus } from '@nestjs/common';
 import { Request, Response } from 'express';
-import {
-  CodeException,
-  ModelValidationException,
-} from '../lib/exceptions/exceptions';
+import { CodeException, ModelValidationException } from '../lib/exceptions/exceptions';
 import { SystemErrorCode } from '../config/types';
 
 @Catch()
@@ -35,7 +27,7 @@ export class ExceptionsFilter implements ExceptionFilter {
         code: error.getResponse()['code'] || error.getResponse()['statusCode'],
         message: error.message,
         path: request.url,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString()
       });
     } else if (error instanceof ModelValidationException) {
       res.status(error.getStatus()).json({
@@ -44,7 +36,7 @@ export class ExceptionsFilter implements ExceptionFilter {
         model: error.modelName,
         errors: error.errors,
         path: request.url,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString()
       });
     } else {
       if (error.status == 422) {
@@ -55,7 +47,7 @@ export class ExceptionsFilter implements ExceptionFilter {
           message: error.message,
           errors: error.errors,
           path: request.url,
-          timestamp: new Date().toISOString(),
+          timestamp: new Date().toISOString()
         });
       } else {
         res.status(error.status || HttpStatus.INTERNAL_SERVER_ERROR).json({
@@ -63,7 +55,7 @@ export class ExceptionsFilter implements ExceptionFilter {
           code: error.code || SystemErrorCode.UNHANDLED_SYSTEM_ERROR,
           message: error.message,
           path: request.url,
-          timestamp: new Date().toISOString(),
+          timestamp: new Date().toISOString()
         });
       }
     }

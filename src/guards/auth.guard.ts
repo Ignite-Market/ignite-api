@@ -1,15 +1,6 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  HttpStatus,
-  Inject,
-  Injectable,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import {
-  PERMISSION_KEY,
-  PermissionPass,
-} from '../decorators/permission.decorator';
+import { PERMISSION_KEY, PermissionPass } from '../decorators/permission.decorator';
 import { Context } from '../context';
 import { CodeException } from '../lib/exceptions/exceptions';
 import { UnauthorizedErrorCode } from '../config/types';
@@ -19,10 +10,7 @@ export class AuthGuard implements CanActivate {
   constructor(@Inject(Reflector.name) private readonly reflector: Reflector) {}
 
   public async canActivate(execCtx: ExecutionContext): Promise<boolean> {
-    const requiredPermissions = this.reflector.getAllAndMerge<PermissionPass[]>(
-      PERMISSION_KEY,
-      [execCtx.getHandler(), execCtx.getClass()]
-    );
+    const requiredPermissions = this.reflector.getAllAndMerge<PermissionPass[]>(PERMISSION_KEY, [execCtx.getHandler(), execCtx.getClass()]);
 
     const context: Context = execCtx.getArgByIndex(0).context;
     // eslint-disable-next-line sonarjs/prefer-single-boolean-return
@@ -30,7 +18,7 @@ export class AuthGuard implements CanActivate {
       throw new CodeException({
         code: UnauthorizedErrorCode.UNAUTHORIZED,
         status: HttpStatus.UNAUTHORIZED,
-        errorMessage: 'User is not authenticated!',
+        errorMessage: 'User is not authenticated!'
       });
     }
     // else if (requiredPermissions.length > 0) {

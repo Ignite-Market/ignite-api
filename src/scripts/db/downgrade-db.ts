@@ -9,7 +9,7 @@ async function run() {
     host: env.MYSQL_HOST,
     port: env.MYSQL_PORT,
     user: env.MYSQL_USER,
-    password: env.MYSQL_PASSWORD,
+    password: env.MYSQL_PASSWORD
   });
 
   const showDialog = !process.argv.includes('--F');

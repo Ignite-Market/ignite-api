@@ -1,20 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { verifyMessage } from 'ethers';
-import {
-  SerializeFor,
-  UnauthorizedErrorCode,
-  ValidatorErrorCode,
-} from '../../config/types';
+import { SerializeFor, UnauthorizedErrorCode, ValidatorErrorCode } from '../../config/types';
 import { Context } from '../../context';
-import {
-  CodeException,
-  ValidationException,
-} from '../../lib/exceptions/exceptions';
+import { CodeException, ValidationException } from '../../lib/exceptions/exceptions';
 import { User } from './models/user.model';
 
 @Injectable()
 export class UserService {
-
   async getUserProfile(ctx: Context) {
     return ctx.user?.serialize(SerializeFor.USER);
   }
@@ -24,23 +16,19 @@ export class UserService {
       throw new CodeException({
         code: ValidatorErrorCode.DEFAULT_VALIDATION_ERROR,
         status: 422,
-        errorCodes: ValidatorErrorCode,
+        errorCodes: ValidatorErrorCode
       });
     }
 
     // Verify wallet signature
     const message = `Login with wallet ${data.address}`;
-    const isValidSignature = this.verifyWalletSignature(
-      message,
-      data.signature,
-      data.address
-    );
-    
+    const isValidSignature = this.verifyWalletSignature(message, data.signature, data.address);
+
     if (!isValidSignature) {
       throw new CodeException({
         code: UnauthorizedErrorCode.INVALID_SIGNATURE,
         status: 401,
-        errorCodes: UnauthorizedErrorCode,
+        errorCodes: UnauthorizedErrorCode
       });
     }
 
@@ -67,11 +55,7 @@ export class UserService {
     return user.serialize(SerializeFor.USER);
   }
 
-  private verifyWalletSignature(
-    message: string,
-    signature: string,
-    address: string
-  ): boolean {
+  private verifyWalletSignature(message: string, signature: string, address: string): boolean {
     try {
       const recoveredAddress = verifyMessage(message, signature);
       return recoveredAddress.toLowerCase() === address.toLowerCase();

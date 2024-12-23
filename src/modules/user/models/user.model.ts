@@ -1,11 +1,6 @@
 import { prop } from '@rawmodel/core';
 import { stringParser } from '@rawmodel/parsers';
-import {
-  DbTables,
-  JwtTokenType,
-  PopulateFrom,
-  SerializeFor
-} from '../../../config/types';
+import { DbTables, JwtTokenType, PopulateFrom, SerializeFor } from '../../../config/types';
 import type { Context } from '../../../context';
 import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
 import { generateJwtToken } from '../../../lib/utils';
@@ -24,14 +19,10 @@ export class User extends AdvancedSQLModel {
    */
   @prop({
     parser: {
-      resolver: stringParser(),
+      resolver: stringParser()
     },
-    serializable: [
-      SerializeFor.USER,
-      SerializeFor.SELECT_DB,
-      SerializeFor.INSERT_DB,
-    ],
-    populatable: [PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB],
+    populatable: [PopulateFrom.DB]
   })
   name: string;
 
@@ -40,17 +31,12 @@ export class User extends AdvancedSQLModel {
    */
   @prop({
     parser: {
-      resolver: stringParser(),
+      resolver: stringParser()
     },
-    serializable: [
-      SerializeFor.USER,
-      SerializeFor.SELECT_DB,
-      SerializeFor.INSERT_DB,
-    ],
-    populatable: [PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB],
+    populatable: [PopulateFrom.DB]
   })
   walletAddress: string;
-
 
   /**
    * User's authentication token.
@@ -58,7 +44,7 @@ export class User extends AdvancedSQLModel {
   @prop({
     parser: { resolver: stringParser() },
     populatable: [],
-    serializable: [SerializeFor.USER],
+    serializable: [SerializeFor.USER]
   })
   public token: string;
 
@@ -67,9 +53,9 @@ export class User extends AdvancedSQLModel {
   }
 
   /**
-   * 
-   * @param address 
-   * @returns 
+   *
+   * @param address
+   * @returns
    */
   async populateByWalletAddress(address: string) {
     this.reset();
@@ -80,7 +66,7 @@ export class User extends AdvancedSQLModel {
       WHERE walletAddress = @address
     `,
       {
-        address,
+        address
       }
     );
 
@@ -92,7 +78,7 @@ export class User extends AdvancedSQLModel {
   }
 
   /**
-   * 
+   *
    */
   login() {
     this.token = generateJwtToken(JwtTokenType.USER_LOGIN, { id: this.id });

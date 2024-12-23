@@ -1,11 +1,6 @@
 import { prop } from '@rawmodel/core';
 import { integerParser, dateParser } from '@rawmodel/parsers';
-import {
-  ErrorCode,
-  PopulateFrom,
-  SerializeFor,
-  SqlModelStatus,
-} from '../../config/types';
+import { ErrorCode, PopulateFrom, SerializeFor, SqlModelStatus } from '../../config/types';
 import { PoolConnection } from 'mysql2/promise';
 import { BaseSQLModel } from './base-sql.model';
 import { presenceValidator } from '@rawmodel/validators';
@@ -21,14 +16,8 @@ export abstract class AdvancedSQLModel extends BaseSQLModel {
    */
   @prop({
     parser: { resolver: integerParser() },
-    serializable: [
-      SerializeFor.USER,
-      SerializeFor.ADMIN,
-      SerializeFor.SELECT_DB,
-      SerializeFor.SERVICE,
-      SerializeFor.WORKER,
-    ],
-    populatable: [PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.ADMIN, SerializeFor.SELECT_DB, SerializeFor.SERVICE, SerializeFor.WORKER],
+    populatable: [PopulateFrom.DB]
   })
   public id: number;
 
@@ -44,18 +33,18 @@ export abstract class AdvancedSQLModel extends BaseSQLModel {
       SerializeFor.INSERT_DB,
       SerializeFor.UPDATE_DB,
       SerializeFor.SELECT_DB,
-      SerializeFor.SERVICE,
+      SerializeFor.SERVICE
     ],
     validators: [
       {
         resolver: presenceValidator(),
-        code: ErrorCode.STATUS_NOT_PRESENT,
-      },
+        code: ErrorCode.STATUS_NOT_PRESENT
+      }
     ],
     defaultValue: SqlModelStatus.ACTIVE,
     fakeValue() {
       return SqlModelStatus.ACTIVE;
-    },
+    }
   })
   public status?: number;
 
@@ -64,12 +53,8 @@ export abstract class AdvancedSQLModel extends BaseSQLModel {
    */
   @prop({
     parser: { resolver: dateParser() },
-    serializable: [
-      SerializeFor.USER,
-      SerializeFor.ADMIN,
-      SerializeFor.SELECT_DB,
-    ],
-    populatable: [PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.ADMIN, SerializeFor.SELECT_DB],
+    populatable: [PopulateFrom.DB]
   })
   public createTime?: Date;
 
@@ -78,12 +63,8 @@ export abstract class AdvancedSQLModel extends BaseSQLModel {
    */
   @prop({
     parser: { resolver: dateParser() },
-    serializable: [
-      SerializeFor.USER,
-      SerializeFor.ADMIN,
-      SerializeFor.SELECT_DB,
-    ],
-    populatable: [PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.ADMIN, SerializeFor.SELECT_DB],
+    populatable: [PopulateFrom.DB]
   })
   public updateTime?: Date;
 
@@ -94,10 +75,10 @@ export abstract class AdvancedSQLModel extends BaseSQLModel {
     serializable: [
       // SerializeFor.PROFILE,
       SerializeFor.ADMIN,
-      SerializeFor.INSERT_DB,
+      SerializeFor.INSERT_DB
       // SerializeFor.SELECT_DB
     ],
-    populatable: [PopulateFrom.DB],
+    populatable: [PopulateFrom.DB]
   })
   public createUser?: number;
 
@@ -109,10 +90,10 @@ export abstract class AdvancedSQLModel extends BaseSQLModel {
       // SerializeFor.PROFILE,
       SerializeFor.ADMIN,
       SerializeFor.INSERT_DB,
-      SerializeFor.UPDATE_DB,
+      SerializeFor.UPDATE_DB
       // SerializeFor.SELECT_DB
     ],
-    populatable: [PopulateFrom.DB],
+    populatable: [PopulateFrom.DB]
   })
   public updateUser?: number;
 
@@ -142,11 +123,7 @@ export abstract class AdvancedSQLModel extends BaseSQLModel {
    * Populates model fields by loading the document with the provided id from the database.
    * @param id Document's ID.
    */
-  public async populateById(
-    id: number | string,
-    conn?: PoolConnection,
-    forUpdate = false
-  ): Promise<this> {
+  public async populateById(id: number | string, conn?: PoolConnection, forUpdate = false): Promise<this> {
     if (!id) {
       throw new Error('ID should not be null');
     }
@@ -168,16 +145,10 @@ export abstract class AdvancedSQLModel extends BaseSQLModel {
       conn
     );
 
-    return data?.length
-      ? this.populate(data[0], PopulateFrom.DB)
-      : this.reset();
+    return data?.length ? this.populate(data[0], PopulateFrom.DB) : this.reset();
   }
 
-  public async populateByName(
-    name: string,
-    conn?: PoolConnection,
-    forUpdate = false
-  ): Promise<this> {
+  public async populateByName(name: string, conn?: PoolConnection, forUpdate = false): Promise<this> {
     if (!this.hasOwnProperty('name')) {
       throw new Error('Object does not contain name property');
     }
@@ -196,9 +167,7 @@ export abstract class AdvancedSQLModel extends BaseSQLModel {
       conn
     );
 
-    return data?.length
-      ? this.populate(data[0], PopulateFrom.DB)
-      : this.reset();
+    return data?.length ? this.populate(data[0], PopulateFrom.DB) : this.reset();
   }
 
   public async populateByUUID(
@@ -221,19 +190,13 @@ export abstract class AdvancedSQLModel extends BaseSQLModel {
       conn
     );
 
-    return data?.length
-      ? this.populate(data[0], PopulateFrom.DB)
-      : this.reset();
+    return data?.length ? this.populate(data[0], PopulateFrom.DB) : this.reset();
   }
 
   /**
    * Saves model data in the database as a new document.
    */
-  public async insert(
-    strategy: SerializeFor = SerializeFor.INSERT_DB,
-    conn?: PoolConnection,
-    insertIgnore?: boolean
-  ): Promise<this> {
+  public async insert(strategy: SerializeFor = SerializeFor.INSERT_DB, conn?: PoolConnection, insertIgnore?: boolean): Promise<this> {
     this.createUser = this.getContext()?.user?.id;
     this.updateUser = this.getContext()?.user?.id;
 
@@ -255,19 +218,11 @@ export abstract class AdvancedSQLModel extends BaseSQLModel {
           .join(', ')}
       )`;
 
-      const response = await this.getContext().mysql.paramExecute(
-        createQuery,
-        serializedModel,
-        conn
-      );
+      const response = await this.getContext().mysql.paramExecute(createQuery, serializedModel, conn);
       if (!this.id) {
         this.id = (response as any).insertId;
         if (!this.id) {
-          const req = await this.getContext().mysql.paramExecute(
-            'SELECT last_insert_id() AS id;',
-            null,
-            conn
-          );
+          const req = await this.getContext().mysql.paramExecute('SELECT last_insert_id() AS id;', null, conn);
           this.id = req[0].id;
         }
       }
@@ -328,10 +283,7 @@ export abstract class AdvancedSQLModel extends BaseSQLModel {
   /**
    * Updates model data in the database.
    */
-  public async update(
-    strategy: SerializeFor = SerializeFor.UPDATE_DB,
-    conn?: PoolConnection
-  ): Promise<this> {
+  public async update(strategy: SerializeFor = SerializeFor.UPDATE_DB, conn?: PoolConnection): Promise<this> {
     this.updateUser = this.getContext()?.user?.id;
 
     const serializedModel = this.serialize(strategy);
@@ -360,11 +312,7 @@ export abstract class AdvancedSQLModel extends BaseSQLModel {
       // re-set id parameter for where clause.
       serializedModel.id = this.id;
 
-      await this.getContext().mysql.paramExecute(
-        createQuery,
-        serializedModel,
-        conn
-      );
+      await this.getContext().mysql.paramExecute(createQuery, serializedModel, conn);
 
       if (isSingleTrans) {
         await this.getContext().mysql.commit(conn);
@@ -407,12 +355,7 @@ export abstract class AdvancedSQLModel extends BaseSQLModel {
       }
     }
 
-    const response = await super.upsert(
-      conn,
-      forceUpsert,
-      insertStrategy,
-      updateStrategy
-    );
+    const response = await super.upsert(conn, forceUpsert, insertStrategy, updateStrategy);
     if (!this.id) {
       this.id = (response as any).insertId || null;
     }
@@ -451,11 +394,7 @@ export abstract class AdvancedSQLModel extends BaseSQLModel {
       WHERE id = @id
       `;
 
-      await this.getContext().mysql.paramExecute(
-        createQuery,
-        { id: this.id },
-        conn
-      );
+      await this.getContext().mysql.paramExecute(createQuery, { id: this.id }, conn);
 
       if (isSingleTrans) {
         await this.getContext().mysql.commit(conn);

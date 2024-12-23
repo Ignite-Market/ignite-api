@@ -11,7 +11,7 @@ export enum IsolationLevel {
   READ_UNCOMMITTED = 'READ UNCOMMITTED',
   READ_COMMITTED = 'READ COMMITTED',
   REPEATABLE_READ = 'REPEATABLE READ',
-  READ_SERIALIZABLE = 'READ SERIALIZABLE',
+  READ_SERIALIZABLE = 'READ SERIALIZABLE'
 }
 
 /**
@@ -30,13 +30,7 @@ export class MySql {
   /**
    * MySql client constructor
    */
-  public constructor(connectionOptions: {
-    host: string;
-    port: number;
-    database: string;
-    user: string;
-    password: string;
-  }) {
+  public constructor(connectionOptions: { host: string; port: number; database: string; user: string; password: string }) {
     this.host = connectionOptions.host;
     this.port = connectionOptions.port;
     this.database = connectionOptions.database;
@@ -52,10 +46,7 @@ export class MySql {
       try {
         this.db = this.createConnectionPool();
 
-        if (
-          env.APP_ENV === AppEnvironment.TEST &&
-          !/(test|testing)/i.test(this.database)
-        ) {
+        if (env.APP_ENV === AppEnvironment.TEST && !/(test|testing)/i.test(this.database)) {
           throw new Error(`!!! ${this.database} NOT TEST DATABASE? !!!`);
         }
 
@@ -67,21 +58,10 @@ export class MySql {
         }
         conn.release();
 
-        writeLog(
-          LogType.INFO,
-          `Connected to DB: ${this.user}@${this.host}:${this.port} > ${this.database}`,
-          'mysql.ts',
-          'connect',
-        );
+        writeLog(LogType.INFO, `Connected to DB: ${this.user}@${this.host}:${this.port} > ${this.database}`, 'mysql.ts', 'connect');
       } catch (err) {
         this.db = null;
-        writeLog(
-          LogType.ERROR,
-          'Database connection failed.',
-          'mysql.ts',
-          'connect',
-          err,
-        );
+        writeLog(LogType.ERROR, 'Database connection failed.', 'mysql.ts', 'connect', err);
         throw err;
       }
     } else {
@@ -108,7 +88,7 @@ export class MySql {
       decimalNumbers: true,
       connectionLimit: 10,
       queueLimit: 100,
-      timezone: 'Z',
+      timezone: 'Z'
       // ssl: env.USE_DB_SSL ? {
       //   ca: fs.readFileSync(`${__dirname}/keys/ca-cert.pem`).toString(),
       //   key: fs.readFileSync(`${__dirname}/keys/client-key.pem`).toString(),
@@ -159,11 +139,7 @@ export class MySql {
    * @param data procedure parameters
    * @param [options={multiSet: boolean}] additional options
    */
-  public async callSingle(
-    procedure: string,
-    data: unknown,
-    options: { multiSet?: boolean } = {},
-  ): Promise<any> {
+  public async callSingle(procedure: string, data: unknown, options: { multiSet?: boolean } = {}): Promise<any> {
     // console.time('Call Single');
     const conn = await this.start();
     try {
@@ -185,12 +161,7 @@ export class MySql {
    * @param data Object with call parameters
    * @returns array of results from database
    */
-  public async call(
-    procedure: string,
-    data: any,
-    connection?: PoolConnection,
-    options: { multiSet?: boolean } = {},
-  ): Promise<any> {
+  public async call(procedure: string, data: any, connection?: PoolConnection, options: { multiSet?: boolean } = {}): Promise<any> {
     if (!connection) {
       if (!this.db) {
         await this.connect();
@@ -199,19 +170,10 @@ export class MySql {
       await this.ensureAlive(connection);
     }
 
-    const query = `CALL ${procedure}(${
-      Object.keys(data).length
-        ? Array(Object.keys(data).length).fill('?').join(',')
-        : ''
-    });`;
+    const query = `CALL ${procedure}(${Object.keys(data).length ? Array(Object.keys(data).length).fill('?').join(',') : ''});`;
 
     writeLog(LogType.DB, query, this.filename, 'call');
-    writeLog(
-      LogType.DB,
-      this.mapValues(data, true).join(';'),
-      this.filename,
-      'call',
-    );
+    writeLog(LogType.DB, this.mapValues(data, true).join(';'), this.filename, 'call');
 
     // console.time('SQL procedure CALL');
     const result = await connection.query(query, this.mapValues(data));
@@ -245,16 +207,8 @@ export class MySql {
     const conn = await this.db.getConnection();
     await this.ensureAlive(conn);
     if (isolationLevel) {
-      writeLog(
-        LogType.DB,
-        `SET TRANSACTION ISOLATION LEVEL ${isolationLevel}`,
-        'mysql.ts',
-        'start',
-      );
-      await conn.execute(
-        `SET TRANSACTION ISOLATION LEVEL ${isolationLevel}`,
-        null,
-      );
+      writeLog(LogType.DB, `SET TRANSACTION ISOLATION LEVEL ${isolationLevel}`, 'mysql.ts', 'start');
+      await conn.execute(`SET TRANSACTION ISOLATION LEVEL ${isolationLevel}`, null);
     }
 
     writeLog(LogType.DB, 'BEGIN TRANSACTION', 'mysql.ts', 'start');
@@ -305,11 +259,7 @@ export class MySql {
    * @param values object with replacement values
    * @param connection PoolConnection reference - needed if query is part of transaction
    */
-  public async paramExecute(
-    query: string,
-    values?: unknown,
-    connection?: PoolConnection,
-  ): Promise<Array<any>> {
+  public async paramExecute(query: string, values?: unknown, connection?: PoolConnection): Promise<Array<any>> {
     const queryId = Math.round(Math.random() * 10000);
     // console.time('Param Execute');
     // array with values for prepared statement
@@ -318,9 +268,7 @@ export class MySql {
 
     if (values) {
       // split query to array to find right order of variables
-      const queryArray = query
-        .split(/\n|\s/)
-        .filter((x) => !!x && /@.*\b/.test(x));
+      const queryArray = query.split(/\n|\s/).filter((x) => !!x && /@.*\b/.test(x));
 
       for (const word of queryArray) {
         for (const key of Object.keys(values)) {
@@ -356,18 +304,8 @@ export class MySql {
 
     // console.log(query);
     // console.time(`Logs [${queryId}]`);
-    writeLog(
-      LogType.DB,
-      `[${queryId}]\n` + query,
-      this.filename,
-      'paramExecute',
-    );
-    writeLog(
-      LogType.DB,
-      `[${queryId}] ` + JSON.stringify(this.mapValues(sqlParamValues, true)),
-      this.filename,
-      'paramExecute',
-    );
+    writeLog(LogType.DB, `[${queryId}]\n` + query, this.filename, 'paramExecute');
+    writeLog(LogType.DB, `[${queryId}] ` + JSON.stringify(this.mapValues(sqlParamValues, true)), this.filename, 'paramExecute');
     // console.timeEnd(`Logs [${queryId}]`);
 
     let result;
@@ -382,10 +320,7 @@ export class MySql {
       result = await conn.execute(query, sqlParamValues);
       conn.release();
       const diff = process.hrtime(time);
-      writeLog(
-        LogType.DB,
-        `SQL ${queryId} Execution time: ${diff[0]} ${diff[1] / 1000000}`,
-      );
+      writeLog(LogType.DB, `SQL ${queryId} Execution time: ${diff[0]} ${diff[1] / 1000000}`);
     } else {
       const time = process.hrtime();
       try {
@@ -398,10 +333,7 @@ export class MySql {
       }
       const diff = process.hrtime(time);
       // console.log('SQL %d Execution time: %ds %dms', queryId, diff[0], diff[1] / 1000000);
-      writeLog(
-        LogType.DB,
-        `SQL ${queryId} Execution time: ${diff[0]} ${diff[1] / 1000000}`,
-      );
+      writeLog(LogType.DB, `SQL ${queryId} Execution time: ${diff[0]} ${diff[1] / 1000000}`);
     }
 
     // console.timeEnd( 'Param Execute');

@@ -22,10 +22,7 @@ export interface Stage {
  * Setup test environment. Rebuild BD, run test app and create test stage object
  * @returns
  */
-export async function setupTest(
-  apiPort = env.API_PORT_TEST,
-  apiHost = env.API_HOST_TEST
-): Promise<Stage> {
+export async function setupTest(apiPort = env.API_PORT_TEST, apiHost = env.API_HOST_TEST): Promise<Stage> {
   let app = null;
   let http: HttpServer = null;
 
@@ -42,7 +39,7 @@ export async function setupTest(
 
   try {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
+      imports: [AppModule]
     }).compile();
 
     app = moduleFixture.createNestApplication();

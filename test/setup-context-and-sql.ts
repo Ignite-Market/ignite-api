@@ -12,7 +12,7 @@ export async function setupTestContextAndSql(): Promise<Stage> {
       database: env.MYSQL_DATABASE_TEST,
       password: env.MYSQL_PASSWORD_TEST,
       port: env.MYSQL_PORT_TEST,
-      user: env.MYSQL_USER_TEST,
+      user: env.MYSQL_USER_TEST
     };
 
     const db = new MySql(config);
@@ -24,7 +24,7 @@ export async function setupTestContextAndSql(): Promise<Stage> {
       http: undefined,
       app: undefined,
       context,
-      db,
+      db
     };
   } catch (e) {
     console.error(e);

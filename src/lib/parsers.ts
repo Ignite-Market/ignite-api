@@ -12,15 +12,8 @@ export function JSONParser(): any {
 }
 
 // Not to be confused with arrayParser from rawmodel
-export function stringArrayParser(
-  separator = ','
-): (value: string) => string | string[] {
-  return (value: string) =>
-    value?.includes(separator)
-      ? value.split(separator)
-      : Array.isArray(value)
-        ? value
-        : [value];
+export function stringArrayParser(separator = ','): (value: string) => string | string[] {
+  return (value: string) => (value?.includes(separator) ? value.split(separator) : Array.isArray(value) ? value : [value]);
 }
 
 /**

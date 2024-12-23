@@ -21,10 +21,7 @@ export abstract class ModelBase extends Model<any> {
     super(data, { context });
   }
 
-  public async handle(
-    error: any,
-    { quiet }: { quiet: boolean } = { quiet: false }
-  ): Promise<this> {
+  public async handle(error: any, { quiet }: { quiet: boolean } = { quiet: false }): Promise<this> {
     try {
       await super.handle(error, { quiet });
       if (!quiet) {
@@ -53,10 +50,7 @@ export abstract class ModelBase extends Model<any> {
    * @returns {Promise<this>}
    */
   public async validateOrThrow(
-    validationException: new (
-      model: Model,
-      errorCodes?: any
-    ) => ModelValidationException,
+    validationException: new (model: Model, errorCodes?: any) => ModelValidationException,
     errorCodes?: object
   ): Promise<this> {
     try {

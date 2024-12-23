@@ -1,10 +1,5 @@
 import { Model } from '@rawmodel/core';
-import {
-  BadRequestErrorCode,
-  LogType,
-  SystemErrorCode,
-  ValidatorErrorCode,
-} from '../../config/types';
+import { BadRequestErrorCode, LogType, SystemErrorCode, ValidatorErrorCode } from '../../config/types';
 
 import { HttpException } from './http-exception';
 import { Context } from '../../context';
@@ -35,9 +30,7 @@ export class CodeException extends HttpException {
     super(
       {
         statusCode: options.code,
-        message: options.errorCodes
-          ? options.errorCodes[options.code]
-          : options.errorMessage,
+        message: options.errorCodes ? options.errorCodes[options.code] : options.errorMessage
       },
       options.status
     );
@@ -46,12 +39,8 @@ export class CodeException extends HttpException {
     writeLog(
       LogType.MSG,
       `(user: ${
-        options.context && options.context.user
-          ? `${options.context.user.id} ${options.context.user.email}`
-          : 'NA'
-      }) ${options.errorMessage || ''}, Details: ${
-        options.details ? JSON.stringify(options.details) : 'NA'
-      }`,
+        options.context && options.context.user ? `${options.context.user.id} ${options.context.user.email}` : 'NA'
+      }) ${options.errorMessage || ''}, Details: ${options.details ? JSON.stringify(options.details) : 'NA'}`,
       options.code.toString(),
       options.sourceFunction || '',
       this
@@ -91,23 +80,17 @@ export class CodeException extends HttpException {
 export class ValidationException extends HttpException {
   errors: IValidationError[];
 
-  public constructor(
-    errors: IValidationError | IValidationError[],
-    errorCodes?: { [key: number]: string }
-  ) {
+  public constructor(errors: IValidationError | IValidationError[], errorCodes?: { [key: number]: string }) {
     const errorsArray = Array.isArray(errors) ? errors : [errors];
     const errorsWithMessages = errorsArray.map((error) => ({
       ...error,
-      message:
-        errorCodes && !error.message
-          ? { ...ValidatorErrorCode, ...errorCodes }[error.code]?.toString()
-          : error.message,
+      message: errorCodes && !error.message ? { ...ValidatorErrorCode, ...errorCodes }[error.code]?.toString() : error.message
     }));
     super(
       {
         code: 422,
         errors: errorsWithMessages,
-        message: 'Validation error', // workaround for errors in production
+        message: 'Validation error' // workaround for errors in production
       },
       422
     );
@@ -131,7 +114,7 @@ export class ModelValidationException extends ValidationException {
       (x) =>
         ({
           code: x.code,
-          property: x.path[0],
+          property: x.path[0]
         }) as IValidationError
     );
 

@@ -7,13 +7,11 @@ import { UserModule } from './modules/user/user.module';
 @Module({
   imports: [MySQLModule, UserModule],
   controllers: [],
-  providers: [],
+  providers: []
 })
 export class AppModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(ContextMiddleware)
-      .forRoutes({ path: '*', method: RequestMethod.ALL });
+    consumer.apply(ContextMiddleware).forRoutes({ path: '*', method: RequestMethod.ALL });
     consumer
       .apply(AuthenticateUserMiddleware)
       .exclude(

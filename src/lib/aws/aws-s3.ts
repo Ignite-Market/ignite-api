@@ -1,9 +1,4 @@
-import type {
-  DeleteObjectOutput,
-  GetObjectOutput,
-  ListObjectsOutput,
-  PutObjectOutput,
-} from '@aws-sdk/client-s3';
+import type { DeleteObjectOutput, GetObjectOutput, ListObjectsOutput, PutObjectOutput } from '@aws-sdk/client-s3';
 import {
   DeleteObjectCommand,
   DeleteObjectsCommand,
@@ -13,7 +8,7 @@ import {
   ListObjectsV2Command,
   ListObjectsV2Output,
   PutObjectCommand,
-  S3Client,
+  S3Client
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { consumers, Readable } from 'stream';
@@ -29,12 +24,12 @@ export class AWS_S3 {
           region: env.AWS_REGION,
           credentials: {
             accessKeyId: env.AWS_KEY,
-            secretAccessKey: env.AWS_SECRET,
-          },
+            secretAccessKey: env.AWS_SECRET
+          }
         });
       } else {
         this.s3Client = new S3Client({
-          region: env.AWS_REGION,
+          region: env.AWS_REGION
         });
       }
     } catch (err) {
@@ -46,10 +41,10 @@ export class AWS_S3 {
             // secret: env.AWS_SECRET,
             reg: env.AWS_REGION,
             endpoint: env.AWS_ENDPOINT,
-            env: env.APP_ENV,
-          },
+            env: env.APP_ENV
+          }
         },
-        err,
+        err
       );
       throw err;
     }
@@ -78,17 +73,12 @@ export class AWS_S3 {
    * @param body File to be uploaded.
    * @param ctx Request context.
    */
-  async upload(
-    bucket: string,
-    source: string,
-    body: Blob | Buffer | ReadableStream,
-    contentType: string,
-  ): Promise<PutObjectOutput> {
+  async upload(bucket: string, source: string, body: Blob | Buffer | ReadableStream, contentType: string): Promise<PutObjectOutput> {
     const command = new PutObjectCommand({
       Bucket: bucket,
       Key: source,
       Body: body,
-      ContentType: contentType,
+      ContentType: contentType
     });
     return await this.s3Client.send(command);
   }
@@ -101,7 +91,7 @@ export class AWS_S3 {
   async get(bucket: string, source: string): Promise<GetObjectOutput> {
     const command = new GetObjectCommand({
       Bucket: bucket,
-      Key: source,
+      Key: source
     });
     return await this.s3Client.send(command);
   }
@@ -124,15 +114,11 @@ export class AWS_S3 {
    * @param startAfter StartAfter is where you want Amazon S3 to start listing from. Amazon S3 starts listing after this specified key. StartAfter can be any key in the bucket.
    * @returns
    */
-  async listFiles(
-    bucket: string,
-    prefix: string,
-    startAfter?: string,
-  ): Promise<ListObjectsV2Output> {
+  async listFiles(bucket: string, prefix: string, startAfter?: string): Promise<ListObjectsV2Output> {
     const command = new ListObjectsV2Command({
       Bucket: bucket,
       Prefix: prefix,
-      StartAfter: startAfter,
+      StartAfter: startAfter
     });
     return await this.s3Client.send(command);
   }
@@ -144,7 +130,7 @@ export class AWS_S3 {
    */
   async listBucket(bucket: string): Promise<ListObjectsOutput> {
     const command = new ListObjectsCommand({
-      Bucket: bucket,
+      Bucket: bucket
     });
     return await this.s3Client.send(command);
   }
@@ -158,7 +144,7 @@ export class AWS_S3 {
   async generateSignedUploadURL(bucket: string, key: string): Promise<string> {
     const command = new PutObjectCommand({
       Bucket: bucket,
-      Key: key,
+      Key: key
     });
     return await getSignedUrl(this.s3Client, command);
   }
@@ -171,7 +157,7 @@ export class AWS_S3 {
   async remove(bucket: string, source: string): Promise<DeleteObjectOutput> {
     const command = new DeleteObjectCommand({
       Bucket: bucket,
-      Key: source,
+      Key: source
     });
     return await this.s3Client.send(command);
   }
@@ -186,7 +172,7 @@ export class AWS_S3 {
     do {
       const command = new DeleteObjectsCommand({
         Bucket: bucket,
-        Delete: { Objects: keys.slice(counter, counter + 1000) },
+        Delete: { Objects: keys.slice(counter, counter + 1000) }
       });
       await this.s3Client.send(command);
       counter += 1000;
@@ -210,9 +196,9 @@ export class AWS_S3 {
           Bucket: bucket,
           Delete: {
             Objects: files.Contents.map((x) => ({
-              Key: x.Key,
-            })),
-          },
+              Key: x.Key
+            }))
+          }
         });
         await this.s3Client.send(command);
       }

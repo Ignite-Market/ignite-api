@@ -1,17 +1,10 @@
-import {
-  BaseQueueWorker,
-  QueueWorkerType,
-} from '../lib/worker/serverless-workers/base-queue-worker';
+import { BaseQueueWorker, QueueWorkerType } from '../lib/worker/serverless-workers/base-queue-worker';
 import { WorkerDefinition } from '../lib/worker/serverless-workers';
 import { Context } from '../context';
 import { env } from '../config/env';
 
 export class TestWorker extends BaseQueueWorker {
-  public constructor(
-    workerDefinition: WorkerDefinition,
-    context: Context,
-    type: QueueWorkerType
-  ) {
+  public constructor(workerDefinition: WorkerDefinition, context: Context, type: QueueWorkerType) {
     super(workerDefinition, context, type, env.AWS_WORKER_SQS_URL);
   }
 
@@ -20,7 +13,7 @@ export class TestWorker extends BaseQueueWorker {
     return [
       { id: 1, message: 'Test message 1' },
       { id: 2, message: 'Test message 2' },
-      { id: 3, message: 'Test message 3' },
+      { id: 3, message: 'Test message 3' }
     ];
   }
 
@@ -30,7 +23,7 @@ export class TestWorker extends BaseQueueWorker {
     return {
       success: true,
       processedData: data,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     };
   }
 }

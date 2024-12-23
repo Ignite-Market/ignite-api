@@ -22,25 +22,13 @@ export abstract class BaseWorker extends ServerlessWorker {
    * @param data any data in JSON
    * @param err Error object
    */
-  protected async writeLogToDb(
-    status: WorkerLogStatus,
-    message: string,
-    data?: any,
-    err?: Error
-  ) {
+  protected async writeLogToDb(status: WorkerLogStatus, message: string, data?: any, err?: Error) {
     try {
       if (err) {
         message += ` (${err.message})`;
         status = WorkerLogStatus.ERROR;
       }
-      await writeWorkerLog(
-        this.context,
-        status,
-        this.workerName,
-        null,
-        message,
-        data
-      );
+      await writeWorkerLog(this.context, status, this.workerName, null, message, data);
       this.logFn(`${this.workerName} ${message}`, err);
     } catch (error) {
       console.log('ERROR writing worker log to database!');

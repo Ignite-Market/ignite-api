@@ -1,9 +1,7 @@
 import { DbTables } from '../../config/types';
 import { WorkerLogStatus } from '../../lib/worker/logger';
 
-export const upgrade = async (
-  queryFn: (query: string, values?: any[]) => Promise<any[]>
-): Promise<void> => {
+export const upgrade = async (queryFn: (query: string, values?: any[]) => Promise<any[]>): Promise<void> => {
   await queryFn(`
   CREATE TABLE IF NOT EXISTS \`${DbTables.WORKER_LOG}\` (
     \`id\` INT NOT NULL AUTO_INCREMENT,
@@ -18,9 +16,7 @@ export const upgrade = async (
   `);
 };
 
-export const downgrade = async (
-  queryFn: (query: string, values?: any[]) => Promise<any[]>
-): Promise<void> => {
+export const downgrade = async (queryFn: (query: string, values?: any[]) => Promise<any[]>): Promise<void> => {
   await queryFn(`
     DROP TABLE IF EXISTS \`${DbTables.WORKER_LOG}\`;
   `);

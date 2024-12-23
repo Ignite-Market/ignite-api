@@ -14,14 +14,14 @@ export async function getMySqlClient() {
           database: env.MYSQL_DATABASE_TEST,
           password: env.MYSQL_PASSWORD_TEST,
           port: env.MYSQL_PORT_TEST,
-          user: env.MYSQL_USER_TEST,
+          user: env.MYSQL_USER_TEST
         }
       : {
           host: env.MYSQL_HOST,
           database: env.MYSQL_DATABASE,
           password: env.MYSQL_PASSWORD,
           port: env.MYSQL_PORT,
-          user: env.MYSQL_USER,
+          user: env.MYSQL_USER
         };
 
   try {
@@ -42,7 +42,7 @@ export enum WhereQueryComparator {
   IN,
   NOT_IN,
   HAS_TEXT,
-  IN_TEXT,
+  IN_TEXT
 }
 
 export interface SqlQueryObject {
@@ -74,18 +74,9 @@ export interface SqlQueryObject {
  * @param urlQuery URL query parameters.
  * @returns Object with parameters for database listing search.
  */
-export function getQueryParams(
-  defaultParameters: any,
-  tableAlias: string,
-  fieldMap: any,
-  urlQuery: any
-) {
-  const limit =
-    urlQuery.limit === 'NO_LIMIT'
-      ? null
-      : parseInt(urlQuery.limit) || env.DEFAULT_PAGE_SIZE || 20;
-  const offset =
-    Number(urlQuery?.skip) || ((parseInt(urlQuery.page) || 1) - 1) * limit;
+export function getQueryParams(defaultParameters: any, tableAlias: string, fieldMap: any, urlQuery: any) {
+  const limit = urlQuery.limit === 'NO_LIMIT' ? null : parseInt(urlQuery.limit) || env.DEFAULT_PAGE_SIZE || 20;
+  const offset = Number(urlQuery?.skip) || ((parseInt(urlQuery.page) || 1) - 1) * limit;
   const order = [];
   if (urlQuery.orderBy) {
     if (Array.isArray(urlQuery.orderBy)) {
@@ -93,14 +84,14 @@ export function getQueryParams(
       for (let i = 0; i < urlQuery.orderBy.length; i++) {
         order.push({
           by: getOrderField(urlQuery.orderBy[i], tableAlias, fieldMap),
-          desc: !!(Array.isArray(urlQuery.desc) && urlQuery.desc[i] == 'true'),
+          desc: !!(Array.isArray(urlQuery.desc) && urlQuery.desc[i] == 'true')
         });
       }
     } else {
       order.push({
         by: getOrderField(urlQuery.orderBy, tableAlias, fieldMap),
         // eslint-disable-next-line sonarjs/no-inverted-boolean-check
-        desc: !!(urlQuery.desc == 'true'),
+        desc: !!(urlQuery.desc == 'true')
       });
     }
   }
@@ -123,14 +114,14 @@ export function getQueryParams(
   return {
     params: {
       ...defaultParameters,
-      ...urlQuery,
+      ...urlQuery
     },
     filters: {
       limit,
       offset,
       order,
-      orderStr,
-    },
+      orderStr
+    }
   };
 }
 
@@ -187,12 +178,7 @@ export async function selectAndCountQuery(
   countByField: string,
   conn?: PoolConnection
 ): Promise<{ items: Array<any>; total: number }> {
-  const querySelect = [
-    queryObj.qSelect,
-    queryObj.qFrom,
-    queryObj.qGroup,
-    queryObj.qFilter,
-  ].join('\n');
+  const querySelect = [queryObj.qSelect, queryObj.qFrom, queryObj.qGroup, queryObj.qFilter].join('\n');
 
   const queryCount = `
   SELECT COUNT(*) as total
@@ -218,14 +204,8 @@ export async function selectAndCountQuery(
   let totalResults: Array<any>;
   const workers = [];
   try {
-    workers.push(
-      db.paramExecute(querySelect, params, conn).then((res) => (items = res))
-    );
-    workers.push(
-      db
-        .paramExecute(queryCount, params, conn)
-        .then((res) => (totalResults = res))
-    );
+    workers.push(db.paramExecute(querySelect, params, conn).then((res) => (items = res)));
+    workers.push(db.paramExecute(queryCount, params, conn).then((res) => (totalResults = res)));
     await Promise.all(workers);
   } catch (err) {
     console.log(err);
@@ -246,19 +226,12 @@ export async function unionSelectAndCountQuery(
   let queryCountAll = '';
 
   for (let i = 0; i < queryObj.qSelects.length; i++) {
-    const querySelect = [
-      queryObj.qSelects[i].qSelect,
-      queryObj.qSelects[i].qFrom,
-      queryObj.qSelects[i].qGroup,
-      queryObj.qSelects[i].qFilter,
-    ].join('\n');
-    querySelectAll = `${
-      i !== 0 ? `${querySelectAll}\n\nUNION\n\n` : ''
-    }${querySelect}`;
+    const querySelect = [queryObj.qSelects[i].qSelect, queryObj.qSelects[i].qFrom, queryObj.qSelects[i].qGroup, queryObj.qSelects[i].qFilter].join(
+      '\n'
+    );
+    querySelectAll = `${i !== 0 ? `${querySelectAll}\n\nUNION\n\n` : ''}${querySelect}`;
 
-    queryCountAll = `${i !== 0 ? `${queryCountAll}\n\nUNION\n\n` : ''} SELECT ${
-      countByField || 'id'
-    }
+    queryCountAll = `${i !== 0 ? `${queryCountAll}\n\nUNION\n\n` : ''} SELECT ${countByField || 'id'}
     ${queryObj.qSelects[i].qFrom}
     ${queryObj.qSelects[i].qGroup ? `GROUP BY ${countByField || 'id'}` : ''}`;
   }
@@ -288,12 +261,8 @@ export async function unionSelectAndCountQuery(
   let totalResults: Array<any>;
   const workers = [];
   try {
-    workers.push(
-      db.paramExecute(querySelectAll, params).then((res) => (items = res))
-    );
-    workers.push(
-      db.paramExecute(queryCount, params).then((res) => (totalResults = res))
-    );
+    workers.push(db.paramExecute(querySelectAll, params).then((res) => (items = res)));
+    workers.push(db.paramExecute(queryCount, params).then((res) => (totalResults = res)));
     await Promise.all(workers);
   } catch (err) {
     console.log(err);
@@ -304,11 +273,7 @@ export async function unionSelectAndCountQuery(
   return { items, total };
 }
 
-export function buildWhereCondition(
-  comparator: WhereQueryComparator,
-  field: string,
-  param: string
-) {
+export function buildWhereCondition(comparator: WhereQueryComparator, field: string, param: string) {
   switch (comparator) {
     case WhereQueryComparator.EQUAL:
       return `${field} = @${param}`;
@@ -358,8 +323,7 @@ export function groupSubItem(
     const subitemsMap = {};
     for (const item of items) {
       let uniqItem = groupItems.get(item[groupIdKey]);
-      const objMap =
-        subitemsMap[item[groupIdKey]] || new Map<number | string, any>();
+      const objMap = subitemsMap[item[groupIdKey]] || new Map<number | string, any>();
 
       if (!uniqItem) {
         groupItems.set(item[groupIdKey], item);
@@ -412,11 +376,6 @@ export async function selectAndGroupSubItems(
     isArray: boolean;
   }>
 ) {
-  const { items, total } = await selectAndCountQuery(
-    db,
-    queryObj,
-    params,
-    countByField
-  );
+  const { items, total } = await selectAndCountQuery(db, queryObj, params, countByField);
   return { items: groupSubItem(items, groupIdKey, subItemsOptions), total };
 }

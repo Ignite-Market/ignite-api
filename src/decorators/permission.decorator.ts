@@ -1,9 +1,5 @@
 import { SetMetadata } from '@nestjs/common';
-import {
-  DefaultUserRole,
-  PermissionLevel,
-  PermissionType,
-} from '../config/types';
+import { DefaultUserRole, PermissionLevel, PermissionType } from '../config/types';
 
 export interface PermissionPass {
   permission?: number;
@@ -14,5 +10,4 @@ export interface PermissionPass {
 
 export const PERMISSION_KEY = 'permissions';
 
-export const Permissions = (...permissions: Array<PermissionPass>) =>
-  SetMetadata<string, PermissionPass[]>(PERMISSION_KEY, permissions);
+export const Permissions = (...permissions: Array<PermissionPass>) => SetMetadata<string, PermissionPass[]>(PERMISSION_KEY, permissions);

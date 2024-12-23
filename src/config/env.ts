@@ -49,7 +49,6 @@ export interface IEnv {
   MYSQL_PASSWORD_TEST: string;
   MYSQL_PORT_TEST: number;
   MYSQL_USER_TEST: string;
-
 }
 
 dotenv.config();
@@ -69,8 +68,7 @@ export let env: IEnv = {
   LOG_LEVEL: process.env['LOG_LEVEL'] || LogLevel.DEBUG,
 
   DEFAULT_PAGE_SIZE: parseInt(process.env['DEFAULT_PAGE_SIZE']) || 20,
-  DEFAULT_CACHE_TTL:
-    parseInt(process.env['DEFAULT_CACHE_TTL']) || CacheKeyTTL.DEFAULT,
+  DEFAULT_CACHE_TTL: parseInt(process.env['DEFAULT_CACHE_TTL']) || CacheKeyTTL.DEFAULT,
 
   REDIS_URL: process.env['REDIS_URL'],
 
@@ -95,8 +93,7 @@ export let env: IEnv = {
   MYSQL_DATABASE_TEST: process.env['MYSQL_DATABASE_TEST'],
   MYSQL_PASSWORD_TEST: process.env['MYSQL_PASSWORD_TEST'],
   MYSQL_PORT_TEST: parseInt(process.env['MYSQL_PORT_TEST']),
-  MYSQL_USER_TEST: process.env['MYSQL_USER_TEST'],
-
+  MYSQL_USER_TEST: process.env['MYSQL_USER_TEST']
 };
 
 export let isEnvReady = false;

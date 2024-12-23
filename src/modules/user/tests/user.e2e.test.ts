@@ -30,7 +30,7 @@ describe('User e2e tests', () => {
         .post('/users/wallet-login')
         .send({
           address: wallet.address,
-          signature: await signMessage(message),
+          signature: await signMessage(message)
         });
 
       expect(response.status).toBe(201);
@@ -39,9 +39,7 @@ describe('User e2e tests', () => {
     });
 
     it('should get user profile', async () => {
-      const response = await request(stage.http)
-        .get('/users/me')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(stage.http).get('/users/me').set('Authorization', `Bearer ${authToken}`);
       expect(response.status).toBe(200);
     });
   });

@@ -8,10 +8,7 @@ import { Context } from '../../../context';
 export abstract class WorkerScheduler extends ServerlessWorker {
   protected context: Context;
 
-  public constructor(
-    serviceDefinition: ServiceDefinition,
-    workerName = 'scheduler'
-  ) {
+  public constructor(serviceDefinition: ServiceDefinition, workerName = 'scheduler') {
     super(new WorkerDefinition(serviceDefinition, workerName));
   }
 
@@ -32,25 +29,13 @@ export abstract class WorkerScheduler extends ServerlessWorker {
    * @param data any data in JSON
    * @param err Error object
    */
-  protected async writeLogToDb(
-    status: WorkerLogStatus,
-    message: string,
-    data?: any,
-    err?: Error
-  ) {
+  protected async writeLogToDb(status: WorkerLogStatus, message: string, data?: any, err?: Error) {
     try {
       if (err) {
         message += ` (${err.message})`;
         status = WorkerLogStatus.ERROR;
       }
-      await writeWorkerLog(
-        this.context,
-        status,
-        'Scheduler',
-        null,
-        message,
-        data
-      );
+      await writeWorkerLog(this.context, status, 'Scheduler', null, message, data);
       this.logFn(`Scheduler: ${message}`, err);
     } catch (error) {
       console.log('ERROR writing worker log to database!');

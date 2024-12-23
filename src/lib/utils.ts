@@ -4,22 +4,13 @@ import { env } from '../config/env';
 
 export function isPlainObject(testVar: any): boolean {
   // eslint-disable-next-line sonarjs/prefer-single-boolean-return
-  if (
-    testVar === null ||
-    testVar === undefined ||
-    typeof testVar !== 'object' ||
-    Array.isArray(testVar) ||
-    typeof testVar?.getMonth === 'function'
-  ) {
+  if (testVar === null || testVar === undefined || typeof testVar !== 'object' || Array.isArray(testVar) || typeof testVar?.getMonth === 'function') {
     return false;
   }
   return true;
 }
 
-export async function streamToString(
-  stream: any,
-  encoding: BufferEncoding
-): Promise<string> {
+export async function streamToString(stream: any, encoding: BufferEncoding): Promise<string> {
   const chunks = [];
   return new Promise((resolve, reject) => {
     stream.on('data', (chunk: any) => chunks.push(Buffer.from(chunk)));
@@ -36,12 +27,7 @@ export async function streamToString(
  * @param {any} ctx
  * @param {(doc, ctx) => void} task task function gets document/element from array an context in params
  */
-export async function runWithWorkers(
-  data: Array<any>,
-  workerCount: number,
-  ctx: any,
-  task: (doc, ctx) => void
-) {
+export async function runWithWorkers(data: Array<any>, workerCount: number, ctx: any, task: (doc, ctx) => void) {
   for (let i = 0; i < data.length; i++) {
     const workers = [];
     console.log(`COMPLETED=${i}/${data.length}`);
@@ -101,22 +87,17 @@ export function checkEmail(email: string) {
  * @param secret
  * @returns
  */
-export function generateJwtToken(
-  subject: string,
-  data: object,
-  expiresIn = '1d',
-  secret?: string
-) {
+export function generateJwtToken(subject: string, data: object, expiresIn = '1d', secret?: string) {
   if (!subject && !expiresIn) {
     return sign({ ...data }, secret ? secret : env.APP_SECRET);
   } else if (expiresIn == 'never') {
     return sign({ ...data }, secret ? secret : env.APP_SECRET, {
-      subject,
+      subject
     });
   }
   return sign({ ...data }, secret ? secret : env.APP_SECRET, {
     subject,
-    expiresIn,
+    expiresIn
   });
 }
 
@@ -132,13 +113,9 @@ export function generatePassword(length: number) {
   return generateRandomString(length, true);
 }
 
-export function generateRandomString(
-  length: number,
-  includeSpecialChars = false
-) {
+export function generateRandomString(length: number, includeSpecialChars = false) {
   const specialChars = '@#$&*€%';
-  let charset =
-    '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+  let charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
   if (includeSpecialChars) {
     charset = charset + specialChars;

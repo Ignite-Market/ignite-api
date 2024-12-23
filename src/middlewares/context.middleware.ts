@@ -16,9 +16,7 @@ export class ContextMiddleware implements NestMiddleware {
   use(req: IRequest, res, next) {
     let requestId = null;
     try {
-      requestId = JSON.parse(
-        decodeURI(req.headers['x-apigateway-context'] as string)
-      )?.awsRequestId;
+      requestId = JSON.parse(decodeURI(req.headers['x-apigateway-context'] as string))?.awsRequestId;
     } catch (err) {}
 
     req.context = new Context(requestId);

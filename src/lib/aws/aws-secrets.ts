@@ -1,8 +1,4 @@
-import {
-  GetSecretValueCommand,
-  PutSecretValueCommand,
-  SecretsManagerClient,
-} from '@aws-sdk/client-secrets-manager';
+import { GetSecretValueCommand, PutSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import { env } from '../../config/env';
 import { safeJsonParse } from '../utils';
 import { AppEnvironment } from '../../config/types';
@@ -13,17 +9,15 @@ import { AppEnvironment } from '../../config/types';
  */
 function createClient() {
   return new SecretsManagerClient({
-    ...(env.APP_ENV === AppEnvironment.LOCAL_DEV &&
-    env.AWS_KEY &&
-    env.AWS_SECRET
+    ...(env.APP_ENV === AppEnvironment.LOCAL_DEV && env.AWS_KEY && env.AWS_SECRET
       ? {
           credentials: {
             accessKeyId: env.AWS_KEY,
-            secretAccessKey: env.AWS_SECRET,
-          },
+            secretAccessKey: env.AWS_SECRET
+          }
         }
       : {}),
-    region: env.AWS_REGION,
+    region: env.AWS_REGION
   });
   // return new aws.SecretsManager({
   //   region: env.AWS_REGION,
@@ -32,7 +26,7 @@ function createClient() {
 
 export async function getSecrets(id: string): Promise<any> {
   const command = new GetSecretValueCommand({
-    SecretId: id,
+    SecretId: id
   });
   const response = await createClient().send(command);
   return safeJsonParse(response.SecretString);
@@ -41,7 +35,7 @@ export async function getSecrets(id: string): Promise<any> {
 export async function updateSecret(id: string, value: string): Promise<any> {
   const command = new PutSecretValueCommand({
     SecretId: id,
-    SecretString: value,
+    SecretString: value
   });
   return await createClient().send(command);
 }

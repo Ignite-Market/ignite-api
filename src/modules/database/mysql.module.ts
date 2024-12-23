@@ -8,10 +8,10 @@ import { getMySqlClient } from '../../lib/database/sql-utils';
       provide: 'MYSQL_DB',
       useFactory: async (): Promise<MySql> => {
         return await getMySqlClient();
-      },
-    },
+      }
+    }
   ],
-  exports: ['MYSQL_DB'],
+  exports: ['MYSQL_DB']
 })
 export class MySQLModule {
   constructor(@Inject('MYSQL_DB') private mysql: MySql) {}

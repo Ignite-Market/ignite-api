@@ -8,7 +8,7 @@ export enum WorkerLogStatus {
   INFO = 2,
   WARNING = 3,
   SUCCESS = 5,
-  ERROR = 9,
+  ERROR = 9
 }
 
 export async function writeWorkerLog(

@@ -9,7 +9,7 @@ async function run() {
     host: env.MYSQL_HOST_TEST,
     port: env.MYSQL_PORT_TEST,
     user: env.MYSQL_USER_TEST,
-    password: env.MYSQL_PASSWORD_TEST,
+    password: env.MYSQL_PASSWORD_TEST
   });
 
   await migrator.rebuild(false);

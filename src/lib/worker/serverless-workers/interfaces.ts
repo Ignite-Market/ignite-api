@@ -1,15 +1,9 @@
-import type {
-  InvokeCommandInput,
-  LambdaClientConfig,
-} from '@aws-sdk/client-lambda';
-import type {
-  SendMessageCommandInput,
-  SQSClientConfig,
-} from '@aws-sdk/client-sqs';
+import type { InvokeCommandInput, LambdaClientConfig } from '@aws-sdk/client-lambda';
+import type { SendMessageCommandInput, SQSClientConfig } from '@aws-sdk/client-sqs';
 
 export enum ServiceDefinitionType {
   LAMBDA,
-  SQS,
+  SQS
 }
 
 export enum LogOutput {
@@ -52,7 +46,7 @@ export enum LogOutput {
   /**
    * output: console, db, service, slack
    */
-  NOTIFY_ALERT,
+  NOTIFY_ALERT
 }
 
 export interface ServiceDefinition {

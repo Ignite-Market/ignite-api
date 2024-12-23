@@ -54,9 +54,7 @@ export class HttpException extends Error {
       this.message = this.response.message;
     } else if (this.constructor?.name) {
       try {
-        this.message = this.constructor?.name
-          .match(/[A-Z][a-z]+|[0-9]+/g)
-          .join(' ');
+        this.message = this.constructor?.name.match(/[A-Z][a-z]+|[0-9]+/g).join(' ');
       } catch (err) {
         console.error('initMessage failed!', this?.constructor?.name);
       }

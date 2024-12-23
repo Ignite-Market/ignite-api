@@ -1,38 +1,17 @@
-import {
-  red,
-  yellow,
-  black,
-  bgYellow,
-  bgRed,
-  bgGreen,
-  green,
-  bgBlack,
-  gray,
-  bgCyan,
-  cyan,
-  white,
-  bgWhite,
-} from 'colors/safe';
+import { red, yellow, black, bgYellow, bgRed, bgGreen, green, bgBlack, gray, bgCyan, cyan, white, bgWhite } from 'colors/safe';
 import { LogLevel, LogType } from '../config/types';
 import { env } from '../config/env';
 import * as moment from 'moment';
 
 const time_format = 'YYYY-MM-DD HH:mm:ss Z';
 
-export function writeLog(
-  type: LogType,
-  message: string,
-  fileSource = '',
-  functionSource = '',
-  error?: Error
-): void {
+export function writeLog(type: LogType, message: string, fileSource = '', functionSource = '', error?: Error): void {
   const levelFilter = {
-    [LogLevel.DB_ONLY]: () =>
-      [LogType.DB, LogType.WARN, LogType.ERROR].includes(type),
+    [LogLevel.DB_ONLY]: () => [LogType.DB, LogType.WARN, LogType.ERROR].includes(type),
     [LogLevel.NO_DB]: () => type !== LogType.DB,
     [LogLevel.ERROR_ONLY]: () => type === LogType.ERROR,
     [LogLevel.WARN]: () => [LogType.WARN, LogType.ERROR].includes(type),
-    [LogLevel.DEBUG]: () => true,
+    [LogLevel.DEBUG]: () => true
   };
 
   try {
@@ -53,13 +32,7 @@ export function writeLog(
   }
 }
 
-function logInColor(
-  type: LogType,
-  message: string,
-  fileSource = '',
-  functionSource = '',
-  error?: Error
-) {
+function logInColor(type: LogType, message: string, fileSource = '', functionSource = '', error?: Error) {
   let bgColor = bgBlack;
   let color = black;
   switch (type) {
@@ -91,9 +64,7 @@ function logInColor(
     bgColor(black(`[${type}]`)),
     gray(`[${moment().format(time_format)}]:`),
     color(
-      `${
-        typeof message == 'string' ? message : JSON.stringify(message, null, 2)
-      }${message && error && error.message ? ', ' : ''}${
+      `${typeof message == 'string' ? message : JSON.stringify(message, null, 2)}${message && error && error.message ? ', ' : ''}${
         error ? `${error.message}` || '' : ''
       }`
     ),
@@ -101,36 +72,16 @@ function logInColor(
   );
 }
 
-function logInConsole(
-  type: LogType,
-  message: string,
-  fileSource = '',
-  functionSource = '',
-  error?: Error
-) {
-  message = `${
-    typeof message == 'string' ? message : JSON.stringify(message, null, 2)
-  }${message && error && error.message ? ', ' : ''}${
+function logInConsole(type: LogType, message: string, fileSource = '', functionSource = '', error?: Error) {
+  message = `${typeof message == 'string' ? message : JSON.stringify(message, null, 2)}${message && error && error.message ? ', ' : ''}${
     error ? `${error.message}` || '' : ''
   }`;
 
   if (type === LogType.ERROR) {
-    console.error(
-      `[${type}][${moment().format(
-        time_format
-      )}]:\n${message}\n[${fileSource}/${functionSource}]`
-    );
+    console.error(`[${type}][${moment().format(time_format)}]:\n${message}\n[${fileSource}/${functionSource}]`);
   } else if (type === LogType.MSG) {
-    console.warn(
-      `[${type}][${moment().format(
-        time_format
-      )}]:\n${message}\n[${fileSource}/${functionSource}]`
-    );
+    console.warn(`[${type}][${moment().format(time_format)}]:\n${message}\n[${fileSource}/${functionSource}]`);
   } else {
-    console.log(
-      `[${type}][${moment().format(
-        time_format
-      )}]:\n${message}\n[${fileSource}/${functionSource}]`
-    );
+    console.log(`[${type}][${moment().format(time_format)}]:\n${message}\n[${fileSource}/${functionSource}]`);
   }
 }

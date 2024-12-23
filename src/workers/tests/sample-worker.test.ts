@@ -1,8 +1,5 @@
 import { Context } from '../../context';
-import {
-  ServiceDefinitionType,
-  WorkerDefinition,
-} from '../../lib/worker/serverless-workers';
+import { ServiceDefinitionType, WorkerDefinition } from '../../lib/worker/serverless-workers';
 import { QueueWorkerType } from '../../lib/worker/serverless-workers/base-queue-worker';
 import { setupTest, Stage } from '../../../test/setup';
 import { releaseStage } from '../../../test/setup-context-and-sql';
@@ -23,7 +20,7 @@ describe('TestWorker', () => {
       {
         type: ServiceDefinitionType.LAMBDA,
         config: { region: 'eu-west-1' },
-        params: { FunctionName: 'test-worker' },
+        params: { FunctionName: 'test-worker' }
       },
       WorkerName.TEST
     );
@@ -35,11 +32,7 @@ describe('TestWorker', () => {
 
   describe('Planner', () => {
     beforeEach(() => {
-      worker = new TestWorker(
-        workerDefinition,
-        context,
-        QueueWorkerType.PLANNER
-      );
+      worker = new TestWorker(workerDefinition, context, QueueWorkerType.PLANNER);
     });
 
     it('should return an array of test messages', async () => {
@@ -49,18 +42,14 @@ describe('TestWorker', () => {
       expect(result.length).toBe(3);
       expect(result[0]).toMatchObject({
         id: 1,
-        message: 'Test message 1',
+        message: 'Test message 1'
       });
     });
   });
 
   describe('Executor', () => {
     beforeEach(() => {
-      worker = new TestWorker(
-        workerDefinition,
-        context,
-        QueueWorkerType.EXECUTOR
-      );
+      worker = new TestWorker(workerDefinition, context, QueueWorkerType.EXECUTOR);
     });
 
     it('should process test message and return success response', async () => {
@@ -69,7 +58,7 @@ describe('TestWorker', () => {
 
       expect(result).toMatchObject({
         success: true,
-        processedData: testData,
+        processedData: testData
       });
       expect(result.timestamp).toBeDefined();
     });

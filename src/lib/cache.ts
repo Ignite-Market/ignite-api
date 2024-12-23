@@ -18,13 +18,7 @@ function flatObject(obj: Record<any, any>, joinChar = '/') {
  * @param user_uuid user uuid for per-user caching, pass null for global caching
  * @param project_uuid project uuid for per-project caching
  */
-export function generateCacheKey(
-  prefix: string,
-  path: string,
-  query: any,
-  params: any,
-  user_id: number
-) {
+export function generateCacheKey(prefix: string, path: string, query: any, params: any, user_id: number) {
   return `${prefix}#${path}@${user_id ? `user_id:${user_id}` : ''}|${flatObject(params)}|${flatObject(query)}`;
 }
 
@@ -34,11 +28,7 @@ export function generateCacheKey(
  * @param action function to be executed if no hit in cache
  * @param expire cache TTL
  */
-export async function runCachedFunction(
-  key: string,
-  action: () => any,
-  expire = env.DEFAULT_CACHE_TTL
-) {
+export async function runCachedFunction(key: string, action: () => any, expire = env.DEFAULT_CACHE_TTL) {
   let cache: AppCache = null;
   let result: any;
   if (env.REDIS_URL) {
@@ -96,13 +86,7 @@ export async function invalidateCachePrefixes(
   const cache = new AppCache();
   await cache.connect();
   for (const prefix of prefixes) {
-    promises.push(
-      invalidateCacheMatch(
-        prefix,
-        { user_uuid: options?.user_uuid, project_uuid: options?.project_uuid },
-        cache
-      )
-    );
+    promises.push(invalidateCacheMatch(prefix, { user_uuid: options?.user_uuid, project_uuid: options?.project_uuid }, cache));
   }
   await Promise.all(promises);
   await cache.disconnect();
@@ -140,9 +124,7 @@ export async function invalidateCacheMatch(
       matchOptions?.user_uuid ? `user_uuid:${matchOptions?.user_uuid}` : ''
     }*${
       // project uuid
-      matchOptions?.project_uuid
-        ? `project_uuid:${matchOptions?.project_uuid}`
-        : ''
+      matchOptions?.project_uuid ? `project_uuid:${matchOptions?.project_uuid}` : ''
     }*${
       // custom parameters (query + body)
       flatObject(matchOptions?.params, '*')

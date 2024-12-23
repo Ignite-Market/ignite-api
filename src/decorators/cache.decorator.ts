@@ -17,7 +17,7 @@ const defaultOptions: ICacheOptions = {
   byUser: false,
   byProject: false,
   keyPrefix: '',
-  ttl: env.DEFAULT_CACHE_TTL,
+  ttl: env.DEFAULT_CACHE_TTL
 };
 
 export const Cache = (options?: ICacheOptions) => {
@@ -29,7 +29,7 @@ export const CacheByUser = (options?: ICacheOptions) => {
   const cacheOptions: ICacheOptions = {
     ...defaultOptions,
     ...options,
-    byUser: true,
+    byUser: true
   };
   return SetMetadata(CACHE_OPTIONS, cacheOptions);
 };
@@ -38,7 +38,7 @@ export const CacheByProject = (options?: ICacheOptions) => {
   const cacheOptions: ICacheOptions = {
     ...defaultOptions,
     ...options,
-    byProject: true,
+    byProject: true
   };
   return SetMetadata(CACHE_OPTIONS, cacheOptions);
 };
