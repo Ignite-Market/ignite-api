@@ -1,60 +1,104 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { verifyMessage } from 'ethers';
-import { SerializeFor, UnauthorizedErrorCode, ValidatorErrorCode } from '../../config/types';
+import { DefaultUserRole, SerializeFor, UnauthorizedErrorCode, ValidatorErrorCode } from '../../config/types';
 import { Context } from '../../context';
 import { CodeException, ValidationException } from '../../lib/exceptions/exceptions';
 import { User } from './models/user.model';
+import { WalletLoginDto } from './dtos/wallet-login.dto';
 
 @Injectable()
 export class UserService {
-  async getUserProfile(ctx: Context) {
+  /**
+   * Returns currently logged in user profile.
+   * @param ctx Application context.
+   * @returns User data.
+   */
+  public async getUserProfile(ctx: Context) {
     return ctx.user?.serialize(SerializeFor.USER);
   }
 
-  async loginWithWallet(data: any, ctx: Context) {
-    if (!data?.address || !data?.signature) {
+  /**
+   * Returns wallet authentication message.
+   * @param timestamp Message timestamp.
+   * @returns Wallet authentication message.
+   */
+  public getWalletAuthMessage(timestamp: number = new Date().getTime()) {
+    return {
+      message: `Please sign this message.\n${timestamp}`,
+      timestamp
+    };
+  }
+
+  /**
+   * Logins user with wallet.
+   * @param data Wallet data.
+   * @param ctx Application context.
+   * @returns User data.
+   */
+  public async loginWithWallet(data: WalletLoginDto, ctx: Context) {
+    // 1 hour validity.
+    if (new Date().getTime() - data.timestamp > 60 * 60 * 1000) {
       throw new CodeException({
-        code: ValidatorErrorCode.DEFAULT_VALIDATION_ERROR,
-        status: 422,
-        errorCodes: ValidatorErrorCode
+        status: HttpStatus.UNAUTHORIZED,
+        code: UnauthorizedErrorCode.INVALID_SIGNATURE,
+        errorCodes: UnauthorizedErrorCode,
+        sourceFunction: `${this.constructor.name}/loginWithWallet`,
+        context: ctx
       });
     }
 
-    // Verify wallet signature
-    const message = `Login with wallet ${data.address}`;
+    const { message } = this.getWalletAuthMessage(data.timestamp);
     const isValidSignature = this.verifyWalletSignature(message, data.signature, data.address);
 
     if (!isValidSignature) {
       throw new CodeException({
+        status: HttpStatus.UNAUTHORIZED,
         code: UnauthorizedErrorCode.INVALID_SIGNATURE,
-        status: 401,
-        errorCodes: UnauthorizedErrorCode
+        errorCodes: UnauthorizedErrorCode,
+        sourceFunction: `${this.constructor.name}/loginWithWallet`,
+        context: ctx
       });
     }
 
-    // Find or create user by wallet address
+    // Find or create user by wallet address.
     const user = await new User({}, ctx).populateByWalletAddress(data.address);
-
     if (!user.exists()) {
+      const conn = await ctx.mysql.start();
+
       user.walletAddress = data.address;
       user.name = `Wallet ${data.address.slice(0, 6)}...${data.address.slice(-4)}`;
-
       try {
         await user.validate();
-      } catch (err) {
-        await user.handle(err);
+      } catch (error) {
+        await user.handle(error);
+
         if (!user.isValid()) {
-          throw new ValidationException(err, ValidatorErrorCode);
+          throw new ValidationException(error, ValidatorErrorCode);
         }
       }
-      await user.insert();
+
+      try {
+        await user.insert(SerializeFor.INSERT_DB, conn);
+        await user.addRole(DefaultUserRole.USER, conn);
+
+        await ctx.mysql.commit(conn);
+      } catch (error) {
+        await ctx.mysql.rollback(conn);
+        throw error;
+      }
     }
 
     user.login();
-
     return user.serialize(SerializeFor.USER);
   }
 
+  /**
+   * Verifies wallet signature.
+   * @param message Message to sign.
+   * @param signature Wallet signature.
+   * @param address Wallet address.
+   * @returns Verification result.
+   */
   private verifyWalletSignature(message: string, signature: string, address: string): boolean {
     try {
       const recoveredAddress = verifyMessage(message, signature);

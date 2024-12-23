@@ -63,20 +63,20 @@ export class User extends AdvancedSQLModel {
   public roles: Role[];
 
   /**
-   *
-   * @param data
-   * @param context
+   * User model constructor.
+   * @param data User data.
+   * @param context Application context.
    */
   public constructor(data: any, context?: Context) {
     super(data, context);
   }
 
   /**
-   *
-   * @param address
-   * @returns
+   * Populates user by wallet address.
+   * @param address Wallet address.
+   * @returns Populated user.
    */
-  async populateByWalletAddress(address: string) {
+  async populateByWalletAddress(address: string): Promise<User> {
     this.reset();
 
     const data = await this.db().paramExecute(
@@ -97,7 +97,7 @@ export class User extends AdvancedSQLModel {
   }
 
   /**
-   *
+   * Logins user - generates JWT token.
    */
   login() {
     this.token = generateJwtToken(JwtTokenType.USER_LOGIN, { id: this.id });

@@ -1,7 +1,6 @@
 import { prop } from '@rawmodel/core';
 import { PopulateFrom, SerializeFor } from '../../config/types';
 import { PoolConnection } from 'mysql2/promise';
-// import 'reflect-metadata';
 import { BaseDBModel } from './base-db.model';
 import { MySql } from '../database/mysql';
 
@@ -10,7 +9,17 @@ import { MySql } from '../database/mysql';
  */
 export { prop };
 
+/**
+ * Base SQL model.
+ */
 export abstract class BaseSQLModel extends BaseDBModel {
+  /**
+   *
+   * @param strategy
+   * @param conn
+   * @param ignore
+   * @returns
+   */
   public async insert(strategy: SerializeFor = SerializeFor.INSERT_DB, conn?: PoolConnection, ignore = false): Promise<this> {
     const serializedModel = this.serialize(strategy);
     let isSingleTrans = false;
@@ -44,42 +53,6 @@ export abstract class BaseSQLModel extends BaseDBModel {
 
     return this;
   }
-
-  // public async replace(conn?: PoolConnection): Promise<this> {
-  //   const serializedModel = this.serialize(SerializeFor.INSERT_DB);
-
-  //   let isSingleTrans = false;
-  //   if (!conn) {
-  //     isSingleTrans = true;
-  //     conn = await this.getContext().mysql.start();
-  //   }
-
-  //   try {
-  //     const query = `
-  //     REPLACE INTO \`${this.tableName}\`
-  //     ( ${Object.keys(serializedModel)
-  //         .map((x) => `\`${x}\``)
-  //         .join(', ')} )
-  //     VALUES (
-  //       ${Object.keys(serializedModel)
-  //         .map((key) => `@${key}`)
-  //         .join(', ')}
-  //     )`;
-
-  //     await this.db().paramExecute(query, this.serialize(SerializeFor.INSERT_DB), conn);
-
-  //     if (isSingleTrans) {
-  //       await this.getContext().mysql.commit(conn);
-  //     }
-  //   } catch (err) {
-  //     if (isSingleTrans) {
-  //       await this.getContext().mysql.rollback(conn);
-  //     }
-  //     throw new Error(err);
-  //   }
-
-  //   return this;
-  // }
 
   /**
    * Creates or updates model data in the database. Upsert can only be used if ID is present, otherwise INSERT will be called.
@@ -273,12 +246,3 @@ export abstract class BaseSQLModel extends BaseDBModel {
       .join(',\n');
   }
 }
-
-// const fieldNameMetadataKey = Symbol('fieldName');
-// export function fieldName(name: string): any {
-//   return Reflect.metadata(fieldNameMetadataKey, name);
-// }
-
-// export function getFieldName(target: any, propertyKey: string): any {
-//   return Reflect.getMetadata(fieldNameMetadataKey, target, propertyKey);
-// }

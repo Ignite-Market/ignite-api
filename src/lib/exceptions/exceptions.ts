@@ -1,9 +1,7 @@
 import { Model } from '@rawmodel/core';
 import { BadRequestErrorCode, LogType, SystemErrorCode, ValidatorErrorCode } from '../../config/types';
-
-import { HttpException } from './http-exception';
-import { Context } from '../../context';
 import { writeLog } from '../logger';
+import { HttpException } from './http-exception';
 
 export interface ErrorOptions {
   code: any;
@@ -46,32 +44,6 @@ export class CodeException extends HttpException {
       this
     );
   }
-
-  // public async writeToMonitor(params?: {
-  //   context?: Context;
-  //   project_uuid?: string;
-  //   user_uuid?: string;
-  //   logType?: LogType;
-  //   service?: string;
-  //   data?: any;
-  //   sendAdminAlert?: boolean;
-  // }) {
-  //   await new LoggingService().writeLog({
-  //     context: params?.context || this.options.context,
-  //     project_uuid: params?.project_uuid,
-  //     user_uuid: params?.user_uuid || params?.context?.user?.user_uuid || null,
-  //     logType: params?.logType || LogType.ERROR,
-  //     message: this.options.errorCodes
-  //       ? this.options.errorCodes[this.options.code]
-  //       : this.options.errorMessage,
-  //     location: this.options.sourceFunction,
-  //     service: params?.service || this.options.sourceModule,
-  //     data: params?.data || this.options.details,
-  //     sendAdminAlert: params.sendAdminAlert,
-  //   });
-
-  //   return this;
-  // }
 }
 
 /**
