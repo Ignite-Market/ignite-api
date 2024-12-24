@@ -27,14 +27,12 @@ export async function setupTest(apiPort = env.API_PORT_TEST, apiHost = env.API_H
   let http: HttpServer = null;
 
   env.APP_ENV = AppEnvironment.TEST;
-
   env.MYSQL_HOST = null; // safety
-
   try {
     await rebuildTestDatabases();
-  } catch (err) {
-    console.error(err);
-    throw new Error(`rebuildTestDatabases failed: ${err}`);
+  } catch (error) {
+    console.error(error);
+    throw new Error(`rebuildTestDatabases failed: ${error}`);
   }
 
   try {

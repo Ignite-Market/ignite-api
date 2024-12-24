@@ -19,6 +19,18 @@
       "windows": {
         "program": "${workspaceFolder}/node_modules/jest/bin/jest"
       }
-    }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Jest Test Current file",
+      "program": "${workspaceFolder}/node_modules/jest/bin/jest.js",
+      "args": ["--runInBand", "--forceExit", "${fileBasename}" ],
+      "env": {
+        "APP_ENV": "testing",
+      },
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    },
   ]
 }

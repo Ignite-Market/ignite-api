@@ -1,3 +1,6 @@
+/**
+ * Application environment types.
+ */
 export enum AppEnvironment {
   LOCAL_DEV = 'local',
   TEST = 'test',
@@ -6,6 +9,9 @@ export enum AppEnvironment {
   PROD = 'production'
 }
 
+/**
+ * Database table names.
+ */
 export enum DbTables {
   USER = 'user',
   ROLES = 'roles',
@@ -118,6 +124,9 @@ export enum ValidateFor {
   QUERY = 'query'
 }
 
+/**
+ * Log types.
+ */
 export enum LogType {
   DB = 'DB',
   INFO = 'INFO',
@@ -129,6 +138,9 @@ export enum LogType {
   DEBUG = 'DEBUG'
 }
 
+/**
+ * Log levels.
+ */
 export enum LogLevel {
   DB_ONLY = 'db',
   NO_DB = 'no-db',
@@ -137,28 +149,26 @@ export enum LogLevel {
   ERROR_ONLY = 'error'
 }
 
+/**
+ * SQL model status.
+ */
 export enum SqlModelStatus {
   DRAFT = 1,
   ACTIVE = 5,
   DELETED = 9
 }
 
-export enum PermissionType {
-  READ = 'read',
-  WRITE = 'write',
-  EXECUTE = 'execute'
-}
-export enum PermissionLevel {
-  NONE = 0,
-  OWN = 1,
-  ALL = 2
-}
-
+/**
+ * Default user roles.
+ */
 export enum DefaultUserRole {
-  ADMIN = 1, // System's admin
-  USER = 99 // user with access to platform (published features)
+  ADMIN = 1, // System's admin.
+  USER = 2 // User with access to platform.
 }
 
+/**
+ * Cache key TTLs.
+ */
 export enum CacheKeyTTL {
   EXTRA_SHORT = 10, // 10 s
   SHORT = 60, // 1 min
@@ -172,6 +182,5 @@ export enum CacheKeyTTL {
  * JWT Token signing types.
  */
 export enum JwtTokenType {
-  // For regular login
   USER_LOGIN = 'user-login'
 }

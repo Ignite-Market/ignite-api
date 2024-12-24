@@ -17,7 +17,7 @@ export class UserController {
     return await this.userService.getUserProfile(context);
   }
 
-  @Get('/wallet-message')
+  @Get('wallet-message')
   getWalletAuthMessage(): any {
     return this.userService.getWalletAuthMessage();
   }

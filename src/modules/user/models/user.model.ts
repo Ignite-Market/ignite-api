@@ -45,7 +45,6 @@ export class User extends AdvancedSQLModel {
    */
   @prop({
     parser: { resolver: stringParser() },
-    populatable: [],
     serializable: [SerializeFor.USER]
   })
   public token: string;
@@ -57,7 +56,6 @@ export class User extends AdvancedSQLModel {
     parser: { resolver: Role, array: true },
     serializable: [SerializeFor.USER],
     populatable: [PopulateFrom.DB],
-    validators: [],
     defaultValue: () => []
   })
   public roles: Role[];

@@ -22,11 +22,11 @@ export interface IEnv {
   REDIS_URL: string;
 
   /**
-   * env var from lambda - current region - can not be overwritten in lambda settings!
+   * ENV var from lambda - current region - can not be overwritten in lambda settings!
    */
   AWS_REGION: string;
   /**
-   * Name of the secret from secret manager
+   * ID of the secrets from secret manager.
    */
   AWS_SECRETS_ID: string;
 
@@ -120,11 +120,12 @@ async function populateSecrets() {
     isEnvReady = true;
     return;
   }
+
   try {
     const secrets = await getSecrets(env.AWS_SECRETS_ID);
     env = { ...env, ...secrets };
   } catch (err) {
-    console.error('ERROR populating env secretes!');
+    console.error('Error while populating env secretes: ');
     console.error(err);
   }
   isEnvReady = true;
@@ -133,8 +134,8 @@ async function populateSecrets() {
 // startup populate
 populateSecrets()
   .then(() => {
-    console.log('SDK: Environment is ready!');
+    console.log('Environment is ready.');
   })
-  .catch((err) => {
-    console.error('SDK: Error preparing environment!', err);
+  .catch((error) => {
+    console.error('Error preparing environment.', error);
   });
