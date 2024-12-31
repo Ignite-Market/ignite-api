@@ -1,0 +1,237 @@
+import { prop } from '@rawmodel/core';
+import { dateParser, floatParser, integerParser, stringParser } from '@rawmodel/parsers';
+import { DbTables, PopulateFrom, SerializeFor, ValidatorErrorCode } from '../../../config/types';
+import type { Context } from '../../../context';
+import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
+import { PoolConnection } from 'mysql2/promise';
+import { presenceValidator } from '@rawmodel/validators';
+
+/**
+ * Prediction set model.
+ */
+export class PredictionSet extends AdvancedSQLModel {
+  /**
+   * Prediction set 's table.
+   */
+  public tableName = DbTables.PREDICTION_SET;
+
+  /**
+   * Prediction group ID.
+   */
+  @prop({
+    parser: { resolver: integerParser() },
+    populatable: [PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
+  })
+  prediction_group_id: number;
+
+  /**
+   * Set ID - A distinct code that uniquely identifies each prediction set within the platform.
+   */
+  @prop({
+    parser: {
+      resolver: stringParser()
+    },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB],
+    populatable: [PopulateFrom.DB]
+  })
+  setId: string;
+
+  /**
+   * Initial pool.
+   */
+  @prop({
+    parser: {
+      resolver: floatParser()
+    },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER],
+    validators: [
+      {
+        resolver: presenceValidator(),
+        code: ValidatorErrorCode.PREDICTION_SET_INITIAL_POOL_NOT_PRESENT
+      }
+    ]
+  })
+  initialPool: number;
+
+  /**
+   * Question - The central query or event being predicted, clearly framed to avoid ambiguity.
+   */
+  @prop({
+    parser: {
+      resolver: stringParser()
+    },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER],
+    validators: [
+      {
+        resolver: presenceValidator(),
+        code: ValidatorErrorCode.PREDICTION_SET_QUESTION_NOT_PRESENT
+      }
+    ]
+  })
+  question: string;
+
+  /**
+   * Description - A detailed explanation of the event or context behind the prediction, ensuring users understand its background and significance.
+   */
+  @prop({
+    parser: {
+      resolver: stringParser()
+    },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER],
+    validators: [
+      {
+        resolver: presenceValidator(),
+        code: ValidatorErrorCode.PREDICTION_SET_DESCRIPTION_NOT_PRESENT
+      }
+    ]
+  })
+  description: string;
+
+  /**
+   * General resolution definition - A high-level summary of how the prediction will be resolved, offering clarity on the expected evaluation process.
+   */
+  @prop({
+    parser: {
+      resolver: stringParser()
+    },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER],
+    validators: [
+      {
+        resolver: presenceValidator(),
+        code: ValidatorErrorCode.PREDICTION_SET_GENERAL_RESOLUTION_NOT_PRESENT
+      }
+    ]
+  })
+  generalResolutionDef: string;
+
+  /**
+   * Outcome resolution definition - Specific criteria and data sources that determine the official resolution of the prediction, ensuring transparency and accuracy.
+   */
+  @prop({
+    parser: {
+      resolver: stringParser()
+    },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER],
+    validators: [
+      {
+        resolver: presenceValidator(),
+        code: ValidatorErrorCode.PREDICTION_SET_OUTCOME_RESOLUTION_NOT_PRESENT
+      }
+    ]
+  })
+  outcomeResolutionDef: string;
+
+  /**
+   * Outcome price definition -  A description of how outcome prices are calculated, including references to external price feeds or oracles like the Flare Price Oracle.
+   */
+  @prop({
+    parser: {
+      resolver: stringParser()
+    },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER],
+    validators: [
+      {
+        resolver: presenceValidator(),
+        code: ValidatorErrorCode.PREDICTION_SET_OUTCOME_PRICE_NOT_PRESENT
+      }
+    ]
+  })
+  outcomePriceDef: string;
+
+  /**
+   * Start time - The official launch date and time when the prediction market opens for trading.
+   */
+  @prop({
+    parser: { resolver: dateParser() },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER],
+    validators: [
+      {
+        resolver: presenceValidator(),
+        code: ValidatorErrorCode.PREDICTION_SET_START_TIME_NOT_PRESENT
+      }
+    ]
+  })
+  public startTime: Date;
+
+  /**
+   * End time - The final date and time when trading closes, after which no further market activity is allowed.
+   */
+  @prop({
+    parser: { resolver: dateParser() },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER],
+    validators: [
+      {
+        resolver: presenceValidator(),
+        code: ValidatorErrorCode.PREDICTION_SET_END_TIME_NOT_PRESENT
+      }
+    ]
+  })
+  public endTime: Date;
+
+  /**
+   * Resolution time - The scheduled time when the market's outcome is finalized, based on pre-defined resolution criteria.
+   */
+  @prop({
+    parser: { resolver: dateParser() },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER],
+    validators: [
+      {
+        resolver: presenceValidator(),
+        code: ValidatorErrorCode.PREDICTION_SET_RESOLUTION_TIME_NOT_PRESENT
+      }
+    ]
+  })
+  public resolutionTime: Date;
+
+  /**
+   * Prediction set's outcomes virtual property definition.
+   */
+  @prop({
+    parser: { resolver: Object, array: true },
+    serializable: [SerializeFor.USER],
+    populatable: [PopulateFrom.DB],
+    defaultValue: () => []
+  })
+  public outcomes: any[];
+
+  /**
+   * Prediction set model constructor.
+   * @param data Prediction set data.
+   * @param context Application context.
+   */
+  public constructor(data: any, context?: Context) {
+    super(data, context);
+  }
+
+  /**
+   * Adds a data source to the prediction set.
+   * @param dataSourceId Data source ID.
+   * @param conn Database connection.
+   * @returns Prediction set.
+   */
+  public async addDataSource(dataSourceId: number, conn?: PoolConnection): Promise<PredictionSet> {
+    await this.db().paramExecute(
+      `
+          INSERT IGNORE INTO ${DbTables.PREDICTION_SET_DATA_SOURCE} (prediction_set_id, data_source_id)
+          VALUES (@prediction_set_id, @dataSourceId)
+        `,
+      {
+        predictionSetId: this.id,
+        dataSourceId
+      },
+      conn
+    );
+
+    return this;
+  }
+}

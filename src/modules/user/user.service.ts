@@ -10,11 +10,11 @@ import { WalletLoginDto } from './dtos/wallet-login.dto';
 export class UserService {
   /**
    * Returns currently logged in user profile.
-   * @param ctx Application context.
+   * @param context Application context.
    * @returns User data.
    */
-  public async getUserProfile(ctx: Context) {
-    return ctx.user?.serialize(SerializeFor.USER);
+  public async getUserProfile(context: Context) {
+    return context.user?.serialize(SerializeFor.USER);
   }
 
   /**
@@ -32,10 +32,10 @@ export class UserService {
   /**
    * Logins user with wallet.
    * @param data Wallet data.
-   * @param ctx Application context.
+   * @param context Application context.
    * @returns User data.
    */
-  public async loginWithWallet(data: WalletLoginDto, ctx: Context) {
+  public async loginWithWallet(data: WalletLoginDto, context: Context) {
     // 1 hour validity.
     if (new Date().getTime() - data.timestamp > 60 * 60 * 1000) {
       throw new CodeException({
@@ -43,7 +43,7 @@ export class UserService {
         code: UnauthorizedErrorCode.INVALID_SIGNATURE,
         errorCodes: UnauthorizedErrorCode,
         sourceFunction: `${this.constructor.name}/loginWithWallet`,
-        context: ctx
+        context
       });
     }
 
@@ -56,14 +56,14 @@ export class UserService {
         code: UnauthorizedErrorCode.INVALID_SIGNATURE,
         errorCodes: UnauthorizedErrorCode,
         sourceFunction: `${this.constructor.name}/loginWithWallet`,
-        context: ctx
+        context
       });
     }
 
     // Find or create user by wallet address.
-    const user = await new User({}, ctx).populateByWalletAddress(data.address);
+    const user = await new User({}, context).populateByWalletAddress(data.address);
     if (!user.exists()) {
-      const conn = await ctx.mysql.start();
+      const conn = await context.mysql.start();
 
       user.walletAddress = data.address;
       user.name = `Wallet ${data.address.slice(0, 6)}...${data.address.slice(-4)}`;
@@ -81,9 +81,9 @@ export class UserService {
         await user.insert(SerializeFor.INSERT_DB, conn);
         await user.addRole(DefaultUserRole.USER, conn);
 
-        await ctx.mysql.commit(conn);
+        await context.mysql.commit(conn);
       } catch (error) {
-        await ctx.mysql.rollback(conn);
+        await context.mysql.rollback(conn);
         throw error;
       }
     }
