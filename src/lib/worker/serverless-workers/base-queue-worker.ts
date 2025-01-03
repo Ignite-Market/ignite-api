@@ -5,6 +5,7 @@ import { sendToWorkerQueue } from '../../aws/aws-sqs';
 import { BaseWorker } from './base-worker';
 import { WorkerLogStatus } from '../logger';
 import { Job } from '../../../modules/job/job.model';
+import { WorkerName } from '../../../workers/worker-executor';
 
 export enum QueueWorkerType {
   PLANNER = 'PLANNER',
@@ -14,7 +15,7 @@ export enum QueueWorkerType {
 export abstract class BaseQueueWorker extends BaseWorker {
   protected context: Context;
   protected workerType: QueueWorkerType;
-  protected workerName: string;
+  protected workerName: any;
   protected workerQueueUrl: string;
 
   public constructor(workerDefinition: WorkerDefinition, context: Context, type: QueueWorkerType, queueUrl: string) {
@@ -49,6 +50,7 @@ export abstract class BaseQueueWorker extends BaseWorker {
         this.workerQueueUrl,
         this.workerName,
         msgData,
+        this.context,
         this.workerDefinition.id,
         this.workerDefinition.parameters
       );

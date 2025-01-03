@@ -1,9 +1,10 @@
 import { prop } from '@rawmodel/core';
-import { integerParser, dateParser } from '@rawmodel/parsers';
-import { ErrorCode, PopulateFrom, SerializeFor, SqlModelStatus } from '../../config/types';
-import { PoolConnection } from 'mysql2/promise';
-import { BaseSQLModel } from './base-sql.model';
+import { dateParser, integerParser } from '@rawmodel/parsers';
 import { presenceValidator } from '@rawmodel/validators';
+import { PoolConnection } from 'mysql2/promise';
+import { ErrorCode, PopulateFrom, SerializeFor, SqlModelStatus } from '../../config/types';
+import { Context } from '../../context';
+import { BaseSQLModel } from './base-sql.model';
 
 /**
  * Common model related objects.
@@ -98,12 +99,26 @@ export abstract class AdvancedSQLModel extends BaseSQLModel {
   public updateUser?: number;
 
   /**
+   * Advanced SQL model constructor.
+   * @param data Model data.
+   * @param context Application context.
+   */
+  public constructor(data: any, context?: Context) {
+    super(data, context);
+  }
+
+  /**
    * Tells if the model represents a document stored in the database.
+   * @returns Model existence status.
    */
   public exists(): boolean {
     return !!this.id;
   }
 
+  /**
+   * Tells if the model is enabled.
+   * @returns Model status.
+   */
   public isEnabled() {
     return this.status !== SqlModelStatus.DELETED;
   }
@@ -159,6 +174,13 @@ export abstract class AdvancedSQLModel extends BaseSQLModel {
     return data?.length ? this.populate(data[0], PopulateFrom.DB) : this.reset();
   }
 
+  /**
+   * Populates model fields by loading the document with the provided uuid from the database.
+   * @param uuid Document's UUID.
+   * @param uuid_property UUID property name.
+   * @param conn Database connection.
+   * @returns Populated model.
+   */
   public async populateByUUID(
     uuid: string,
     uuid_property?: string, // Nullable because not needed in derived classes
@@ -318,7 +340,6 @@ export abstract class AdvancedSQLModel extends BaseSQLModel {
     this.updateUser = this.getContext()?.user?.id;
 
     this.status = SqlModelStatus.DELETED;
-
     try {
       await this.update(SerializeFor.INSERT_DB, conn);
     } catch (err) {

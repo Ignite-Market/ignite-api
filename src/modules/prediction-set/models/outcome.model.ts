@@ -1,9 +1,8 @@
 import { prop } from '@rawmodel/core';
 import { floatParser, integerParser, stringParser } from '@rawmodel/parsers';
-import { DbTables, PopulateFrom, SerializeFor, ValidatorErrorCode } from '../../../config/types';
-import type { Context } from '../../../context';
-import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
 import { presenceValidator } from '@rawmodel/validators';
+import { DbTables, PopulateFrom, SerializeFor, ValidatorErrorCode } from '../../../config/types';
+import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
 
 /**
  * Prediction set outcome.
@@ -53,13 +52,4 @@ export class Outcome extends AdvancedSQLModel {
     populatable: [PopulateFrom.DB, PopulateFrom.USER]
   })
   pool: number;
-
-  /**
-   * Prediction set model constructor.
-   * @param data Prediction set data.
-   * @param context Application context.
-   */
-  public constructor(data: any, context?: Context) {
-    super(data, context);
-  }
 }

@@ -21,7 +21,8 @@ export enum DbTables {
   PREDICTION_SET = 'prediction_set',
   DATA_SOURCE = 'data_source',
   PREDICTION_SET_DATA_SOURCE = 'prediction_set_data_source',
-  OUTCOME = 'outcome'
+  OUTCOME = 'outcome',
+  PREDICTION_GROUP = 'prediction_group'
 }
 /**
  * Validation error codes - 422_00_000.
@@ -58,7 +59,8 @@ export enum ResourceNotFoundErrorCode {
   DEFAULT_RESOURCE_NOT_FOUND_ERROR = 404_00_000,
   USER_DOES_NOT_EXISTS = 404_00_001,
   DATA_SOURCE_DOES_NOT_EXISTS = 404_00_002,
-  PREDICTION_SET_DOES_NOT_EXISTS = 404_00_003
+  PREDICTION_SET_DOES_NOT_EXISTS = 404_00_003,
+  PREDICTION_GROUP_DOES_NOT_EXISTS = 404_00_004
 }
 
 /**
@@ -96,7 +98,7 @@ export enum UnauthorizedErrorCode {
 }
 
 /**
- * Model error codes
+ * Model error codes.
  */
 export enum ErrorCode {
   STATUS_NOT_PRESENT = 422_00_100,

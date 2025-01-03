@@ -3,7 +3,7 @@ import { integerParser } from '@rawmodel/parsers';
 import { arrayLengthValidator, presenceValidator } from '@rawmodel/validators';
 import { PopulateFrom, ValidatorErrorCode } from '../../../config/types';
 import { PredictionSet } from '../models/prediction-set.model';
-import { Outcome } from '../models/outcome';
+import { Outcome } from '../models/outcome.model';
 
 export class PredictionSetDto extends PredictionSet {
   @prop({

@@ -11,7 +11,9 @@ import { TestWorker } from './test-worker';
 
 export enum WorkerName {
   SCHEDULER = 'scheduler',
-  TEST = 'test'
+  TEST = 'test',
+  CREATE_PREDICTION_SET = 'create_prediction_set',
+  CREATE_PREDICTION_GROUP = 'create_prediction_group'
 }
 
 export async function handler(event: any) {
@@ -69,16 +71,17 @@ export async function handleLambdaEvent(event: any, context: Context, serviceDef
     workerDefinition = new WorkerDefinition(serviceDef, WorkerName.SCHEDULER);
   }
 
-  // eslint-disable-next-line sonarjs/no-small-switch
   switch (workerDefinition.workerName) {
     case WorkerName.SCHEDULER:
       const scheduler = new Scheduler(serviceDef, context);
       await scheduler.run();
       break;
+
     case WorkerName.TEST:
       const worker = new TestWorker(workerDefinition, context, QueueWorkerType.PLANNER);
       await worker.run();
       break;
+
     default:
       console.error(`ERROR - INVALID WORKER NAME: ${workerDefinition.workerName}`);
       await writeWorkerLog(

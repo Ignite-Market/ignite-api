@@ -61,15 +61,6 @@ export class User extends AdvancedSQLModel {
   public roles: Role[];
 
   /**
-   * User model constructor.
-   * @param data User data.
-   * @param context Application context.
-   */
-  public constructor(data: any, context?: Context) {
-    super(data, context);
-  }
-
-  /**
    * Populates user by wallet address.
    * @param address Wallet address.
    * @returns Populated user.

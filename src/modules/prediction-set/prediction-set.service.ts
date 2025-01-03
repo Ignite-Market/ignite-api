@@ -1,14 +1,40 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { create } from 'domain';
-import { PredictionSet } from './models/prediction-set.model';
+import { PredictionSet, PredictionSetStatus } from './models/prediction-set.model';
 import { Context } from '../../context';
 import { ResourceNotFoundErrorCode, SerializeFor, SystemErrorCode } from '../../config/types';
 import { CodeException } from '../../lib/exceptions/exceptions';
 import { DataSource } from './models/data-source.model';
-import { Outcome } from './models/outcome';
+import { Outcome } from './models/outcome.model';
+import { PredictionGroup } from './models/prediction-group.model';
+import { sendToWorkerQueue } from '../../lib/aws/aws-sqs';
+import { env } from '../../config/env';
+import { WorkerName } from '../../workers/worker-executor';
 
 @Injectable()
 export class PredictionSetService {
+  /**
+   * Create prediction group.
+   * @param predictionGroup Prediction group.
+   * @param context Application context.
+   * @returns Prediction group.
+   */
+  public async createPredictionGroup(predictionGroup: PredictionGroup, context: Context) {
+    try {
+      await predictionGroup.insert(SerializeFor.INSERT_DB);
+    } catch (error) {
+      throw new CodeException({
+        code: SystemErrorCode.SQL_SYSTEM_ERROR,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        sourceFunction: `${this.constructor.name}/createPredictionGroup`,
+        details: error,
+        context
+      });
+    }
+
+    return predictionGroup.serialize(SerializeFor.USER);
+  }
+
   /**
    * Create prediction set.
    * @param predictionSet Prediction set.
@@ -34,11 +60,27 @@ export class PredictionSetService {
       });
     }
 
+    // Add prediction set to prediction group.
+    if (predictionSet.prediction_group_id) {
+      const predictionGroup = await new PredictionGroup({}, context).populateById(predictionSet.prediction_group_id, conn);
+      if (!predictionGroup.exists()) {
+        await context.mysql.rollback(conn);
+
+        throw new CodeException({
+          code: ResourceNotFoundErrorCode.PREDICTION_GROUP_DOES_NOT_EXISTS,
+          status: HttpStatus.NOT_FOUND,
+          sourceFunction: `${this.constructor.name}/createPredictionSet`,
+          context
+        });
+      }
+    }
+
     // Add data sources to the prediction set.
     for (const dataSourceId of dataSourceIds) {
       const dataSource = await new DataSource({}, context).populateById(dataSourceId, conn);
-      if (!dataSource) {
+      if (!dataSource.exists()) {
         await context.mysql.rollback(conn);
+
         throw new CodeException({
           code: ResourceNotFoundErrorCode.DATA_SOURCE_DOES_NOT_EXISTS,
           status: HttpStatus.NOT_FOUND,
@@ -93,6 +135,33 @@ export class PredictionSetService {
         details: error,
         context
       });
+    }
+
+    // If prediction set is not part of a prediction group, we start processing.
+    if (!predictionSet.prediction_group_id) {
+      try {
+        predictionSet.setStatus = PredictionSetStatus.PENDING;
+        await predictionSet.update();
+
+        await sendToWorkerQueue(
+          env.AWS_WORKER_SQS_URL,
+          WorkerName.CREATE_PREDICTION_SET,
+          [
+            {
+              predictionSetId: predictionSet.id
+            }
+          ],
+          context
+        );
+      } catch (error) {
+        throw new CodeException({
+          code: SystemErrorCode.SQL_SYSTEM_ERROR,
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          sourceFunction: `${this.constructor.name}/createPredictionSet`,
+          details: error,
+          context
+        });
+      }
     }
 
     return predictionSet.serialize(SerializeFor.USER);

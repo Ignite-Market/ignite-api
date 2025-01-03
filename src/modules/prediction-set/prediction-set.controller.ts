@@ -9,7 +9,8 @@ import { ValidationGuard } from '../../guards/validation.guard';
 import { Roles } from '../../decorators/role.decorator';
 import { DefaultUserRole } from '../../config/types';
 import { PredictionSet } from './models/prediction-set.model';
-import { Outcome } from './models/outcome';
+import { Outcome } from './models/outcome.model';
+import { PredictionGroup } from './models/prediction-group.model';
 
 @Controller('prediction-sets')
 export class PredictionSetController {
@@ -25,5 +26,13 @@ export class PredictionSetController {
     const predictionOutcomes = data.predictionOutcomes.map((d) => new Outcome(d.serialize(), context));
 
     return await this.predictionSetService.createPredictionSet(predictionSet, dataSourceIds, predictionOutcomes, context);
+  }
+
+  @Post('groups')
+  @Validation({ dto: PredictionGroup })
+  @UseGuards(ValidationGuard, AuthGuard)
+  @Roles(DefaultUserRole.ADMIN)
+  async createPredictionGroup(@Body() predictionGroup: PredictionGroup, @Ctx() context: Context) {
+    return await this.predictionSetService.createPredictionGroup(predictionGroup, context);
   }
 }

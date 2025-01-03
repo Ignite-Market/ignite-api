@@ -1,10 +1,16 @@
 import { prop } from '@rawmodel/core';
 import { dateParser, floatParser, integerParser, stringParser } from '@rawmodel/parsers';
-import { DbTables, PopulateFrom, SerializeFor, ValidatorErrorCode } from '../../../config/types';
-import type { Context } from '../../../context';
-import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
-import { PoolConnection } from 'mysql2/promise';
 import { presenceValidator } from '@rawmodel/validators';
+import { PoolConnection } from 'mysql2/promise';
+import { DbTables, ErrorCode, PopulateFrom, SerializeFor, ValidatorErrorCode } from '../../../config/types';
+import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
+import { enumInclusionValidator } from '../../../lib/validators';
+
+export enum PredictionSetStatus {
+  INITIALIZED = 1,
+  PENDING = 2,
+  ACTIVE = 3
+}
 
 /**
  * Prediction set model.
@@ -194,6 +200,27 @@ export class PredictionSet extends AdvancedSQLModel {
   public resolutionTime: Date;
 
   /**
+   * Group status.
+   * - 1: INITIALIZED - When the set is created.
+   * - 2: PENDING - When the set is syncing with the blockchain.
+   * - 3: ACTIVE - When the set is ready for predictions.
+   */
+  @prop({
+    parser: { resolver: integerParser() },
+    populatable: [PopulateFrom.USER, PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB],
+    validators: [
+      {
+        resolver: enumInclusionValidator(PredictionSetStatus),
+        code: ErrorCode.INVALID_STATUS
+      }
+    ],
+    emptyValue: () => PredictionSetStatus.INITIALIZED,
+    defaultValue: () => PredictionSetStatus.INITIALIZED
+  })
+  public setStatus: PredictionSetStatus;
+
+  /**
    * Prediction set's outcomes virtual property definition.
    */
   @prop({
@@ -203,15 +230,6 @@ export class PredictionSet extends AdvancedSQLModel {
     defaultValue: () => []
   })
   public outcomes: any[];
-
-  /**
-   * Prediction set model constructor.
-   * @param data Prediction set data.
-   * @param context Application context.
-   */
-  public constructor(data: any, context?: Context) {
-    super(data, context);
-  }
 
   /**
    * Adds a data source to the prediction set.

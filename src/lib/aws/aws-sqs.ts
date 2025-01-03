@@ -1,33 +1,57 @@
 import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
 import type { SendMessageCommandInput } from '@aws-sdk/client-sqs';
 import { env } from '../../config/env';
+import { AppEnvironment } from '../../config/types';
+import { WorkerName } from '../../workers/worker-executor';
+import { TestWorker } from '../../workers/test-worker';
+import { QueueWorkerType, WorkerDefinition } from '../worker/serverless-workers';
+import { Context } from '../../context';
 
+/**
+ * Creates an SQS client.
+ * @returns SQSClient.
+ */
 export function createSqsClient() {
   return new SQSClient({
-    // credentials: {
-    //   accessKeyId: env.AWS_KEY,
-    //   secretAccessKey: env.AWS_SECRET,
-    // },
+    credentials: {
+      accessKeyId: env.AWS_KEY,
+      secretAccessKey: env.AWS_SECRET
+    },
     region: env.AWS_REGION
   });
 }
 
+/**
+ * Sends a message to an SQS queue.
+ * @param queueUrl The URL of the SQS queue.
+ * @param workerName The name of the worker.
+ * @param msgData The data to send.
+ * @param id The ID of the message.
+ * @param parameters The parameters of the message.
+ * @param delaySeconds The number of seconds to delay the message.
+ * @returns The number of errors and the error messages.
+ */
 export async function sendToWorkerQueue(
   queueUrl: string,
-  workerName: string,
+  workerName: WorkerName,
   msgData: Array<any>,
-  id: number,
+  context: Context = null,
+  id: number = null,
   parameters: any[] = null,
   delaySeconds = 0
 ): Promise<{ errCount: number; errMsgs: string[] }> {
+  // If we are running in test mode, do not send the message to the queue, but execute worker directly.
+  if (env.APP_ENV === AppEnvironment.TEST || env.APP_ENV === AppEnvironment.LOCAL_DEV) {
+    return testSendToWorkerQueue(workerName, msgData, context);
+  }
+
   const sqs = createSqsClient();
   let errCount = 0;
   const errMsgs = [];
   const promises = [];
+
   for (const msg of msgData) {
     const message: SendMessageCommandInput = {
-      // Remove DelaySeconds parameter and value for FIFO queues
-      //  DelaySeconds: 10,
       MessageAttributes: {
         workerName: {
           DataType: 'String',
@@ -47,14 +71,14 @@ export async function sendToWorkerQueue(
         }
       },
       MessageBody: JSON.stringify(typeof msg.serialize == 'function' ? msg.serialize() : msg),
-      // MessageDeduplicationId: 'TheWhistler',  // Required for FIFO queues
-      // MessageGroupId: 'Group1',  // Required for FIFO queues
       QueueUrl: queueUrl,
       DelaySeconds: delaySeconds
     };
+
     if (!parameters) {
       delete message.MessageAttributes.parameters;
     }
+
     const command = new SendMessageCommand(message);
     const promise = sqs.send(command).catch((err) => {
       console.log('sendToWorkerQueue: Error sending SQS message!', err);
@@ -65,11 +89,44 @@ export async function sendToWorkerQueue(
     promises.push(promise);
   }
   await Promise.all(promises);
+
   if (errCount) {
     console.log('sendToWorkerQueue: Errors detected while sending messages to queue', {
       errCount,
       errMsgs: JSON.stringify(errMsgs)
     });
   }
+
   return { errCount, errMsgs };
+}
+
+/**
+ * Sends a message to an SQS queue for testing.
+ * @param queueUrl The URL of the SQS queue.
+ * @param workerName The name of the worker.
+ * @param msgData The data to send.
+ * @returns The number of errors and the error messages.
+ */
+async function testSendToWorkerQueue(
+  workerName: WorkerName,
+  msgData: Array<any>,
+  context: Context
+): Promise<{ errCount: number; errMsgs: string[] }> {
+  for (const msg of msgData) {
+    switch (workerName) {
+      case WorkerName.TEST:
+        await new TestWorker(
+          new WorkerDefinition(null, WorkerName.TEST, {
+            parameters: msg
+          }),
+          context,
+          QueueWorkerType.PLANNER
+        ).run({
+          executeArg: msg
+        });
+
+        break;
+    }
+  }
+  return { errCount: 0, errMsgs: [] };
 }

@@ -1,7 +1,6 @@
 import { prop } from '@rawmodel/core';
 import { stringParser } from '@rawmodel/parsers';
 import { DbTables, PopulateFrom, SerializeFor } from '../../../config/types';
-import type { Context } from '../../../context';
 import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
 import { JSONParser } from '../../../lib/parsers';
 
@@ -73,13 +72,4 @@ export class DataSource extends AdvancedSQLModel {
     populatable: [PopulateFrom.DB, PopulateFrom.USER]
   })
   abi: any;
-
-  /**
-   * Prediction set model constructor.
-   * @param data Prediction set data.
-   * @param context Application context.
-   */
-  public constructor(data: any, context?: Context) {
-    super(data, context);
-  }
 }
