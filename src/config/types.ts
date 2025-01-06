@@ -13,16 +13,16 @@ export enum AppEnvironment {
  * Database table names.
  */
 export enum DbTables {
-  USER = 'user',
-  ROLES = 'roles',
-  USER_ROLES = 'user_roles',
   JOB = 'job',
   WORKER_LOG = 'worker_log',
+  USER = 'user',
+  ROLE = 'role',
+  USER_ROLE = 'user_role',
+  PREDICTION_GROUP = 'prediction_group',
   PREDICTION_SET = 'prediction_set',
   DATA_SOURCE = 'data_source',
   PREDICTION_SET_DATA_SOURCE = 'prediction_set_data_source',
-  OUTCOME = 'outcome',
-  PREDICTION_GROUP = 'prediction_group'
+  OUTCOME = 'outcome'
 }
 /**
  * Validation error codes - 422_00_000.
@@ -49,7 +49,8 @@ export enum ValidatorErrorCode {
   PREDICTION_SET_DTO_PREDICTION_OUTCOMES_NOT_PRESENT = 422_00_018,
   PREDICTION_SET_DTO_PREDICTION_OUTCOMES_NOT_VALID = 422_00_019,
   OUTCOME_NAME_NOT_PRESENT = 422_00_020,
-  PREDICTION_SET_INITIAL_POOL_NOT_PRESENT = 422_00_021
+  PREDICTION_SET_INITIAL_POOL_NOT_PRESENT = 422_00_021,
+  PREDICTION_GROUP_NAME_NOT_PRESENT = 422_00_022
 }
 
 /**

@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
-import { PREDICTION_ABI, TOKEN_ABI } from './abis.js';
-import { PredictionSet } from '../modules/prediction-set/models/prediction-set.model.js';
 import { env } from '../config/env.js';
+import { PredictionSet } from '../modules/prediction-set/models/prediction-set.model.js';
+import { PREDICTION_ABI, TOKEN_ABI } from './abis.js';
 
 /**
  * Sets up betting contract.
@@ -27,11 +27,14 @@ export async function setup(): Promise<{ provider: ethers.JsonRpcProvider; signe
 /**
  * Adds prediction sets in bulk.
  */
-export async function addPredictionGroup(): Promise<void> {}
+export async function addPredictionGroup(): Promise<void> {
+  return;
+}
 
 /**
  * Adds prediction set.
+ * TODO: Check if set already exists.
  */
 export async function addPredictionSet(predictionSet: PredictionSet) {
-  // TODO: Check if set already exists.
+  return;
 }

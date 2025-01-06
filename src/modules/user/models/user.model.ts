@@ -1,10 +1,9 @@
 import { prop } from '@rawmodel/core';
 import { stringParser } from '@rawmodel/parsers';
+import { PoolConnection } from 'mysql2/promise';
 import { DbTables, JwtTokenType, PopulateFrom, SerializeFor, SqlModelStatus } from '../../../config/types';
-import type { Context } from '../../../context';
 import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
 import { generateJwtToken } from '../../../lib/utils';
-import { PoolConnection } from 'mysql2/promise';
 import { Role } from './role.model';
 
 /**
@@ -100,7 +99,7 @@ export class User extends AdvancedSQLModel {
   public async addRole(roleId: number, conn?: PoolConnection, populateRoles: boolean = true): Promise<User> {
     await this.db().paramExecute(
       `
-        INSERT IGNORE INTO ${DbTables.USER_ROLES} (user_id, role_id)
+        INSERT IGNORE INTO ${DbTables.USER_ROLE} (user_id, role_id)
         VALUES (@userId, @roleId)
       `,
       { userId: this.id, roleId },
@@ -142,8 +141,8 @@ export class User extends AdvancedSQLModel {
     const rows = await this.db().paramExecute(
       `
         SELECT *
-        FROM ${DbTables.ROLES} r
-        JOIN ${DbTables.USER_ROLES} ur
+        FROM ${DbTables.ROLE} r
+        JOIN ${DbTables.USER_ROLE} ur
           ON ur.role_id = r.id
         WHERE ur.user_id = @userId
           AND r.status < ${SqlModelStatus.DELETED}

@@ -40,11 +40,23 @@ export class PredictionGroup extends AdvancedSQLModel {
     validators: [
       {
         resolver: presenceValidator(),
-        code: ValidatorErrorCode.OUTCOME_NAME_NOT_PRESENT
+        code: ValidatorErrorCode.PREDICTION_GROUP_NAME_NOT_PRESENT
       }
     ]
   })
   name: string;
+
+  /**
+   * Prediction group description.
+   */
+  @prop({
+    parser: {
+      resolver: stringParser()
+    },
+    populatable: [PopulateFrom.DB, PopulateFrom.USER],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB]
+  })
+  description: string;
 
   /**
    * Group status.

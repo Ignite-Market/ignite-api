@@ -1,0 +1,33 @@
+import { DbTables, SqlModelStatus } from '../../config/types';
+import { PredictionSetStatus } from '../../modules/prediction-set/models/prediction-set.model';
+
+export async function upgrade(queryFn: (query: string, values?: any[]) => Promise<any[]>): Promise<void> {
+  await queryFn(`
+  CREATE TABLE IF NOT EXISTS \`${DbTables.PREDICTION_SET}\` (
+    \`id\` INT NOT NULL AUTO_INCREMENT,
+    \`prediction_group_id\` INT NULL,
+    \`setId\` VARCHAR(255) NOT NULL UNIQUE,
+    \`initialPool\` DECIMAL(10,2) NULL,
+    \`question\` VARCHAR(500) NULL,
+    \`description\` VARCHAR(500) NULL,
+    \`generalResolutionDef\` VARCHAR(500) NULL,
+    \`outcomeResolutionDef\` VARCHAR(500) NULL,
+    \`outcomePriceDef\` VARCHAR(500) NULL,
+    \`startTime\` DATETIME NULL,
+    \`endTime\` DATETIME NULL,
+    \`resolutionTime\` DATETIME NULL,
+    \`setStatus\` INT NOT NULL DEFAULT '${PredictionSetStatus.INITIALIZED}',
+    \`status\` INT NOT NULL DEFAULT '${SqlModelStatus.ACTIVE}',
+    \`createTime\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    \`createUser\` INT NULL,
+    \`updateTime\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    \`updateUser\` INT NULL,
+    PRIMARY KEY (\`id\`));
+  `);
+}
+
+export async function downgrade(queryFn: (query: string, values?: any[]) => Promise<any[]>): Promise<void> {
+  await queryFn(`
+    DROP TABLE IF EXISTS \`${DbTables.PREDICTION_SET}\`;
+  `);
+}

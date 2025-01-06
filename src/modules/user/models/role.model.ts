@@ -10,7 +10,7 @@ export class Role extends AdvancedSQLModel {
   /**
    * Roles table.
    */
-  tableName = DbTables.ROLES;
+  tableName = DbTables.ROLE;
 
   /**
    * Role's name property definition.

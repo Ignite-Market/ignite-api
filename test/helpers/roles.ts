@@ -8,7 +8,7 @@ import { Role } from '../../src/modules/user/models/role.model';
  */
 export async function createBaseRoles(context: Context) {
   await context.mysql.paramExecute(`
-    INSERT INTO \`${DbTables.ROLES}\` (
+    INSERT INTO \`${DbTables.ROLE}\` (
       \`id\`,
       \`name\`
     )
