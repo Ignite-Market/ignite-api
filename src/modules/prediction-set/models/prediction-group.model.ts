@@ -86,4 +86,23 @@ export class PredictionGroup extends AdvancedSQLModel {
       conn
     );
   }
+
+  /**
+   * Get prediction sets.
+   * @param conn Database connection.
+   * @returns Prediction sets.
+   */
+  public async getPredictionSets(conn?: PoolConnection): Promise<any[]> {
+    return await this.db().paramExecute(
+      `
+        SELECT *
+        FROM ${DbTables.PREDICTION_SET}
+        WHERE prediction_group_id = @groupId
+      `,
+      {
+        groupId: this.id
+      },
+      conn
+    );
+  }
 }

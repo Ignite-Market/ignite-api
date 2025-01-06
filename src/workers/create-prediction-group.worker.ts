@@ -4,19 +4,19 @@ import { WorkerLogStatus } from '../lib/worker/logger';
 import { BaseWorker } from '../lib/worker/serverless-workers';
 import { Job } from '../modules/job/job.model';
 import { PredictionGroup, PredictionGroupStatus } from '../modules/prediction-set/models/prediction-group.model';
-import { PredictionSet, PredictionSetStatus } from '../modules/prediction-set/models/prediction-set.model';
+import { PredictionSetStatus } from '../modules/prediction-set/models/prediction-set.model';
 
 /**
- * Prediction set data.
+ * Prediction group data.
  */
 export interface PredictionGroupData {
   predictionGroupId: number;
 }
 
 /**
- * Create prediction set on BC worker.
+ * Create prediction group on BC worker.
  */
-export class CreatePredictionSetWorker extends BaseWorker {
+export class CreatePredictionGroupWorker extends BaseWorker {
   public async before(_data?: any): Promise<any> {
     return;
   }

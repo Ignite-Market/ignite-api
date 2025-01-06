@@ -74,7 +74,8 @@ export enum ConflictErrorCode {
  * Bad request error codes - 400_00_000.
  */
 export enum BadRequestErrorCode {
-  DEFAULT_BAD_REQUEST_ERROR = 400_00_000
+  DEFAULT_BAD_REQUEST_ERROR = 400_00_000,
+  INVALID_PREDICTION_GROUP = 400_00_001
 }
 
 /**

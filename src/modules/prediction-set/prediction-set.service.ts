@@ -1,15 +1,12 @@
-import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import { create } from 'domain';
-import { PredictionSet, PredictionSetStatus } from './models/prediction-set.model';
+import { HttpStatus, Injectable } from '@nestjs/common';
+import { BadRequestErrorCode, ResourceNotFoundErrorCode, SerializeFor, SystemErrorCode } from '../../config/types';
 import { Context } from '../../context';
-import { ResourceNotFoundErrorCode, SerializeFor, SystemErrorCode } from '../../config/types';
-import { CodeException } from '../../lib/exceptions/exceptions';
-import { DataSource } from './models/data-source.model';
-import { Outcome } from './models/outcome.model';
-import { PredictionGroup } from './models/prediction-group.model';
 import { sendToWorkerQueue } from '../../lib/aws/aws-sqs';
-import { env } from '../../config/env';
+import { CodeException } from '../../lib/exceptions/exceptions';
 import { WorkerName } from '../../workers/worker-executor';
+import { DataSource } from './models/data-source.model';
+import { PredictionGroup, PredictionGroupStatus } from './models/prediction-group.model';
+import { PredictionSet, PredictionSetStatus } from './models/prediction-set.model';
 
 @Injectable()
 export class PredictionSetService {
@@ -36,12 +33,82 @@ export class PredictionSetService {
   }
 
   /**
+   * Process prediction group.
+   * @param predictionGroupId Prediction group ID.
+   * @param context Application context.
+   * @returns Prediction group.
+   */
+  public async processPredictionGroup(predictionGroupId: number, context: Context) {
+    const predictionGroup = await new PredictionGroup({}, context).populateById(predictionGroupId);
+    if (!predictionGroup.exists() || !predictionGroup.isEnabled()) {
+      throw new CodeException({
+        code: ResourceNotFoundErrorCode.PREDICTION_GROUP_DOES_NOT_EXISTS,
+        status: HttpStatus.NOT_FOUND,
+        sourceFunction: `${this.constructor.name}/processPredictionGroup`,
+        context
+      });
+    }
+
+    if (predictionGroup.groupStatus !== PredictionGroupStatus.INITIALIZED && predictionGroup.groupStatus !== PredictionGroupStatus.ERROR) {
+      throw new CodeException({
+        code: BadRequestErrorCode.INVALID_PREDICTION_GROUP,
+        status: HttpStatus.BAD_REQUEST,
+        sourceFunction: `${this.constructor.name}/processPredictionGroup`,
+        errorMessage: 'Prediction group is not in the correct state to be processed.',
+        context
+      });
+    }
+
+    const predictionSets = await predictionGroup.getPredictionSets();
+    if (predictionSets.length < 3) {
+      throw new CodeException({
+        code: BadRequestErrorCode.INVALID_PREDICTION_GROUP,
+        status: HttpStatus.BAD_REQUEST,
+        sourceFunction: `${this.constructor.name}/processPredictionGroup`,
+        errorMessage: 'Prediction group must have at least 2 prediction sets.',
+        context
+      });
+    }
+
+    const conn = await context.mysql.start();
+    try {
+      predictionGroup.groupStatus = PredictionGroupStatus.PENDING;
+      await predictionGroup.update(SerializeFor.UPDATE_DB, conn);
+      await predictionGroup.updatePredictionSetsStatus(PredictionSetStatus.PENDING, conn);
+
+      await context.mysql.commit(conn);
+    } catch (error) {
+      await context.mysql.rollback(conn);
+
+      throw new CodeException({
+        code: SystemErrorCode.SQL_SYSTEM_ERROR,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        sourceFunction: `${this.constructor.name}/processPredictionGroup`,
+        details: error,
+        context
+      });
+    }
+
+    await sendToWorkerQueue(
+      WorkerName.CREATE_PREDICTION_GROUP,
+      [
+        {
+          predictionGroupId: predictionGroup.id
+        }
+      ],
+      context
+    );
+
+    return predictionGroup.serialize(SerializeFor.USER);
+  }
+
+  /**
    * Create prediction set.
    * @param predictionSet Prediction set.
    * @param dataSourceIds Data source IDs.
    * @param context Application context.
    */
-  public async createPredictionSet(predictionSet: PredictionSet, dataSourceIds: number[], predictionOutcomes: Outcome[], context: Context) {
+  public async createPredictionSet(predictionSet: PredictionSet, dataSourceIds: number[], context: Context) {
     const conn = await context.mysql.start();
 
     // Create prediction set.
@@ -63,7 +130,7 @@ export class PredictionSetService {
     // Add prediction set to prediction group.
     if (predictionSet.prediction_group_id) {
       const predictionGroup = await new PredictionGroup({}, context).populateById(predictionSet.prediction_group_id, conn);
-      if (!predictionGroup.exists()) {
+      if (!predictionGroup.exists() || !predictionGroup.isEnabled()) {
         await context.mysql.rollback(conn);
 
         throw new CodeException({
@@ -78,7 +145,7 @@ export class PredictionSetService {
     // Add data sources to the prediction set.
     for (const dataSourceId of dataSourceIds) {
       const dataSource = await new DataSource({}, context).populateById(dataSourceId, conn);
-      if (!dataSource.exists()) {
+      if (!dataSource.exists() || !dataSource.isEnabled()) {
         await context.mysql.rollback(conn);
 
         throw new CodeException({
@@ -105,8 +172,8 @@ export class PredictionSetService {
     }
 
     // Add outcomes to the prediction set.
-    const outcomePool = predictionSet.initialPool / predictionOutcomes.length;
-    for (const outcome of predictionOutcomes) {
+    const outcomePool = predictionSet.initialPool / predictionSet.outcomes.length;
+    for (const outcome of predictionSet.outcomes) {
       try {
         outcome.pool = outcomePool;
         await outcome.insert(SerializeFor.INSERT_DB, conn);
@@ -144,7 +211,6 @@ export class PredictionSetService {
         await predictionSet.update();
 
         await sendToWorkerQueue(
-          env.AWS_WORKER_SQS_URL,
           WorkerName.CREATE_PREDICTION_SET,
           [
             {
@@ -180,9 +246,7 @@ export class PredictionSetService {
       .map((word) => word[0].toUpperCase())
       .join('');
 
-    const outcomeCode = '';
-    // const outcomeCode = predictionSet.outcomes.map((outcome) => outcome[0].toUpperCase()).join('');
-
+    const outcomeCode = predictionSet.outcomes.map((outcome) => outcome.name[0].toUpperCase()).join('');
     const startTimeCode = predictionSet.startTime.toISOString().slice(0, 10).replace(/-/g, '');
     const endTimeCode = predictionSet.endTime.toISOString().slice(0, 10).replace(/-/g, '');
     const resolutionTimeCode = predictionSet.resolutionTime.toISOString().slice(0, 10).replace(/-/g, '');

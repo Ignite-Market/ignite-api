@@ -1,11 +1,10 @@
 import { WorkerDefinition } from '.';
 import { Context } from '../../../context';
 import { DbTables } from '../../../config/types';
-import { sendToWorkerQueue } from '../../aws/aws-sqs';
+import { sendToQueue } from '../../aws/aws-sqs';
 import { BaseWorker } from './base-worker';
 import { WorkerLogStatus } from '../logger';
 import { Job } from '../../../modules/job/job.model';
-import { WorkerName } from '../../../workers/worker-executor';
 
 export enum QueueWorkerType {
   PLANNER = 'PLANNER',
@@ -46,7 +45,7 @@ export abstract class BaseQueueWorker extends BaseWorker {
       }
       await this.writeLogToDb(WorkerLogStatus.INFO, `Sending ${msgData.length} messages to queue!`);
 
-      const { errCount, errMsgs } = await sendToWorkerQueue(
+      const { errCount, errMsgs } = await sendToQueue(
         this.workerQueueUrl,
         this.workerName,
         msgData,

@@ -5,6 +5,7 @@ import { PoolConnection } from 'mysql2/promise';
 import { DbTables, ErrorCode, PopulateFrom, SerializeFor, ValidatorErrorCode } from '../../../config/types';
 import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
 import { enumInclusionValidator } from '../../../lib/validators';
+import { Outcome } from './outcome.model';
 
 export enum PredictionSetStatus {
   INITIALIZED = 1,
@@ -230,7 +231,7 @@ export class PredictionSet extends AdvancedSQLModel {
     populatable: [PopulateFrom.DB],
     defaultValue: () => []
   })
-  public outcomes: any[];
+  public outcomes: Outcome[];
 
   /**
    * Adds a data source to the prediction set.

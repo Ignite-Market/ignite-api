@@ -6,6 +6,8 @@ import { WorkerName } from '../../workers/worker-executor';
 import { TestWorker } from '../../workers/test-worker';
 import { QueueWorkerType, WorkerDefinition } from '../worker/serverless-workers';
 import { Context } from '../../context';
+import { CreatePredictionGroupWorker } from '../../workers/create-prediction-group.worker';
+import { CreatePredictionSetWorker } from '../../workers/create-prediction-set.worker';
 
 /**
  * Creates an SQS client.
@@ -22,6 +24,26 @@ export function createSqsClient() {
 }
 
 /**
+ * Sends a message to an SQS worker queue.
+ * @param workerName The name of the worker.
+ * @param msgData The data to send.
+ * @param id The ID of the message.
+ * @param parameters The parameters of the message.
+ * @param delaySeconds The number of seconds to delay the message.
+ * @returns The number of errors and the error messages.
+ */
+export async function sendToWorkerQueue(
+  workerName: WorkerName,
+  msgData: Array<any>,
+  context: Context = null,
+  id: number = null,
+  parameters: any[] = null,
+  delaySeconds = 0
+) {
+  await sendToQueue(env.AWS_WORKER_SQS_URL, workerName, msgData, context, id, parameters, delaySeconds);
+}
+
+/**
  * Sends a message to an SQS queue.
  * @param queueUrl The URL of the SQS queue.
  * @param workerName The name of the worker.
@@ -31,7 +53,7 @@ export function createSqsClient() {
  * @param delaySeconds The number of seconds to delay the message.
  * @returns The number of errors and the error messages.
  */
-export async function sendToWorkerQueue(
+export async function sendToQueue(
   queueUrl: string,
   workerName: WorkerName,
   msgData: Array<any>,
@@ -125,6 +147,33 @@ async function testSendToWorkerQueue(
           executeArg: msg
         });
 
+        break;
+
+      case WorkerName.CREATE_PREDICTION_GROUP:
+        await new CreatePredictionGroupWorker(
+          new WorkerDefinition(null, WorkerName.CREATE_PREDICTION_GROUP, {
+            parameters: msg
+          }),
+          context
+        ).run({
+          executeArg: msg
+        });
+
+        break;
+
+      case WorkerName.CREATE_PREDICTION_SET:
+        await new CreatePredictionSetWorker(
+          new WorkerDefinition(null, WorkerName.CREATE_PREDICTION_SET, {
+            parameters: msg
+          }),
+          context
+        ).run({
+          executeArg: msg
+        });
+
+        break;
+
+      default:
         break;
     }
   }

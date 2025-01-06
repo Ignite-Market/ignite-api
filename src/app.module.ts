@@ -3,9 +3,10 @@ import { ContextMiddleware } from './middlewares/context.middleware';
 import { AuthenticateUserMiddleware } from './middlewares/authentication.middleware';
 import { MySQLModule } from './modules/database/mysql.module';
 import { UserModule } from './modules/user/user.module';
+import { PredictionSetModule } from './modules/prediction-set/prediction-set.module';
 
 @Module({
-  imports: [MySQLModule, UserModule],
+  imports: [MySQLModule, UserModule, PredictionSetModule],
   controllers: [],
   providers: []
 })
