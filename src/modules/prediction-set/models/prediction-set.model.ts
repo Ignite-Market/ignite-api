@@ -9,7 +9,8 @@ import { enumInclusionValidator } from '../../../lib/validators';
 export enum PredictionSetStatus {
   INITIALIZED = 1,
   PENDING = 2,
-  ACTIVE = 3
+  ACTIVE = 3,
+  ERROR = 4
 }
 
 /**

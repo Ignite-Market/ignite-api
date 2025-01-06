@@ -4,6 +4,8 @@ import { presenceValidator } from '@rawmodel/validators';
 import { DbTables, ErrorCode, PopulateFrom, SerializeFor, ValidatorErrorCode } from '../../../config/types';
 import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
 import { enumInclusionValidator } from '../../../lib/validators';
+import { PredictionSetStatus } from './prediction-set.model';
+import { PoolConnection } from 'mysql2/promise';
 
 /**
  * Prediction group status.
@@ -64,4 +66,24 @@ export class PredictionGroup extends AdvancedSQLModel {
     defaultValue: () => PredictionGroupStatus.INITIALIZED
   })
   public groupStatus: PredictionGroupStatus;
+
+  /**
+   * Update prediction sets statuses.
+   * @param setStatus Prediction set status.
+   * @param conn Database connection.
+   */
+  public async updatePredictionSetsStatus(setStatus: PredictionSetStatus, conn?: PoolConnection) {
+    await this.db().paramExecute(
+      `
+        UPDATE ${DbTables.PREDICTION_SET}
+        SET setStatus = @setStatus
+        WHERE prediction_group_id = @groupId
+      `,
+      {
+        setStatus,
+        groupId: this.id
+      },
+      conn
+    );
+  }
 }

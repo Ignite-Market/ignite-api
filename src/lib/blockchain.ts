@@ -27,9 +27,11 @@ export async function setup(): Promise<{ provider: ethers.JsonRpcProvider; signe
 /**
  * Adds prediction sets in bulk.
  */
-export async function addPredictionSets(predictionSets: PredictionSet[]): Promise<void> {}
+export async function addPredictionGroup(): Promise<void> {}
 
 /**
  * Adds prediction set.
  */
-export async function addPredictionSet(predictionSet: PredictionSet) {}
+export async function addPredictionSet(predictionSet: PredictionSet) {
+  // TODO: Check if set already exists.
+}
