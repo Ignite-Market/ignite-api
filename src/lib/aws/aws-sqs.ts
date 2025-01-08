@@ -6,7 +6,6 @@ import { WorkerName } from '../../workers/worker-executor';
 import { TestWorker } from '../../workers/test-worker';
 import { QueueWorkerType, WorkerDefinition } from '../worker/serverless-workers';
 import { Context } from '../../context';
-import { CreatePredictionGroupWorker } from '../../workers/create-prediction-group.worker';
 import { CreatePredictionSetWorker } from '../../workers/create-prediction-set.worker';
 
 /**
@@ -143,18 +142,6 @@ async function testSendToWorkerQueue(
           }),
           context,
           QueueWorkerType.PLANNER
-        ).run({
-          executeArg: msg
-        });
-
-        break;
-
-      case WorkerName.CREATE_PREDICTION_GROUP:
-        await new CreatePredictionGroupWorker(
-          new WorkerDefinition(null, WorkerName.CREATE_PREDICTION_GROUP, {
-            parameters: msg
-          }),
-          context
         ).run({
           executeArg: msg
         });

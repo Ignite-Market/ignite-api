@@ -12,8 +12,7 @@ import { TestWorker } from './test-worker';
 export enum WorkerName {
   SCHEDULER = 'scheduler',
   TEST = 'test',
-  CREATE_PREDICTION_SET = 'create_prediction_set',
-  CREATE_PREDICTION_GROUP = 'create_prediction_group'
+  CREATE_PREDICTION_SET = 'create_prediction_set'
 }
 
 export async function handler(event: any) {

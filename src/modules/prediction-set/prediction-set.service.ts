@@ -1,116 +1,67 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import {
-  BadRequestErrorCode,
-  DbTables,
-  PopulateFrom,
-  ResourceNotFoundErrorCode,
-  SerializeFor,
-  SqlModelStatus,
-  SystemErrorCode
-} from '../../config/types';
+import { BadRequestErrorCode, PopulateFrom, ResourceNotFoundErrorCode, SerializeFor, SqlModelStatus, SystemErrorCode } from '../../config/types';
 import { Context } from '../../context';
 import { sendToWorkerQueue } from '../../lib/aws/aws-sqs';
 import { CodeException } from '../../lib/exceptions/exceptions';
 import { WorkerName } from '../../workers/worker-executor';
-import { DataSource } from './models/data-source.model';
-import { PredictionGroup, PredictionGroupStatus } from './models/prediction-group.model';
-import { PredictionSet, PredictionSetStatus } from './models/prediction-set.model';
 import { PredictionSetDto } from './dtos/prediction-set.dto';
+import { DataSource } from './models/data-source.model';
 import { Outcome } from './models/outcome.model';
-import { selectAndCountQuery } from '../../lib/database/sql-utils';
+import { PredictionSet, PredictionSetStatus } from './models/prediction-set.model';
 
 @Injectable()
 export class PredictionSetService {
   /**
-   * Create prediction group.
-   * @param predictionGroup Prediction group.
+   * Process prediction set.
+   * @param predictionSetId Prediction set ID.
    * @param context Application context.
-   * @returns Prediction group.
+   * @returns Prediction set.
    */
-  public async createPredictionGroup(predictionGroup: PredictionGroup, context: Context) {
-    try {
-      await predictionGroup.insert(SerializeFor.INSERT_DB);
-    } catch (error) {
+  public async processPredictionSet(predictionSetId: number, context: Context) {
+    const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId);
+    if (!predictionSet.exists() || !predictionSet.isEnabled()) {
       throw new CodeException({
-        code: SystemErrorCode.SQL_SYSTEM_ERROR,
-        status: HttpStatus.INTERNAL_SERVER_ERROR,
-        sourceFunction: `${this.constructor.name}/createPredictionGroup`,
-        details: error,
-        context
-      });
-    }
-
-    return predictionGroup.serialize(SerializeFor.USER);
-  }
-
-  /**
-   * Process prediction group.
-   * @param predictionGroupId Prediction group ID.
-   * @param context Application context.
-   * @returns Prediction group.
-   */
-  public async processPredictionGroup(predictionGroupId: number, context: Context) {
-    const predictionGroup = await new PredictionGroup({}, context).populateById(predictionGroupId);
-    if (!predictionGroup.exists() || !predictionGroup.isEnabled()) {
-      throw new CodeException({
-        code: ResourceNotFoundErrorCode.PREDICTION_GROUP_DOES_NOT_EXISTS,
+        code: ResourceNotFoundErrorCode.PREDICTION_SET_DOES_NOT_EXISTS,
         status: HttpStatus.NOT_FOUND,
-        sourceFunction: `${this.constructor.name}/processPredictionGroup`,
+        sourceFunction: `${this.constructor.name}/processPredictionSet`,
         context
       });
     }
 
-    if (predictionGroup.groupStatus !== PredictionGroupStatus.INITIALIZED && predictionGroup.groupStatus !== PredictionGroupStatus.ERROR) {
+    if (![PredictionSetStatus.INITIALIZED, PredictionSetStatus.ERROR].includes(predictionSet.setStatus)) {
       throw new CodeException({
-        code: BadRequestErrorCode.INVALID_PREDICTION_GROUP,
+        code: BadRequestErrorCode.INVALID_PREDICTION_SET_STATUS,
         status: HttpStatus.BAD_REQUEST,
-        sourceFunction: `${this.constructor.name}/processPredictionGroup`,
-        errorMessage: 'Prediction group is not in the correct state to be processed.',
+        sourceFunction: `${this.constructor.name}/processPredictionSet`,
+        errorMessage: 'Prediction set is not in the correct state to be processed.',
         context
       });
     }
 
-    const predictionSets = await predictionGroup.getPredictionSets();
-    if (predictionSets.length < 3) {
-      throw new CodeException({
-        code: BadRequestErrorCode.INVALID_PREDICTION_GROUP,
-        status: HttpStatus.BAD_REQUEST,
-        sourceFunction: `${this.constructor.name}/processPredictionGroup`,
-        errorMessage: 'Prediction group must have at least 2 prediction sets.',
-        context
-      });
-    }
-
-    const conn = await context.mysql.start();
     try {
-      predictionGroup.groupStatus = PredictionGroupStatus.PENDING;
-      await predictionGroup.update(SerializeFor.UPDATE_DB, conn);
-      await predictionGroup.updatePredictionSetsStatus(PredictionSetStatus.PENDING, conn);
-
-      await context.mysql.commit(conn);
+      predictionSet.setStatus = PredictionSetStatus.PENDING;
+      await predictionSet.update();
     } catch (error) {
-      await context.mysql.rollback(conn);
-
       throw new CodeException({
         code: SystemErrorCode.SQL_SYSTEM_ERROR,
         status: HttpStatus.INTERNAL_SERVER_ERROR,
-        sourceFunction: `${this.constructor.name}/processPredictionGroup`,
+        sourceFunction: `${this.constructor.name}/processPredictionSet`,
         details: error,
         context
       });
     }
 
     await sendToWorkerQueue(
-      WorkerName.CREATE_PREDICTION_GROUP,
+      WorkerName.CREATE_PREDICTION_SET,
       [
         {
-          predictionGroupId: predictionGroup.id
+          predictionSetId: predictionSet.id
         }
       ],
       context
     );
 
-    return predictionGroup.serialize(SerializeFor.USER);
+    return predictionSet.serialize(SerializeFor.USER);
   }
 
   /**
@@ -137,22 +88,6 @@ export class PredictionSetService {
         details: error,
         context
       });
-    }
-
-    // Add prediction set to prediction group.
-    if (predictionSet.prediction_group_id) {
-      const predictionGroup = await new PredictionGroup({}, context).populateById(predictionSet.prediction_group_id, conn);
-      if (!predictionGroup.exists() || !predictionGroup.isEnabled()) {
-        await context.mysql.rollback(conn);
-
-        throw new CodeException({
-          code: ResourceNotFoundErrorCode.PREDICTION_GROUP_DOES_NOT_EXISTS,
-          errorCodes: ResourceNotFoundErrorCode,
-          status: HttpStatus.NOT_FOUND,
-          sourceFunction: `${this.constructor.name}/createPredictionSet`,
-          context
-        });
-      }
     }
 
     // Add data sources to the prediction set.
@@ -223,47 +158,19 @@ export class PredictionSetService {
       });
     }
 
-    // If prediction set is not part of a prediction group, we start processing.
-    if (!predictionSet.prediction_group_id) {
-      try {
-        predictionSet.setStatus = PredictionSetStatus.PENDING;
-        await predictionSet.update();
-
-        await sendToWorkerQueue(
-          WorkerName.CREATE_PREDICTION_SET,
-          [
-            {
-              predictionSetId: predictionSet.id
-            }
-          ],
-          context
-        );
-      } catch (error) {
-        throw new CodeException({
-          code: SystemErrorCode.SQL_SYSTEM_ERROR,
-          errorCodes: SystemErrorCode,
-          status: HttpStatus.INTERNAL_SERVER_ERROR,
-          sourceFunction: `${this.constructor.name}/createPredictionSet`,
-          details: error,
-          context
-        });
-      }
-    }
-
     return predictionSet.serialize(SerializeFor.USER);
   }
 
   /**
    * Update prediction set.
-   * @param predisctionSetId Prediction set id.
+   * @param predictionSetId Prediction set ID.
    * @param predictionSetData Prediction set data.
    * @param context Application context.
    */
-  public async updatePredictionSet(predisctionSetId: number, predictionSetData: PredictionSetDto, context: Context) {
+  public async updatePredictionSet(predictionSetId: number, predictionSetData: PredictionSetDto, context: Context) {
     const conn = await context.mysql.start();
 
-    const predictionSet = await new PredictionSet({}, context).populateById(predisctionSetId, conn);
-
+    const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId, conn);
     if (!predictionSet.exists() || !predictionSet.isEnabled()) {
       throw new CodeException({
         code: SystemErrorCode.SQL_SYSTEM_ERROR,
@@ -274,46 +181,15 @@ export class PredictionSetService {
       });
     }
 
-    // Only update if not processed/pending
-    if ([PredictionSetStatus.INITIALIZED, PredictionSetStatus.ERROR].includes(predictionSet.setStatus)) {
+    // Only update if not processed/pending.
+    if (![PredictionSetStatus.INITIALIZED, PredictionSetStatus.ERROR].includes(predictionSet.setStatus)) {
       throw new CodeException({
-        code: SystemErrorCode.SQL_SYSTEM_ERROR,
-        errorCodes: SystemErrorCode,
-        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        code: BadRequestErrorCode.INVALID_PREDICTION_SET_STATUS,
+        status: HttpStatus.BAD_REQUEST,
         sourceFunction: `${this.constructor.name}/updatePredictionSet`,
+        errorMessage: 'Prediction set is not in the correct state to be processed.',
         context
       });
-    }
-
-    if (predictionSet.prediction_group_id || predictionSetData.prediction_group_id) {
-      if (predictionSetData.prediction_group_id !== predictionSet.prediction_group_id) {
-        // Can not change prediction group
-        throw new CodeException({
-          code: ResourceNotFoundErrorCode.PREDICTION_GROUP_DOES_NOT_EXISTS,
-          errorCodes: ResourceNotFoundErrorCode,
-          status: HttpStatus.NOT_FOUND,
-          sourceFunction: `${this.constructor.name}/updatePredictionSet`,
-          context
-        });
-      }
-
-      // Check group still exists & is not processed/pending
-      const predictionGroup = await new PredictionGroup({}, context).populateById(predictionSetData.prediction_group_id, conn);
-      if (
-        !predictionGroup.exists() ||
-        !predictionGroup.isEnabled() ||
-        ![PredictionGroupStatus.INITIALIZED, PredictionGroupStatus.ERROR].includes(predictionGroup.groupStatus)
-      ) {
-        await context.mysql.rollback(conn);
-
-        throw new CodeException({
-          code: ResourceNotFoundErrorCode.PREDICTION_GROUP_DOES_NOT_EXISTS,
-          errorCodes: ResourceNotFoundErrorCode,
-          status: HttpStatus.NOT_FOUND,
-          sourceFunction: `${this.constructor.name}/updatePredictionSet`,
-          context
-        });
-      }
     }
 
     // Delete and add new data sources to the prediction set
@@ -403,33 +279,6 @@ export class PredictionSetService {
       });
     }
 
-    // If prediction set is not part of a prediction group, we start processing.
-    if (!predictionSet.prediction_group_id) {
-      try {
-        predictionSet.setStatus = PredictionSetStatus.PENDING;
-        await predictionSet.update();
-
-        await sendToWorkerQueue(
-          WorkerName.CREATE_PREDICTION_SET,
-          [
-            {
-              predictionSetId: predictionSet.id
-            }
-          ],
-          context
-        );
-      } catch (error) {
-        throw new CodeException({
-          code: SystemErrorCode.SQL_SYSTEM_ERROR,
-          errorCodes: SystemErrorCode,
-          status: HttpStatus.INTERNAL_SERVER_ERROR,
-          sourceFunction: `${this.constructor.name}/updatePredictionSet`,
-          details: error,
-          context
-        });
-      }
-    }
-
     return predictionSet.serialize(SerializeFor.USER);
   }
 
@@ -438,11 +287,11 @@ export class PredictionSetService {
    * @param predictionSet Prediction set.
    * @param context Application context.
    */
-  public async deletePredictionSet(predisctionSetId: number, context: Context) {
-    const predictionSet = await new PredictionSet({}, context).populateById(predisctionSetId);
+  public async deletePredictionSet(predictionSetId: number, context: Context) {
+    const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId);
 
     // Only delete if not processed/pending
-    if ([PredictionSetStatus.INITIALIZED, PredictionSetStatus.ERROR].includes(predictionSet.setStatus)) {
+    if (![PredictionSetStatus.INITIALIZED, PredictionSetStatus.ERROR].includes(predictionSet.setStatus)) {
       throw new CodeException({
         code: SystemErrorCode.SQL_SYSTEM_ERROR,
         errorCodes: SystemErrorCode,

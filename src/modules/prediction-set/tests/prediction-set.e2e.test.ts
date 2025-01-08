@@ -28,7 +28,6 @@ describe('User e2e tests', () => {
     let predictionId: number;
     afterEach(async () => {
       // await stage.db.paramExecute(`DELETE FROM \`${DbTables.OUTCOME}\``);
-      // await stage.db.paramExecute(`DELETE FROM \`${DbTables.PREDICTION_GROUP}\``);
       // await stage.db.paramExecute(`DELETE FROM \`${DbTables.PREDICTION_SET}\``);
     });
 

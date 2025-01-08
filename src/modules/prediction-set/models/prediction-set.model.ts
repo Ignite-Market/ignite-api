@@ -6,7 +6,6 @@ import { DbTables, ErrorCode, PopulateFrom, SerializeFor, ValidatorErrorCode } f
 import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
 import { enumInclusionValidator } from '../../../lib/validators';
 import { Outcome } from './outcome.model';
-import { DataSource } from './data-source.model';
 
 export enum PredictionSetStatus {
   INITIALIZED = 1,
@@ -23,16 +22,6 @@ export class PredictionSet extends AdvancedSQLModel {
    * Prediction set 's table.
    */
   public tableName = DbTables.PREDICTION_SET;
-
-  /**
-   * Prediction group ID.
-   */
-  @prop({
-    parser: { resolver: integerParser() },
-    populatable: [PopulateFrom.DB, PopulateFrom.USER],
-    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
-  })
-  prediction_group_id: number;
 
   /**
    * Set ID - A distinct code that uniquely identifies each prediction set within the platform.
@@ -203,10 +192,11 @@ export class PredictionSet extends AdvancedSQLModel {
   public resolutionTime: Date;
 
   /**
-   * Group status.
+   * Set status.
    * - 1: INITIALIZED - When the set is created.
    * - 2: PENDING - When the set is syncing with the blockchain.
    * - 3: ACTIVE - When the set is ready for predictions.
+   * - 4: ERROR - When the set is in error state.
    */
   @prop({
     parser: { resolver: integerParser() },

@@ -1,13 +1,21 @@
 import { DbTables, SqlModelStatus } from '../../config/types';
-import { PredictionGroupStatus } from '../../modules/prediction-set/models/prediction-group.model';
+import { PredictionSetStatus } from '../../modules/prediction-set/models/prediction-set.model';
 
 export async function upgrade(queryFn: (query: string, values?: any[]) => Promise<any[]>): Promise<void> {
   await queryFn(`
-  CREATE TABLE IF NOT EXISTS \`${DbTables.PREDICTION_GROUP}\` (
+  CREATE TABLE IF NOT EXISTS \`${DbTables.PREDICTION_SET}\` (
     \`id\` INT NOT NULL AUTO_INCREMENT,
-    \`name\` VARCHAR(255) NULL,
-    \`description\` VARCHAR(500) NULL,
-    \`groupStatus\` INT NOT NULL DEFAULT '${PredictionGroupStatus.INITIALIZED}',
+    \`setId\` VARCHAR(255) NOT NULL UNIQUE,
+    \`initialPool\` DECIMAL(10,2) NULL,
+    \`question\` VARCHAR(500) NULL,
+    \`description\` TEXT NULL,
+    \`generalResolutionDef\` TEXT NULL,
+    \`outcomeResolutionDef\` TEXT NULL,
+    \`outcomePriceDef\` TEXT NULL,
+    \`startTime\` DATETIME NULL,
+    \`endTime\` DATETIME NULL,
+    \`resolutionTime\` DATETIME NULL,
+    \`setStatus\` INT NOT NULL DEFAULT '${PredictionSetStatus.INITIALIZED}',
     \`status\` INT NOT NULL DEFAULT '${SqlModelStatus.ACTIVE}',
     \`createTime\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     \`createUser\` INT NULL,
@@ -19,6 +27,6 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
 
 export async function downgrade(queryFn: (query: string, values?: any[]) => Promise<any[]>): Promise<void> {
   await queryFn(`
-    DROP TABLE IF EXISTS \`${DbTables.PREDICTION_GROUP}\`;
+    DROP TABLE IF EXISTS \`${DbTables.PREDICTION_SET}\`;
   `);
 }
