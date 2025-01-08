@@ -1,7 +1,6 @@
 import { addPredictionSet } from '../lib/blockchain';
 import { WorkerLogStatus } from '../lib/worker/logger';
-import { BaseWorker } from '../lib/worker/serverless-workers';
-import { Job } from '../modules/job/job.model';
+import { BaseQueueWorkerExecutor } from '../lib/worker/serverless-workers/base-queue-worker-executor';
 import { PredictionSet, PredictionSetStatus } from '../modules/prediction-set/models/prediction-set.model';
 
 /**
@@ -14,39 +13,23 @@ export interface PredictionSetData {
 /**
  * Create prediction set on BC worker.
  */
-export class CreatePredictionSetWorker extends BaseWorker {
-  public async before(_data?: any): Promise<any> {
-    return;
-  }
-
-  public async execute(data: PredictionSetData): Promise<any> {
+export class CreatePredictionSetWorker extends BaseQueueWorkerExecutor {
+  /**
+   *
+   * @param data
+   */
+  public async runExecutor(data: PredictionSetData): Promise<any> {
     try {
       let parsedData = data;
       if (typeof data === 'string' || data instanceof String) {
         parsedData = JSON.parse(data as any);
       }
 
-      await this.handleCreatePredictionSet(parsedData);
+      await this.handleCreatePredictionSet(data);
     } catch (error) {
       await this.writeLogToDb(WorkerLogStatus.ERROR, `Error executing ${this.workerName}`, null, error);
       throw error;
     }
-  }
-
-  public async onSuccess(_data?: any, _successData?: any): Promise<any> {
-    return;
-  }
-
-  public async onError(error: Error): Promise<any> {
-    await this.writeLogToDb(WorkerLogStatus.ERROR, `Error executing ${this.workerName}`, null, error);
-  }
-
-  public async onUpdateWorkerDefinition(): Promise<void> {
-    await new Job({}, this.context).updateWorkerDefinition(this.workerDefinition);
-  }
-
-  public onAutoRemove(): Promise<void> {
-    throw new Error('Method not implemented.');
   }
 
   /**

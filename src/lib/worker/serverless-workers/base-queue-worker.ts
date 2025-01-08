@@ -64,7 +64,12 @@ export abstract class BaseQueueWorker extends BaseWorker {
       }
       // await this.writeLogToDb(WorkerLogStatus.INFO, 'SQS message', JSON.parse(data));
       // we got data from SQS queue --> run executor
-      await this.runExecutor(JSON.parse(data));
+
+      let parsedData = data;
+      if (typeof data === 'string' || data instanceof String) {
+        parsedData = JSON.parse(data as any);
+      }
+      await this.runExecutor(parsedData);
     }
   }
 

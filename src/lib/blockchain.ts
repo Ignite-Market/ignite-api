@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
-import { env } from '../config/env.js';
-import { PredictionSet } from '../modules/prediction-set/models/prediction-set.model.js';
-import { PREDICTION_ABI, TOKEN_ABI } from './abis.js';
+import { env } from '../config/env';
+import { PredictionSet } from '../modules/prediction-set/models/prediction-set.model';
+import { PREDICTION_ABI, TOKEN_ABI } from './abis';
 
 /**
  * Sets up betting contract.

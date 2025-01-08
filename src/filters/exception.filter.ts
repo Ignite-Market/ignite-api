@@ -19,8 +19,15 @@ export class ExceptionsFilter implements ExceptionFilter {
     //   error,
     // );
     console.error(error, 'exception.filter.ts');
+    if (error.details) {
+      console.error(error.details, 'exception.filter.ts');
+    }
 
     if (error instanceof CodeException) {
+      if (error?.options?.details) {
+        console.error(error.options.details, 'exception.filter.ts');
+      }
+
       res.status(error.getStatus()).json({
         id: request?.context?.requestId,
         status: error.getStatus(),
@@ -40,7 +47,7 @@ export class ExceptionsFilter implements ExceptionFilter {
       });
     } else {
       if (error.status == 422) {
-        //Validation errors recieved from microservice - handled in @kalmia-monitor/lib base-service
+        //Validation errors received from microservice - handled in @kalmia-monitor/lib base-service
         res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({
           id: request?.context?.requestId,
           code: error.code || SystemErrorCode.MICROSERVICE_SYSTEM_ERROR,

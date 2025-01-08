@@ -1,4 +1,4 @@
-import { Body, Controller, Param, ParseIntPipe, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { DefaultUserRole } from '../../config/types';
 import { Context } from '../../context';
 import { Ctx } from '../../decorators/context.decorator';
@@ -15,6 +15,10 @@ import { PredictionSetService } from './prediction-set.service';
 @Controller('prediction-sets')
 export class PredictionSetController {
   constructor(private readonly predictionSetService: PredictionSetService) {}
+
+  // TODO: Admin routes to update + delete prediction sets - that are not yet active!
+  // TODO: Admin route to cancel prediction set/prediction set group - set status + call to BC.
+  // TODO: Route to list prediction sets/groups for FE. Listing should list single prediction sets (not in groups) and grouped prediction sets.
 
   @Post()
   @Validation({ dto: PredictionSetDto })

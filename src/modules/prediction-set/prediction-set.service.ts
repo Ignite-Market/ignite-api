@@ -120,6 +120,7 @@ export class PredictionSetService {
 
       throw new CodeException({
         code: SystemErrorCode.SQL_SYSTEM_ERROR,
+        errorCodes: SystemErrorCode,
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         sourceFunction: `${this.constructor.name}/createPredictionSet`,
         details: error,
@@ -135,6 +136,7 @@ export class PredictionSetService {
 
         throw new CodeException({
           code: ResourceNotFoundErrorCode.PREDICTION_GROUP_DOES_NOT_EXISTS,
+          errorCodes: ResourceNotFoundErrorCode,
           status: HttpStatus.NOT_FOUND,
           sourceFunction: `${this.constructor.name}/createPredictionSet`,
           context
@@ -150,6 +152,7 @@ export class PredictionSetService {
 
         throw new CodeException({
           code: ResourceNotFoundErrorCode.DATA_SOURCE_DOES_NOT_EXISTS,
+          errorCodes: ResourceNotFoundErrorCode,
           status: HttpStatus.NOT_FOUND,
           sourceFunction: `${this.constructor.name}/createPredictionSet`,
           context
@@ -163,6 +166,7 @@ export class PredictionSetService {
 
         throw new CodeException({
           code: SystemErrorCode.SQL_SYSTEM_ERROR,
+          errorCodes: SystemErrorCode,
           status: HttpStatus.INTERNAL_SERVER_ERROR,
           sourceFunction: `${this.constructor.name}/createPredictionSet`,
           details: error,
@@ -176,12 +180,15 @@ export class PredictionSetService {
     for (const outcome of predictionSet.outcomes) {
       try {
         outcome.pool = outcomePool;
+        outcome.prediction_set_id = predictionSet.id;
+
         await outcome.insert(SerializeFor.INSERT_DB, conn);
       } catch (error) {
         await context.mysql.rollback(conn);
 
         throw new CodeException({
           code: SystemErrorCode.SQL_SYSTEM_ERROR,
+          errorCodes: SystemErrorCode,
           status: HttpStatus.INTERNAL_SERVER_ERROR,
           sourceFunction: `${this.constructor.name}/createPredictionSet`,
           details: error,
@@ -197,6 +204,7 @@ export class PredictionSetService {
 
       throw new CodeException({
         code: SystemErrorCode.SQL_SYSTEM_ERROR,
+        errorCodes: SystemErrorCode,
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         sourceFunction: `${this.constructor.name}/createPredictionSet`,
         details: error,
@@ -222,6 +230,7 @@ export class PredictionSetService {
       } catch (error) {
         throw new CodeException({
           code: SystemErrorCode.SQL_SYSTEM_ERROR,
+          errorCodes: SystemErrorCode,
           status: HttpStatus.INTERNAL_SERVER_ERROR,
           sourceFunction: `${this.constructor.name}/createPredictionSet`,
           details: error,

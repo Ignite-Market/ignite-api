@@ -1,7 +1,7 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { IRequest } from '../interfaces/i-request';
 
-const AUTHORIZATION_HEADER = 'Authorization';
+export const AUTHORIZATION_HEADER = 'Authorization';
 
 /**
  * Authenticates user or returns error if that is not possible.

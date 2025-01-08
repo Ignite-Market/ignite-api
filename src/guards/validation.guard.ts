@@ -2,7 +2,7 @@ import { CanActivate, ExecutionContext, Inject, Injectable } from '@nestjs/commo
 import { Reflector } from '@nestjs/core';
 import { IValidationOptions, VALIDATION_OPTIONS_KEY } from '../decorators/validation.decorator';
 import { IRequest } from '../interfaces/i-request';
-import { ValidationException } from '../lib/exceptions/exceptions';
+import { ModelValidationException, ValidationException } from '../lib/exceptions/exceptions';
 import { ValidatorErrorCode } from '../config/types';
 
 @Injectable()
@@ -24,7 +24,7 @@ export class ValidationGuard implements CanActivate {
       }
 
       if (!dto.isValid()) {
-        throw new ValidationException(dto, ValidatorErrorCode);
+        throw new ModelValidationException(dto, ValidatorErrorCode);
       }
     }
 
