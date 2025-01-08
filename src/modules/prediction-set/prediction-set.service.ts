@@ -1,5 +1,13 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { BadRequestErrorCode, ResourceNotFoundErrorCode, SerializeFor, SystemErrorCode } from '../../config/types';
+import {
+  BadRequestErrorCode,
+  DbTables,
+  PopulateFrom,
+  ResourceNotFoundErrorCode,
+  SerializeFor,
+  SqlModelStatus,
+  SystemErrorCode
+} from '../../config/types';
 import { Context } from '../../context';
 import { sendToWorkerQueue } from '../../lib/aws/aws-sqs';
 import { CodeException } from '../../lib/exceptions/exceptions';
@@ -7,6 +15,9 @@ import { WorkerName } from '../../workers/worker-executor';
 import { DataSource } from './models/data-source.model';
 import { PredictionGroup, PredictionGroupStatus } from './models/prediction-group.model';
 import { PredictionSet, PredictionSetStatus } from './models/prediction-set.model';
+import { PredictionSetDto } from './dtos/prediction-set.dto';
+import { Outcome } from './models/outcome.model';
+import { selectAndCountQuery } from '../../lib/database/sql-utils';
 
 @Injectable()
 export class PredictionSetService {
@@ -240,6 +251,209 @@ export class PredictionSetService {
     }
 
     return predictionSet.serialize(SerializeFor.USER);
+  }
+
+  /**
+   * Update prediction set.
+   * @param predisctionSetId Prediction set id.
+   * @param predictionSetData Prediction set data.
+   * @param context Application context.
+   */
+  public async updatePredictionSet(predisctionSetId: number, predictionSetData: PredictionSetDto, context: Context) {
+    const conn = await context.mysql.start();
+
+    const predictionSet = await new PredictionSet({}, context).populateById(predisctionSetId, conn);
+
+    if (!predictionSet.exists() || !predictionSet.isEnabled()) {
+      throw new CodeException({
+        code: SystemErrorCode.SQL_SYSTEM_ERROR,
+        errorCodes: SystemErrorCode,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        sourceFunction: `${this.constructor.name}/updatePredictionSet`,
+        context
+      });
+    }
+
+    // Only update if not processed/pending
+    if ([PredictionSetStatus.INITIALIZED, PredictionSetStatus.ERROR].includes(predictionSet.setStatus)) {
+      throw new CodeException({
+        code: SystemErrorCode.SQL_SYSTEM_ERROR,
+        errorCodes: SystemErrorCode,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        sourceFunction: `${this.constructor.name}/updatePredictionSet`,
+        context
+      });
+    }
+
+    if (predictionSet.prediction_group_id || predictionSetData.prediction_group_id) {
+      if (predictionSetData.prediction_group_id !== predictionSet.prediction_group_id) {
+        // Can not change prediction group
+        throw new CodeException({
+          code: ResourceNotFoundErrorCode.PREDICTION_GROUP_DOES_NOT_EXISTS,
+          errorCodes: ResourceNotFoundErrorCode,
+          status: HttpStatus.NOT_FOUND,
+          sourceFunction: `${this.constructor.name}/updatePredictionSet`,
+          context
+        });
+      }
+
+      // Check group still exists & is not processed/pending
+      const predictionGroup = await new PredictionGroup({}, context).populateById(predictionSetData.prediction_group_id, conn);
+      if (
+        !predictionGroup.exists() ||
+        !predictionGroup.isEnabled() ||
+        ![PredictionGroupStatus.INITIALIZED, PredictionGroupStatus.ERROR].includes(predictionGroup.groupStatus)
+      ) {
+        await context.mysql.rollback(conn);
+
+        throw new CodeException({
+          code: ResourceNotFoundErrorCode.PREDICTION_GROUP_DOES_NOT_EXISTS,
+          errorCodes: ResourceNotFoundErrorCode,
+          status: HttpStatus.NOT_FOUND,
+          sourceFunction: `${this.constructor.name}/updatePredictionSet`,
+          context
+        });
+      }
+    }
+
+    // Delete and add new data sources to the prediction set
+    await predictionSet.deleteDataSources(conn);
+    for (const dataSourceId of predictionSetData.dataSourceIds) {
+      const dataSource = await new DataSource({}, context).populateById(dataSourceId, conn);
+      if (!dataSource.exists() || !dataSource.isEnabled()) {
+        await context.mysql.rollback(conn);
+
+        throw new CodeException({
+          code: ResourceNotFoundErrorCode.DATA_SOURCE_DOES_NOT_EXISTS,
+          errorCodes: ResourceNotFoundErrorCode,
+          status: HttpStatus.NOT_FOUND,
+          sourceFunction: `${this.constructor.name}/updatePredictionSet`,
+          context
+        });
+      }
+
+      try {
+        await predictionSet.addDataSource(dataSource.id, conn);
+      } catch (error) {
+        await context.mysql.rollback(conn);
+
+        throw new CodeException({
+          code: SystemErrorCode.SQL_SYSTEM_ERROR,
+          errorCodes: SystemErrorCode,
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          sourceFunction: `${this.constructor.name}/updatePredictionSet`,
+          details: error,
+          context
+        });
+      }
+    }
+
+    // Delete and add new outcomes to the prediction set
+    await predictionSet.deleteOutcomes(conn);
+    const outcomePool = predictionSetData.initialPool / predictionSetData.predictionOutcomes.length;
+    for (const predictionOutcome of predictionSetData.predictionOutcomes) {
+      try {
+        const outcome = new Outcome(predictionOutcome, context);
+        outcome.pool = outcomePool;
+        outcome.prediction_set_id = predictionSet.id;
+
+        await outcome.insert(SerializeFor.INSERT_DB, conn);
+        predictionSet.outcomes.push(outcome);
+      } catch (error) {
+        await context.mysql.rollback(conn);
+
+        throw new CodeException({
+          code: SystemErrorCode.SQL_SYSTEM_ERROR,
+          errorCodes: SystemErrorCode,
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          sourceFunction: `${this.constructor.name}/updatePredictionSet`,
+          details: error,
+          context
+        });
+      }
+    }
+
+    predictionSet.populate(predictionSetData, PopulateFrom.USER);
+    try {
+      await predictionSet.update(SerializeFor.UPDATE_DB, conn);
+    } catch (error) {
+      await context.mysql.rollback(conn);
+
+      throw new CodeException({
+        code: SystemErrorCode.SQL_SYSTEM_ERROR,
+        errorCodes: SystemErrorCode,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        sourceFunction: `${this.constructor.name}/updatePredictionSet`,
+        details: error,
+        context
+      });
+    }
+
+    try {
+      await context.mysql.commit(conn);
+    } catch (error) {
+      await context.mysql.rollback(conn);
+      throw new CodeException({
+        code: SystemErrorCode.SQL_SYSTEM_ERROR,
+        errorCodes: SystemErrorCode,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        sourceFunction: `${this.constructor.name}/updatePredictionSet`,
+        details: error,
+        context
+      });
+    }
+
+    // If prediction set is not part of a prediction group, we start processing.
+    if (!predictionSet.prediction_group_id) {
+      try {
+        predictionSet.setStatus = PredictionSetStatus.PENDING;
+        await predictionSet.update();
+
+        await sendToWorkerQueue(
+          WorkerName.CREATE_PREDICTION_SET,
+          [
+            {
+              predictionSetId: predictionSet.id
+            }
+          ],
+          context
+        );
+      } catch (error) {
+        throw new CodeException({
+          code: SystemErrorCode.SQL_SYSTEM_ERROR,
+          errorCodes: SystemErrorCode,
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          sourceFunction: `${this.constructor.name}/updatePredictionSet`,
+          details: error,
+          context
+        });
+      }
+    }
+
+    return predictionSet.serialize(SerializeFor.USER);
+  }
+
+  /**
+   * Delete prediction set.
+   * @param predictionSet Prediction set.
+   * @param context Application context.
+   */
+  public async deletePredictionSet(predisctionSetId: number, context: Context) {
+    const predictionSet = await new PredictionSet({}, context).populateById(predisctionSetId);
+
+    // Only delete if not processed/pending
+    if ([PredictionSetStatus.INITIALIZED, PredictionSetStatus.ERROR].includes(predictionSet.setStatus)) {
+      throw new CodeException({
+        code: SystemErrorCode.SQL_SYSTEM_ERROR,
+        errorCodes: SystemErrorCode,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        sourceFunction: `${this.constructor.name}/updatePredictionSet`,
+        context
+      });
+    }
+
+    predictionSet.status = SqlModelStatus.DELETED;
+    await predictionSet.update();
   }
 
   /**

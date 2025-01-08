@@ -6,6 +6,7 @@ import { DbTables, ErrorCode, PopulateFrom, SerializeFor, ValidatorErrorCode } f
 import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
 import { enumInclusionValidator } from '../../../lib/validators';
 import { Outcome } from './outcome.model';
+import { DataSource } from './data-source.model';
 
 export enum PredictionSetStatus {
   INITIALIZED = 1,
@@ -28,7 +29,7 @@ export class PredictionSet extends AdvancedSQLModel {
    */
   @prop({
     parser: { resolver: integerParser() },
-    populatable: [PopulateFrom.DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER],
     serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
   })
   prediction_group_id: number;
@@ -243,11 +244,51 @@ export class PredictionSet extends AdvancedSQLModel {
     await this.db().paramExecute(
       `
           INSERT IGNORE INTO ${DbTables.PREDICTION_SET_DATA_SOURCE} (prediction_set_id, data_source_id)
-          VALUES (@prediction_set_id, @dataSourceId)
+          VALUES (@predictionSetId, @dataSourceId)
         `,
       {
         predictionSetId: this.id,
         dataSourceId
+      },
+      conn
+    );
+
+    return this;
+  }
+
+  /**
+   * Remove all data sources for this prediction set.
+   * @param conn Database connection.
+   * @returns Prediction set.
+   */
+  public async deleteDataSources(conn?: PoolConnection): Promise<PredictionSet> {
+    await this.db().paramExecute(
+      `
+          DELETE FROM  ${DbTables.PREDICTION_SET_DATA_SOURCE} 
+          WHERE prediction_set_id = @predictionSetId
+        `,
+      {
+        predictionSetId: this.id
+      },
+      conn
+    );
+
+    return this;
+  }
+
+  /**
+   * Remove all outcomes for this prediction set.
+   * @param conn Database connection.
+   * @returns Prediction set.
+   */
+  public async deleteOutcomes(conn?: PoolConnection): Promise<PredictionSet> {
+    await this.db().paramExecute(
+      `
+          DELETE FROM ${DbTables.OUTCOME} 
+          WHERE prediction_set_id = @predictionSetId
+        `,
+      {
+        predictionSetId: this.id
       },
       conn
     );
