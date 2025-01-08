@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { DefaultUserRole } from '../../config/types';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { DefaultUserRole, PopulateFrom } from '../../config/types';
 import { Context } from '../../context';
 import { Ctx } from '../../decorators/context.decorator';
 import { Roles } from '../../decorators/role.decorator';
@@ -44,5 +44,27 @@ export class PredictionSetController {
   @Roles(DefaultUserRole.ADMIN)
   async processPredictionGroup(@Param('id', ParseIntPipe) predictionGroupId: number, @Ctx() context: Context) {
     return await this.predictionSetService.processPredictionGroup(predictionGroupId, context);
+  }
+
+  // @Get('')
+  // @UseGuards(AuthGuard)
+  // @Roles()
+  // async getPredictions(@Query() query, @Ctx() context: Context) {
+  //   return await this.predictionSetService.getPredictions(query, context);
+  // }
+
+  @Put('/:id')
+  @Validation({ dto: PredictionSetDto })
+  @UseGuards(ValidationGuard, AuthGuard)
+  @Roles(DefaultUserRole.ADMIN)
+  async updatePredictionSet(@Param('id', ParseIntPipe) id: number, @Body() data: PredictionSetDto, @Ctx() context: Context) {
+    return await this.predictionSetService.updatePredictionSet(id, data, context);
+  }
+
+  @Delete('/:id')
+  @UseGuards(AuthGuard)
+  @Roles(DefaultUserRole.ADMIN)
+  async deletePredictionSet(@Param('id', ParseIntPipe) id: number, @Ctx() context: Context) {
+    return await this.predictionSetService.deletePredictionSet(id, context);
   }
 }
