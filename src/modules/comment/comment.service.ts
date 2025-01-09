@@ -4,8 +4,8 @@ import { Context } from '../../context';
 import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
 import { CommentCreateDto } from './dtos/comment-create.dto';
 import { CommentUpdateDto } from './dtos/comment-update.dto';
-import { AuthorizationErrorCode, DefaultUserRole, ResourceNotFoundErrorCode, SqlModelStatus } from '../../config/types';
-import { CodeException } from '../../lib/exceptions/exceptions';
+import { AuthorizationErrorCode, DefaultUserRole, ResourceNotFoundErrorCode, SqlModelStatus, ValidatorErrorCode } from '../../config/types';
+import { CodeException, ValidationException } from '../../lib/exceptions/exceptions';
 import { PredictionSet } from '../prediction-set/models/prediction-set.model';
 
 @Injectable()
@@ -39,6 +39,16 @@ export class CommentService {
         sourceFunction: `${this.constructor.name}/createComment`,
         context
       });
+    }
+
+    try {
+      await comment.validate();
+    } catch (error) {
+      await comment.handle(error);
+
+      if (!comment.isValid()) {
+        throw new ValidationException(error, ValidatorErrorCode);
+      }
     }
 
     await comment.insert();
@@ -79,6 +89,17 @@ export class CommentService {
     }
 
     comment.content = data.content;
+
+    try {
+      await comment.validate();
+    } catch (error) {
+      await comment.handle(error);
+
+      if (!comment.isValid()) {
+        throw new ValidationException(error, ValidatorErrorCode);
+      }
+    }
+
     await comment.update();
     return comment;
   }

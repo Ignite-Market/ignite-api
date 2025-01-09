@@ -93,7 +93,7 @@ export class Comment extends AdvancedSQLModel {
         SELECT 
           ${this.generateSelectFields('c')},
           IF(c.status <> ${SqlModelStatus.DELETED}, c.content, 'This comment has been deleted') AS content,
-          u.name AS username
+          u.username
         `,
       qFrom: `
         FROM ${DbTables.COMMENT} c

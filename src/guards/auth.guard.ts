@@ -2,7 +2,7 @@ import { CanActivate, ExecutionContext, HttpStatus, Inject, Injectable } from '@
 import { Reflector } from '@nestjs/core';
 import { Context } from '../context';
 import { CodeException } from '../lib/exceptions/exceptions';
-import { DefaultUserRole, UnauthorizedErrorCode } from '../config/types';
+import { AuthorizationErrorCode, DefaultUserRole, UnauthorizedErrorCode } from '../config/types';
 import { ROLE_KEY } from '../decorators/role.decorator';
 
 @Injectable()
@@ -21,30 +21,19 @@ export class AuthGuard implements CanActivate {
         errorMessage: 'User is not authenticated!'
       });
     }
-    // else if (requiredPermissions.length > 0) {
-    //   //Check required roles and required permissions. Both are passed through @Permission decorator.
-    //   //User should have all permissions and at least one of required roles.
-    //   for (const requiredPerm of requiredPermissions.filter(
-    //     (x) => x.permission,
-    //   )) {
-    //     if (!context.hasPermission(requiredPerm.permission)) {
-    //       return false;
-    //     }
-    //   }
 
-    //   for (const requiredPerm of requiredPermissions.filter((x) => x.role)) {
-    //     if (context.hasRole(requiredPerm.role)) {
-    //       return true;
-    //     }
-    //   }
-    //   throw new CodeException({
-    //     code: ForbiddenErrorCodes.FORBIDDEN,
-    //     status: HttpStatus.FORBIDDEN,
-    //     errorMessage: 'Insufficient permissions',
-    //   });
-    // }
+    if (requiredRoles.length) {
+      const hasRoles = await context.hasRole(requiredRoles);
 
-    // TODO: Add role support.
+      if (!hasRoles) {
+        throw new CodeException({
+          status: HttpStatus.FORBIDDEN,
+          code: AuthorizationErrorCode.INSUFFICIENT_ROLES,
+          sourceFunction: `${this.constructor.name}/canActivate`,
+          errorMessage: 'Insufficient roles'
+        });
+      }
+    }
 
     return true;
   }
