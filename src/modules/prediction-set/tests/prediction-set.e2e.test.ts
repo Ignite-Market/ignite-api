@@ -8,7 +8,8 @@ import { DbTables, SqlModelStatus } from '../../../config/types';
 import { AUTHORIZATION_HEADER } from '../../../middlewares/authentication.middleware';
 import { DataSource } from '../models/data-source.model';
 import * as moment from 'moment';
-import { PredictionSet } from '../models/prediction-set.model';
+import { createPredictionSet, createPredictionSets } from './helpers/prediction-helper';
+import { PredictionSetStatus } from '../models/prediction-set.model';
 
 describe('User e2e tests', () => {
   let stage: Stage;
@@ -27,8 +28,10 @@ describe('User e2e tests', () => {
   describe('Prediction set e2e tests', () => {
     let predictionId: number;
     afterEach(async () => {
-      // await stage.db.paramExecute(`DELETE FROM \`${DbTables.OUTCOME}\``);
-      // await stage.db.paramExecute(`DELETE FROM \`${DbTables.PREDICTION_SET}\``);
+      await stage.db.paramExecute(`DELETE FROM \`${DbTables.OUTCOME}\``);
+      await stage.db.paramExecute(`DELETE FROM \`${DbTables.PREDICTION_SET_DATA_SOURCE}\``);
+      await stage.db.paramExecute(`DELETE FROM \`${DbTables.DATA_SOURCE}\``);
+      await stage.db.paramExecute(`DELETE FROM \`${DbTables.PREDICTION_SET}\``);
     });
 
     describe('POST /prediction-sets - Create prediction set tests', () => {
@@ -79,8 +82,30 @@ describe('User e2e tests', () => {
         expect(res.body.data.outcomes[1].name).toBe(body.predictionOutcomes[1].name);
         predictionId = res.body.data.id;
       });
+    });
 
+    describe('GET /prediction-sets - Get prediction set tests', () => {
+      it('Should get prediction sets', async () => {
+        const predictions = await createPredictionSets(3, stage.context);
+        const res = await request(stage.http)
+          .get('/prediction-sets')
+          .set('Content-Type', 'application/json')
+          .set('Accept', 'application/json')
+          .set(AUTHORIZATION_HEADER, cred.userToken)
+          .expect(HttpStatus.OK);
+
+        expect(res.body.data.total).toBe(3);
+        expect(res.body.data.items).toHaveLength(3);
+        expect(res.body.data.items[0].outcomes).toHaveLength(2);
+        expect(res.body.data.items[0].question).toBe(predictions[0].question);
+        expect(res.body.data.items[1].question).toBe(predictions[1].question);
+        expect(res.body.data.items[2].question).toBe(predictions[2].question);
+      });
+    });
+
+    describe('PUT /prediction-sets/:id - Update prediction set tests', () => {
       it('Should update existing prediction set', async () => {
+        const prediction = await createPredictionSet(stage.context);
         const dataSourceIds = [];
         for (let i = 0; i < 3; i++) {
           const ds = await new DataSource({}, stage.context).insert();
@@ -109,14 +134,14 @@ describe('User e2e tests', () => {
         };
 
         const res = await request(stage.http)
-          .put(`/prediction-sets/${predictionId}`)
+          .put(`/prediction-sets/${prediction.id}`)
           .send(body)
           .set('Content-Type', 'application/json')
           .set('Accept', 'application/json')
           .set(AUTHORIZATION_HEADER, cred.adminUserToken)
           .expect(HttpStatus.OK);
 
-        expect(res.body.data.id).toBe(predictionId);
+        expect(res.body.data.id).toBe(prediction.id);
         expect(res.body.data.question).toBe(body.question);
         expect(res.body.data.initialPool).toBe(body.initialPool);
         expect(res.body.data.description).toBe(body.description);
@@ -127,10 +152,13 @@ describe('User e2e tests', () => {
         expect(res.body.data.outcomes[0].name).toBe(body.predictionOutcomes[0].name);
         expect(res.body.data.outcomes[1].name).toBe(body.predictionOutcomes[1].name);
       });
+    });
 
-      it('Should delete existing prediction set', async () => {
+    describe('PATCH /prediction-sets/:id/process - Process prediction set tests', () => {
+      it('Should start processing initialized prediction set', async () => {
+        const prediction = await createPredictionSet(stage.context);
         await request(stage.http)
-          .delete(`/prediction-sets/${predictionId}`)
+          .patch(`/prediction-sets/${prediction.id}/process`)
           .set('Content-Type', 'application/json')
           .set('Accept', 'application/json')
           .set(AUTHORIZATION_HEADER, cred.adminUserToken)
@@ -140,7 +168,99 @@ describe('User e2e tests', () => {
           `
             SELECT * FROM \`${DbTables.PREDICTION_SET}\` 
             WHERE id = @predictionId`,
-          { predictionId }
+          { predictionId: prediction.id }
+        );
+
+        expect(res[0].setStatus).toBe(PredictionSetStatus.ACTIVE);
+      });
+
+      it('Should not start processing active prediction set', async () => {
+        const prediction = await createPredictionSet(stage.context);
+        await stage.db.paramExecute(
+          `
+            UPDATE \`${DbTables.PREDICTION_SET}\` 
+            SET setStatus = ${PredictionSetStatus.ACTIVE}
+            WHERE id = @predictionId`,
+          { predictionId: prediction.id }
+        );
+        await request(stage.http)
+          .patch(`/prediction-sets/${prediction.id}/process`)
+          .set('Content-Type', 'application/json')
+          .set('Accept', 'application/json')
+          .set(AUTHORIZATION_HEADER, cred.adminUserToken)
+          .expect(HttpStatus.BAD_REQUEST);
+      });
+    });
+
+    describe('PATCH /prediction-sets/:id/cancel - Cancel prediction set tests', () => {
+      it('Should cancel pending prediction set', async () => {
+        const prediction = await createPredictionSet(stage.context);
+        await stage.db.paramExecute(
+          `
+            UPDATE \`${DbTables.PREDICTION_SET}\` 
+            SET setStatus = ${PredictionSetStatus.PENDING}
+            WHERE id = @predictionId`,
+          { predictionId: prediction.id }
+        );
+        await request(stage.http)
+          .patch(`/prediction-sets/${prediction.id}/cancel`)
+          .set('Content-Type', 'application/json')
+          .set('Accept', 'application/json')
+          .set(AUTHORIZATION_HEADER, cred.adminUserToken)
+          .expect(HttpStatus.OK);
+
+        const res = await stage.db.paramExecute(
+          `
+            SELECT * FROM \`${DbTables.PREDICTION_SET}\` 
+            WHERE id = @predictionId`,
+          { predictionId: prediction.id }
+        );
+
+        expect(res[0].setStatus).toBe(PredictionSetStatus.INITIALIZED);
+      });
+
+      it('Should cancel active prediction set', async () => {
+        const prediction = await createPredictionSet(stage.context);
+        await stage.db.paramExecute(
+          `
+            UPDATE \`${DbTables.PREDICTION_SET}\` 
+            SET setStatus = ${PredictionSetStatus.ACTIVE}
+            WHERE id = @predictionId`,
+          { predictionId: prediction.id }
+        );
+        await request(stage.http)
+          .patch(`/prediction-sets/${prediction.id}/cancel`)
+          .set('Content-Type', 'application/json')
+          .set('Accept', 'application/json')
+          .set(AUTHORIZATION_HEADER, cred.adminUserToken)
+          .expect(HttpStatus.OK);
+
+        const res = await stage.db.paramExecute(
+          `
+            SELECT * FROM \`${DbTables.PREDICTION_SET}\` 
+            WHERE id = @predictionId`,
+          { predictionId: prediction.id }
+        );
+
+        expect(res[0].setStatus).toBe(PredictionSetStatus.INITIALIZED);
+      });
+    });
+
+    describe('DELETE /prediction-sets/:id - Delete prediction set tests', () => {
+      it('Should delete existing prediction set', async () => {
+        const prediction = await createPredictionSet(stage.context);
+        await request(stage.http)
+          .delete(`/prediction-sets/${prediction.id}`)
+          .set('Content-Type', 'application/json')
+          .set('Accept', 'application/json')
+          .set(AUTHORIZATION_HEADER, cred.adminUserToken)
+          .expect(HttpStatus.OK);
+
+        const res = await stage.db.paramExecute(
+          `
+            SELECT * FROM \`${DbTables.PREDICTION_SET}\` 
+            WHERE id = @predictionId`,
+          { predictionId: prediction.id }
         );
 
         expect(res[0].status).toBe(SqlModelStatus.DELETED);

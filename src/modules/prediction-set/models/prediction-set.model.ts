@@ -2,10 +2,12 @@ import { prop } from '@rawmodel/core';
 import { dateParser, floatParser, integerParser, stringParser } from '@rawmodel/parsers';
 import { presenceValidator } from '@rawmodel/validators';
 import { PoolConnection } from 'mysql2/promise';
-import { DbTables, ErrorCode, PopulateFrom, SerializeFor, ValidatorErrorCode } from '../../../config/types';
+import { DbTables, ErrorCode, PopulateFrom, SerializeFor, SqlModelStatus, ValidatorErrorCode } from '../../../config/types';
 import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
 import { enumInclusionValidator } from '../../../lib/validators';
 import { Outcome } from './outcome.model';
+import { getQueryParams, selectAndCountQuery } from '../../../lib/database/sql-utils';
+import { BaseQueryFilter } from '../../../lib/base-models/base-query-filter.model';
 
 export enum PredictionSetStatus {
   INITIALIZED = 1,
@@ -284,5 +286,53 @@ export class PredictionSet extends AdvancedSQLModel {
     );
 
     return this;
+  }
+
+  public async getList(query: BaseQueryFilter): Promise<any> {
+    const defaultParams = {
+      id: null
+    };
+
+    // Map url query with sql fields.
+    const fieldMap = {
+      id: 'p.id'
+    };
+
+    const { params, filters } = getQueryParams(defaultParams, 'p', fieldMap, query.serialize());
+
+    const sqlQuery = {
+      qSelect: `
+        SELECT 
+          ${new PredictionSet({}).generateSelectFields('p')},
+          CONCAT(
+            '[', 
+              IF(o.id IS NOT NULL,
+                GROUP_CONCAT(DISTINCT JSON_OBJECT(
+                  'name', o.name,
+                  'pool', o.pool
+                )), 
+              ''),
+            ']'
+          ) AS outcomes
+        `,
+      qFrom: `
+        FROM ${DbTables.PREDICTION_SET} p
+        LEFT JOIN ${DbTables.OUTCOME} o
+          ON o.prediction_set_id = p.id
+          AND o.status = ${SqlModelStatus.ACTIVE}
+        `,
+      qGroup: `
+        GROUP BY p.id
+      `,
+      qFilter: `
+        ORDER BY ${filters.orderStr}
+        LIMIT ${filters.limit} OFFSET ${filters.offset};
+      `
+    };
+    const res = await selectAndCountQuery(this.getContext().mysql, sqlQuery, params, 'p.id');
+    if (res.items.length) {
+      res.items = res?.items?.map((x: any) => ({ ...x, outcomes: JSON.parse(x.outcomes) }));
+    }
+    return res;
   }
 }

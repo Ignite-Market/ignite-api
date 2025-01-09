@@ -8,6 +8,7 @@ import { PredictionSetDto } from './dtos/prediction-set.dto';
 import { DataSource } from './models/data-source.model';
 import { Outcome } from './models/outcome.model';
 import { PredictionSet, PredictionSetStatus } from './models/prediction-set.model';
+import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
 
 @Injectable()
 export class PredictionSetService {
@@ -283,6 +284,41 @@ export class PredictionSetService {
   }
 
   /**
+   * Returns listing of prediction.
+   * @param query Filtering query.
+   * @param context Application context.
+   * @returns Prediction group.
+   */
+  public async getPredictions(query: BaseQueryFilter, context: Context) {
+    return await new PredictionSet({}, context).getList(query);
+  }
+
+  /**
+   * Cancel prediction set.
+   * @param predictionSet Prediction set.
+   * @param context Application context.
+   */
+  public async cancelPredictionSet(predictionSetId: number, context: Context) {
+    const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId);
+
+    // Only delete if processed/pending
+    if (![PredictionSetStatus.PENDING, PredictionSetStatus.ACTIVE].includes(predictionSet.setStatus)) {
+      throw new CodeException({
+        code: SystemErrorCode.SQL_SYSTEM_ERROR,
+        errorCodes: SystemErrorCode,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        sourceFunction: `${this.constructor.name}/cancelPredictionSet`,
+        context
+      });
+    }
+
+    predictionSet.setStatus = PredictionSetStatus.INITIALIZED;
+    await predictionSet.update();
+
+    // TODO: Cancel on blockchain
+  }
+
+  /**
    * Delete prediction set.
    * @param predictionSet Prediction set.
    * @param context Application context.
@@ -296,7 +332,7 @@ export class PredictionSetService {
         code: SystemErrorCode.SQL_SYSTEM_ERROR,
         errorCodes: SystemErrorCode,
         status: HttpStatus.INTERNAL_SERVER_ERROR,
-        sourceFunction: `${this.constructor.name}/updatePredictionSet`,
+        sourceFunction: `${this.constructor.name}/deletePredictionSet`,
         context
       });
     }

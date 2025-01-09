@@ -1,5 +1,5 @@
-import { Body, Controller, Delete, Param, ParseIntPipe, Patch, Post, Put, UseGuards } from '@nestjs/common';
-import { DefaultUserRole } from '../../config/types';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { DefaultUserRole, ValidateFor } from '../../config/types';
 import { Context } from '../../context';
 import { Ctx } from '../../decorators/context.decorator';
 import { Roles } from '../../decorators/role.decorator';
@@ -10,6 +10,7 @@ import { PredictionSetDto } from './dtos/prediction-set.dto';
 import { Outcome } from './models/outcome.model';
 import { PredictionSet } from './models/prediction-set.model';
 import { PredictionSetService } from './prediction-set.service';
+import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
 
 @Controller('prediction-sets')
 export class PredictionSetController {
@@ -30,12 +31,12 @@ export class PredictionSetController {
     return await this.predictionSetService.createPredictionSet(predictionSet, data.dataSourceIds, context);
   }
 
-  // @Get('')
-  // @UseGuards(AuthGuard)
-  // @Roles()
-  // async getPredictions(@Query() query, @Ctx() context: Context) {
-  //   return await this.predictionSetService.getPredictions(query, context);
-  // }
+  @Get('')
+  @Validation({ dto: BaseQueryFilter, validateFor: ValidateFor.QUERY })
+  @UseGuards(AuthGuard, ValidationGuard)
+  async getPredictions(@Query() query: BaseQueryFilter, @Ctx() context: Context) {
+    return await this.predictionSetService.getPredictions(query, context);
+  }
 
   @Put('/:id')
   @Validation({ dto: PredictionSetDto })
@@ -43,6 +44,13 @@ export class PredictionSetController {
   @Roles(DefaultUserRole.ADMIN)
   async updatePredictionSet(@Param('id', ParseIntPipe) id: number, @Body() data: PredictionSetDto, @Ctx() context: Context) {
     return await this.predictionSetService.updatePredictionSet(id, data, context);
+  }
+
+  @Patch('/:id/cancel')
+  @UseGuards(AuthGuard)
+  @Roles(DefaultUserRole.ADMIN)
+  async cancelPredictionSet(@Param('id', ParseIntPipe) id: number, @Ctx() context: Context) {
+    return await this.predictionSetService.cancelPredictionSet(id, context);
   }
 
   @Delete('/:id')
