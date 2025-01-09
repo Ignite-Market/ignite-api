@@ -16,10 +16,6 @@ import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
 export class PredictionSetController {
   constructor(private readonly predictionSetService: PredictionSetService) {}
 
-  // TODO: Admin routes to update + delete prediction sets - that are not yet active!
-  // TODO: Admin route to cancel prediction set - set status + call to BC.
-  // TODO: Route to list prediction sets for FE.
-
   @Post()
   @Validation({ dto: PredictionSetDto })
   @UseGuards(ValidationGuard, AuthGuard)

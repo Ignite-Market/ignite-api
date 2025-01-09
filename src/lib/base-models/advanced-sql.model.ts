@@ -238,6 +238,8 @@ export abstract class AdvancedSQLModel extends BaseSQLModel {
         }
       }
 
+      this.createTime = new Date();
+      this.updateTime = this.createTime;
       if (isSingleTrans) {
         await this.getContext().mysql.commit(conn);
       }
@@ -285,6 +287,7 @@ export abstract class AdvancedSQLModel extends BaseSQLModel {
 
       await this.getContext().mysql.paramExecute(createQuery, serializedModel, conn);
 
+      this.updateTime = new Date();
       if (isSingleTrans) {
         await this.getContext().mysql.commit(conn);
       }

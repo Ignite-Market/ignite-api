@@ -9,6 +9,8 @@ import { DefaultUserRole } from '../../src/config/types';
 export interface TestCredentials {
   user: User;
   userToken: string;
+  user2: User;
+  user2Token: string;
   adminUser: User;
   adminUserToken: string;
 }
@@ -26,6 +28,14 @@ export async function createBaseUsers(context: Context): Promise<TestCredentials
     context
   ).insert();
 
+  const user2 = await new User(
+    {
+      address: Wallet.createRandom(),
+      name: 'User wallet 2'
+    },
+    context
+  ).insert();
+
   const adminUser = await new User(
     {
       address: Wallet.createRandom(),
@@ -35,14 +45,18 @@ export async function createBaseUsers(context: Context): Promise<TestCredentials
   ).insert();
 
   await user.addRole(DefaultUserRole.USER);
+  await user2.addRole(DefaultUserRole.USER);
   await adminUser.addRole(DefaultUserRole.ADMIN);
 
   user.login();
+  user2.login();
   adminUser.login();
 
   return {
     user,
     userToken: user.token,
+    user2,
+    user2Token: user2.token,
     adminUser,
     adminUserToken: adminUser.token
   };

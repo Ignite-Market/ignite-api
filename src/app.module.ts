@@ -4,9 +4,10 @@ import { AuthenticateUserMiddleware } from './middlewares/authentication.middlew
 import { MySQLModule } from './modules/database/mysql.module';
 import { UserModule } from './modules/user/user.module';
 import { PredictionSetModule } from './modules/prediction-set/prediction-set.module';
+import { CommentModule } from './modules/comment/comment.module';
 
 @Module({
-  imports: [MySQLModule, UserModule, PredictionSetModule],
+  imports: [MySQLModule, UserModule, PredictionSetModule, CommentModule],
   controllers: [],
   providers: []
 })

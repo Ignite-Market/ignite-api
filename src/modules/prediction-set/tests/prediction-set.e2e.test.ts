@@ -26,7 +26,6 @@ describe('User e2e tests', () => {
   });
 
   describe('Prediction set e2e tests', () => {
-    let predictionId: number;
     afterEach(async () => {
       await stage.db.paramExecute(`DELETE FROM \`${DbTables.OUTCOME}\``);
       await stage.db.paramExecute(`DELETE FROM \`${DbTables.PREDICTION_SET_DATA_SOURCE}\``);
@@ -80,7 +79,6 @@ describe('User e2e tests', () => {
         expect(new Date(res.body.data.resolutionTime).getTime()).toBe(new Date(body.resolutionTime).getTime());
         expect(res.body.data.outcomes[0].name).toBe(body.predictionOutcomes[0].name);
         expect(res.body.data.outcomes[1].name).toBe(body.predictionOutcomes[1].name);
-        predictionId = res.body.data.id;
       });
     });
 
