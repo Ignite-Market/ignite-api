@@ -1,29 +1,40 @@
-/* eslint-disable @typescript-eslint/member-ordering */
-import { WorkerDefinition } from '.';
+import * as dayjs from 'dayjs';
 import moment from 'moment';
-import { BaseWorker } from './base-worker';
+import { WorkerDefinition } from '.';
 import { DbTables, SerializeFor } from '../../../config/types';
 import { Context } from '../../../context';
 import { Job, JobStatus } from '../../../modules/job/job.model';
 import { WorkerLogStatus } from '../logger';
+import { BaseWorker } from './base-worker';
 
+/**
+ * Single threat worker alert type.
+ */
 export enum SingleThreadWorkerAlertType {
   MISSING_JOB_DEFINITION,
-  JOB_LOCK_TIMEOUT
+  JOB_LOCKED,
+  NOT_ACTIVE
 }
 
 /**
- * Single thread worker class.
+ * Base single thread worker definition.
  */
 export abstract class BaseSingleThreadWorker extends BaseWorker {
+  /**
+   * Job definition.
+   */
   private job: Job;
-  private shouldUpdateState = false;
+
+  /**
+   * Tells if job should be ran.
+   */
+  private shouldRunJob = true;
 
   /**
    * Worker that is forced to run as in single thread. All parallel instances will fail to run.
    *
-   * @param workerDefinition
-   * @param context
+   * @param workerDefinition Worker definition.
+   * @param context Application context.
    */
   public constructor(workerDefinition: WorkerDefinition, context: Context) {
     super(workerDefinition, context);
@@ -33,40 +44,33 @@ export abstract class BaseSingleThreadWorker extends BaseWorker {
   public abstract onAlert(job: Job, alertType: SingleThreadWorkerAlertType): Promise<any>;
 
   public async before(_data?: any): Promise<any> {
-    // lock data in DB with transaction
+    // Lock data in DB with transaction.
     const conn = await this.context.mysql.start();
 
-    // validate job ID and check for active jobs
+    // Validate job ID and check for active jobs.
     try {
       if (this.workerDefinition.id) {
         this.job = await new Job({}, this.context).populateById(
           this.workerDefinition.id,
           conn,
-          true // lock row in DB
+          true // Lock row in DB.
         );
       } else {
         this.job = await new Job({}, this.context).populateByName(
           this.workerDefinition.workerName,
           conn,
-          true // lock row in DB
+          true // Lock row in DB.
         );
       }
 
-      // on those errors job state should not be reset!
-      if (!this.job.exists()) {
-        await this.fireAlert(SingleThreadWorkerAlertType.MISSING_JOB_DEFINITION);
-        throw new Error(`Job not found: (ID = ${this.workerDefinition.id}`);
-      }
-      if (this.job.executorCount >= 1) {
-        await this.fireAlert(SingleThreadWorkerAlertType.JOB_LOCK_TIMEOUT);
-        throw new Error('Job already running! Terminating worker.');
-      }
-      if (this.job.status !== JobStatus.ACTIVE) {
-        await this.fireAlert(SingleThreadWorkerAlertType.JOB_LOCK_TIMEOUT);
-        throw new Error(`Job in invalid status! (STATUS = ${this.job.status}) Terminating worker.`);
+      // Ensure job is in a correct state.
+      this.shouldRunJob = await this.checkLockedStatus();
+      if (!this.shouldRunJob) {
+        await this.context.mysql.rollback(conn);
+        return;
       }
 
-      // inc executor count and set locked status
+      // Inc executor count and set locked status
       this.job.executorCount = this.job.executorCount ? this.job.executorCount + 1 : 1;
       this.job.status = JobStatus.LOCKED;
 
@@ -81,38 +85,86 @@ export abstract class BaseSingleThreadWorker extends BaseWorker {
   }
 
   public async execute(data?: any): Promise<any> {
-    await this.writeLogToDb(WorkerLogStatus.DEBUG, 'Started SINGLE THREAD worker', null, null);
-    // all errors inside worker will cause job state update
-    this.shouldUpdateState = true;
+    if (!this.shouldRunJob) {
+      return;
+    }
+    await this.writeLogToDb(WorkerLogStatus.DEBUG, 'Started SINGLE THREAD worker');
 
+    // All errors inside worker will cause job state update.
     await this.runExecutor(data ? JSON.parse(data) : null);
   }
 
   public async onUpdateWorkerDefinition(): Promise<void> {
+    if (!this.shouldRunJob) {
+      return;
+    }
     await this.job.updateWorkerDefinition(this.workerDefinition);
   }
 
   public async onSuccess(): Promise<any> {
+    if (!this.shouldRunJob) {
+      this.writeLogToDb(WorkerLogStatus.WARNING, 'Warning! Job was locked, message discarded!');
+      return;
+    }
+
     await this.updateJobState();
-    await this.writeLogToDb(WorkerLogStatus.DEBUG, 'Job completed!', null, null);
+    await this.writeLogToDb(WorkerLogStatus.DEBUG, 'Job completed!');
   }
 
   public async onError(error): Promise<any> {
     await this.writeLogToDb(WorkerLogStatus.ERROR, 'Error!', null, error);
-    // try to reset job state so next time worker will run.
-    await this.updateJobState();
     throw error;
   }
 
+  private async checkLockedStatus(): Promise<boolean> {
+    if (!this.job.exists()) {
+      await this.fireAlert(SingleThreadWorkerAlertType.MISSING_JOB_DEFINITION);
+      return false;
+    }
+
+    console.log(`${dayjs().diff(dayjs(this.job.lastRun), 'second')} seconds since last job run! TIMEOUT=(${this.job.timeout})`);
+
+    // If past timeout - ignore count and locked status.
+    if (
+      !!this.job.lastRun &&
+      !!this.job.timeout &&
+      this.job.status === JobStatus.LOCKED &&
+      dayjs().diff(dayjs(this.job.lastRun), 'second') >= this.job.timeout
+    ) {
+      this.job.executorCount = 0;
+      this.job.lastError = 'TIMEOUT EXCEEDED';
+      this.job.lastFailed = this.job.nextRun;
+      await this.writeLogToDb(WorkerLogStatus.WARNING, 'Warning! Running locked worker because timeout reached.');
+
+      return true;
+    }
+
+    if (this.job.executorCount >= 1 || this.job.status === JobStatus.LOCKED) {
+      await this.fireAlert(SingleThreadWorkerAlertType.JOB_LOCKED);
+      return false;
+    }
+
+    if (this.job.status !== JobStatus.ACTIVE) {
+      await this.fireAlert(SingleThreadWorkerAlertType.NOT_ACTIVE);
+      const errorMessage = `Job in invalid status! (STATUS = ${this.job.status}) Terminating worker. For ${this.workerDefinition?.workerName}`;
+      throw new Error(errorMessage);
+    }
+
+    return true;
+  }
+
   public async onAutoRemove(): Promise<any> {
+    if (!this.shouldRunJob) {
+      return;
+    }
+
     await this.context.mysql.paramExecute(`DELETE FROM ${DbTables.JOB} WHERE id = @id`, {
       id: this.workerDefinition.id
     });
   }
 
   private async updateJobState() {
-    // only update job state if shouldUpdateState flag is set.
-    if (!this.job || !this.job.id || !this.shouldUpdateState) {
+    if (!this.job || !this.job.id) {
       return;
     }
     await this.job.reload();
