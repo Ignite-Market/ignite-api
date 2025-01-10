@@ -7,8 +7,8 @@ import { releaseStage } from '../../../../test/setup-context-and-sql';
 import { DbTables, SqlModelStatus } from '../../../config/types';
 import { AUTHORIZATION_HEADER } from '../../../middlewares/authentication.middleware';
 import { createPredictionSet } from '../../prediction-set/tests/helpers/prediction-helper';
-import { createComment, createComments } from './helpers/comment-helper';
 import { Comment } from '../models/comment.model';
+import { createComment, createComments } from './helpers/comment-helper';
 
 describe('Comment e2e tests', () => {
   let stage: Stage;

@@ -22,11 +22,11 @@ export class CommentController {
     return this.commentService.createComment(data, context);
   }
 
-  @Get('prediction-set/:prediction_set_id')
+  @Get('prediction-set/:predictionSetId')
   @Validation({ dto: BaseQueryFilter, validateFor: ValidateFor.QUERY })
   @UseGuards(AuthGuard, ValidationGuard)
   async getByPredictionSetId(
-    @Param('prediction_set_id') predictionSetId: number,
+    @Param('predictionSetId') predictionSetId: number,
     @Query() query: BaseQueryFilter,
     @Ctx() context: Context
   ): Promise<Comment[]> {

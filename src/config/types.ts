@@ -22,7 +22,8 @@ export enum DbTables {
   DATA_SOURCE = 'data_source',
   PREDICTION_SET_DATA_SOURCE = 'prediction_set_data_source',
   OUTCOME = 'outcome',
-  COMMENT = 'comment'
+  COMMENT = 'comment',
+  PREDICTION_SET_ATTESTATION = 'prediction_set_attestation'
 }
 /**
  * Validation error codes - 422_00_000.
@@ -50,7 +51,7 @@ export enum ValidatorErrorCode {
   PREDICTION_SET_DTO_PREDICTION_OUTCOMES_NOT_VALID = 422_00_019,
   OUTCOME_NAME_NOT_PRESENT = 422_00_020,
   PREDICTION_SET_INITIAL_POOL_NOT_PRESENT = 422_00_021,
-  PREDICTION_SET_ID_NOT_PRESENT = 422_00_022,
+  COMMENT_PREDICTION_SET_ID_NOT_PRESENT = 422_00_022,
   COMMENT_CONTENT_NOT_PRESENT = 422_00_023
 }
 

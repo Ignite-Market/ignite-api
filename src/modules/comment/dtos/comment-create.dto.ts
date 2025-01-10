@@ -15,7 +15,7 @@ export class CommentCreateDto extends ModelBase {
     validators: [
       {
         resolver: presenceValidator(),
-        code: ValidatorErrorCode.PREDICTION_SET_ID_NOT_PRESENT
+        code: ValidatorErrorCode.COMMENT_PREDICTION_SET_ID_NOT_PRESENT
       }
     ]
   })

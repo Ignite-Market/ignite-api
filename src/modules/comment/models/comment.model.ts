@@ -25,7 +25,7 @@ export class Comment extends AdvancedSQLModel {
     validators: [
       {
         resolver: presenceValidator(),
-        code: ValidatorErrorCode.PREDICTION_SET_ID_NOT_PRESENT
+        code: ValidatorErrorCode.COMMENT_PREDICTION_SET_ID_NOT_PRESENT
       }
     ]
   })

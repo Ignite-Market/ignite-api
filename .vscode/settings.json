@@ -9,7 +9,11 @@
   "javascript.preferences.importModuleSpecifier": "relative",
   "typescript.preferences.importModuleSpecifier": "relative",
   "cSpell.words": [
+    "coston",
     "CURDATE",
+    "flarenetwork",
     "leaderboard",
+    "psds",
+    "SUBDATE"
   ]
 }

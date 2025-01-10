@@ -8,6 +8,7 @@ import { enumInclusionValidator } from '../../../lib/validators';
 import { Outcome } from './outcome.model';
 import { getQueryParams, selectAndCountQuery } from '../../../lib/database/sql-utils';
 import { BaseQueryFilter } from '../../../lib/base-models/base-query-filter.model';
+import { DataSource } from './data-source.model';
 
 export enum PredictionSetStatus {
   INITIALIZED = 1,
@@ -225,6 +226,30 @@ export class PredictionSet extends AdvancedSQLModel {
     defaultValue: () => []
   })
   public outcomes: Outcome[];
+
+  /**
+   *
+   * @param conn
+   * @returns
+   */
+  public async getDataSources(conn?: PoolConnection): Promise<DataSource[]> {
+    const rows = await this.db().paramExecute(
+      `
+        SELECT *
+        FROM ${DbTables.DATA_SOURCE} ds
+        JOIN ${DbTables.PREDICTION_SET_DATA_SOURCE} psds
+          ON psds.data_source_id = ds.id
+        WHERE psds.prediction_set_id = @predictionSetId
+          AND r.status < ${SqlModelStatus.DELETED}
+        ORDER BY ds.id;
+          `,
+      { predictionSetId: this.id },
+      conn
+    );
+
+    const context = this.getContext();
+    return rows.map((r) => new DataSource(r, context));
+  }
 
   /**
    * Adds a data source to the prediction set.

@@ -15,8 +15,8 @@ export interface PredictionSetData {
  */
 export class CreatePredictionSetWorker extends BaseQueueWorkerExecutor {
   /**
-   *
-   * @param data
+   * Runs worker executor.
+   * @param data Prediction set data.
    */
   public async runExecutor(data: PredictionSetData): Promise<any> {
     try {

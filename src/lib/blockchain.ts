@@ -9,7 +9,7 @@ import { PREDICTION_ABI, TOKEN_ABI } from './abis';
  */
 export async function setup(): Promise<{ provider: ethers.JsonRpcProvider; signer: ethers.Wallet; predictionContract: ethers.Contract }> {
   const provider = new ethers.JsonRpcProvider(env.FLARE_RPC);
-  const signer = new ethers.Wallet(env.ATTESTATION_PRIVATE_KEY, provider);
+  const signer = new ethers.Wallet(env.FLARE_ATTESTATION_PRIVATE_KEY, provider);
 
   const predictionContract = new ethers.Contract(env.PREDICTION_CONTRACT, PREDICTION_ABI, signer);
   const tokenContract = new ethers.Contract(env.TOKEN_CONTRACT, TOKEN_ABI, signer);
