@@ -345,6 +345,8 @@ export class PredictionSet extends AdvancedSQLModel {
         LEFT JOIN ${DbTables.OUTCOME} o
           ON o.prediction_set_id = p.id
           AND o.status = ${SqlModelStatus.ACTIVE}
+        WHERE p.setStatus = ${PredictionSetStatus.ACTIVE}
+        AND p.status <> ${SqlModelStatus.DELETED}
         `,
       qGroup: `
         GROUP BY p.id

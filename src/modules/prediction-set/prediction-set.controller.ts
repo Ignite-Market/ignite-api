@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
-import { DefaultUserRole, ValidateFor } from '../../config/types';
+import { DefaultUserRole, SerializeFor, ValidateFor } from '../../config/types';
 import { Context } from '../../context';
 import { Ctx } from '../../decorators/context.decorator';
 import { Roles } from '../../decorators/role.decorator';
@@ -24,7 +24,7 @@ export class PredictionSetController {
     const predictionSet = new PredictionSet(data.serialize(), context);
     predictionSet.outcomes = data.predictionOutcomes.map((d) => new Outcome(d.serialize(), context));
 
-    return await this.predictionSetService.createPredictionSet(predictionSet, data.dataSourceIds, context);
+    return (await this.predictionSetService.createPredictionSet(predictionSet, data.dataSourceIds, context)).serialize(SerializeFor.USER);
   }
 
   @Get('')

@@ -6,6 +6,7 @@ import { DbTables } from '../../../config/types';
 import { createBaseRoles } from '../../../../test/helpers/roles';
 import { HttpStatus } from '@nestjs/common';
 import { User } from '../models/user.model';
+import { AUTHORIZATION_HEADER } from '../../../middlewares/authentication.middleware';
 
 describe('User e2e tests', () => {
   let stage: Stage;
@@ -36,11 +37,12 @@ describe('User e2e tests', () => {
     });
 
     afterEach(async () => {
+      await stage.db.paramExecute(`DELETE FROM \`${DbTables.USER_ROLE}\``);
       await stage.db.paramExecute(`DELETE FROM \`${DbTables.USER}\``);
 
       user = await new User(
         {
-          name: 'Existing user',
+          username: 'Existing user',
           walletAddress: userWallet.address
         },
         stage.context
@@ -102,8 +104,21 @@ describe('User e2e tests', () => {
       console.log(response.body);
       expect(response.status).toBe(200);
       expect(response.body.data.walletAddress).toBe(user.walletAddress);
-      expect(response.body.data.name).toBe(user.name);
+      expect(response.body.data.username).toBe(user.username);
       expect(response.body.data.id).toBe(user.id);
+    });
+
+    it('Should update user profile', async () => {
+      user.login();
+      const response = await request(stage.http)
+        .put('/users/update-profile')
+        .send({
+          username: 'Updated user'
+        })
+        .set(AUTHORIZATION_HEADER, user.token)
+        .expect(HttpStatus.OK);
+
+      expect(response.body.data.username).toBe('Updated user');
     });
   });
 });

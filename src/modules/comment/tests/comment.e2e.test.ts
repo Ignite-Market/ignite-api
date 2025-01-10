@@ -27,7 +27,7 @@ describe('Comment e2e tests', () => {
     await releaseStage(stage);
   });
 
-  describe('Comment CRUD tests', () => {
+  describe('Comment e2e tests', () => {
     afterEach(async () => {
       await stage.db.paramExecute(`DELETE FROM \`${DbTables.COMMENT}\``);
     });

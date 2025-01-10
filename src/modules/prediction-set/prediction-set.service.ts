@@ -1,8 +1,16 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { BadRequestErrorCode, PopulateFrom, ResourceNotFoundErrorCode, SerializeFor, SqlModelStatus, SystemErrorCode } from '../../config/types';
+import {
+  BadRequestErrorCode,
+  PopulateFrom,
+  ResourceNotFoundErrorCode,
+  SerializeFor,
+  SqlModelStatus,
+  SystemErrorCode,
+  ValidatorErrorCode
+} from '../../config/types';
 import { Context } from '../../context';
 import { sendToWorkerQueue } from '../../lib/aws/aws-sqs';
-import { CodeException } from '../../lib/exceptions/exceptions';
+import { CodeException, ValidationException } from '../../lib/exceptions/exceptions';
 import { WorkerName } from '../../workers/worker-executor';
 import { PredictionSetDto } from './dtos/prediction-set.dto';
 import { DataSource } from './models/data-source.model';
@@ -71,12 +79,13 @@ export class PredictionSetService {
    * @param dataSourceIds Data source IDs.
    * @param context Application context.
    */
-  public async createPredictionSet(predictionSet: PredictionSet, dataSourceIds: number[], context: Context) {
+  public async createPredictionSet(predictionSet: PredictionSet, dataSourceIds: number[], context: Context): Promise<PredictionSet> {
     const conn = await context.mysql.start();
 
     // Create prediction set.
     predictionSet.setId = this._generatePredictionSetId(predictionSet);
     try {
+      await predictionSet.validate();
       await predictionSet.insert(SerializeFor.INSERT_DB, conn);
     } catch (error) {
       await context.mysql.rollback(conn);
@@ -159,7 +168,7 @@ export class PredictionSetService {
       });
     }
 
-    return predictionSet.serialize(SerializeFor.USER);
+    return predictionSet;
   }
 
   /**

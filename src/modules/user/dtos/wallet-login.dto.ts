@@ -1,4 +1,4 @@
-import { Model, prop } from '@rawmodel/core';
+import { prop } from '@rawmodel/core';
 import { integerParser, stringParser } from '@rawmodel/parsers';
 import { presenceValidator } from '@rawmodel/validators';
 import { PopulateFrom, ValidatorErrorCode } from '../../../config/types';

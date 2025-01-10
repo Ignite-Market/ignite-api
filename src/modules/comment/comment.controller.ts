@@ -7,7 +7,7 @@ import { CommentService } from './comment.service';
 import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
 import { ValidationGuard } from '../../guards/validation.guard';
 import { Validation } from '../../decorators/validation.decorator';
-import { ValidateFor } from '../../config/types';
+import { SerializeFor, ValidateFor } from '../../config/types';
 import { CommentCreateDto } from './dtos/comment-create.dto';
 import { CommentUpdateDto } from './dtos/comment-update.dto';
 
@@ -18,8 +18,8 @@ export class CommentController {
   @Post()
   @Validation({ dto: CommentCreateDto })
   @UseGuards(AuthGuard, ValidationGuard)
-  async create(@Body() data: CommentCreateDto, @Ctx() context: Context): Promise<Comment> {
-    return this.commentService.createComment(data, context);
+  async create(@Body() data: CommentCreateDto, @Ctx() context: Context): Promise<any> {
+    return (await this.commentService.createComment(data, context)).serialize(SerializeFor.USER);
   }
 
   @Get('prediction-set/:predictionSetId')

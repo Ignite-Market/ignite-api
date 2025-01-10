@@ -3,7 +3,7 @@ import { Context } from '../../../../context';
 import { PredictionSetDto } from '../../dtos/prediction-set.dto';
 import { DataSource } from '../../models/data-source.model';
 import { Outcome } from '../../models/outcome.model';
-import { PredictionSet } from '../../models/prediction-set.model';
+import { PredictionSet, PredictionSetStatus } from '../../models/prediction-set.model';
 import { PredictionSetService } from '../../prediction-set.service';
 
 /**
@@ -38,13 +38,19 @@ export const createPredictionSet = async (context: Context, data?: PredictionSet
 
   const predictionSet = new PredictionSet(body, context);
   predictionSet.outcomes = body.predictionOutcomes.map((d) => new Outcome(d, context));
-  return await new PredictionSetService().createPredictionSet(predictionSet, body.dataSourceIds, context);
+  const prediction = await new PredictionSetService().createPredictionSet(predictionSet, body.dataSourceIds, context);
+  if (data?.setStatus && data?.setStatus != PredictionSetStatus.INITIALIZED) {
+    prediction.setStatus = data.setStatus;
+    prediction.update();
+  }
+
+  return prediction;
 };
 
 export const createPredictionSets = async (quantity: number, context: Context): Promise<any[]> => {
   const predictions = [];
   for (let i = 0; i < quantity; i++) {
-    const dto = new PredictionSetDto({ question: 'Question ' + i });
+    const dto = new PredictionSetDto({ question: 'Question ' + i, setStatus: PredictionSetStatus.ACTIVE });
     predictions.push(await createPredictionSet(context, dto));
   }
 

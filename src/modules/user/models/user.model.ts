@@ -1,10 +1,16 @@
 import { prop } from '@rawmodel/core';
-import { stringParser } from '@rawmodel/parsers';
+import { integerParser, stringParser } from '@rawmodel/parsers';
 import { PoolConnection } from 'mysql2/promise';
-import { DbTables, JwtTokenType, PopulateFrom, SerializeFor, SqlModelStatus } from '../../../config/types';
+import { DbTables, JwtTokenType, PopulateFrom, SerializeFor, SqlModelStatus, ValidatorErrorCode } from '../../../config/types';
 import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
 import { generateJwtToken } from '../../../lib/utils';
 import { Role } from './role.model';
+import { emailValidator } from '@rawmodel/validators';
+
+export enum UserEmailStatus {
+  PENDING = 0,
+  VERIFIED = 1
+}
 
 /**
  * User model.
@@ -16,16 +22,43 @@ export class User extends AdvancedSQLModel {
   public tableName = DbTables.USER;
 
   /**
-   * User's name - generated from wallet address.
+   * User's username.
    */
   @prop({
     parser: {
       resolver: stringParser()
     },
-    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB],
     populatable: [PopulateFrom.DB]
   })
-  name: string;
+  username: string;
+
+  /**
+   * User's email.
+   */
+  @prop({
+    parser: { resolver: stringParser() },
+    serializable: [SerializeFor.USER, SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB],
+    populatable: [PopulateFrom.DB],
+    validators: [
+      {
+        resolver: emailValidator(),
+        code: ValidatorErrorCode.USER_EMAIL_NOT_VALID
+      }
+    ]
+  })
+  email: string;
+
+  /**
+   * User's email status.
+   */
+  @prop({
+    parser: { resolver: integerParser() },
+    serializable: [SerializeFor.USER, SerializeFor.UPDATE_DB],
+    populatable: [PopulateFrom.DB],
+    defaultValue: () => UserEmailStatus.PENDING
+  })
+  emailStatus: UserEmailStatus;
 
   /**
    * User's wallet address.
@@ -89,6 +122,28 @@ export class User extends AdvancedSQLModel {
    */
   login() {
     this.token = generateJwtToken(JwtTokenType.USER_LOGIN, { id: this.id });
+  }
+
+  /**
+   * Populates user by email.
+   * @param email Email.
+   * @returns Populated user.
+   */
+  async populateByEmail(email: string): Promise<User> {
+    if (!email) {
+      throw new Error('Email should not be null');
+    }
+
+    this.reset();
+
+    const data = await this.db().paramExecute(
+      `
+      SELECT * FROM ${DbTables.USER} 
+      WHERE email = @email
+    `,
+      { email }
+    );
+    return data?.length ? this.populate(data[0], PopulateFrom.DB) : this.reset();
   }
 
   /**

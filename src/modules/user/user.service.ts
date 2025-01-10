@@ -3,8 +3,10 @@ import { verifyMessage } from 'ethers';
 import { DefaultUserRole, SerializeFor, UnauthorizedErrorCode, ValidatorErrorCode } from '../../config/types';
 import { Context } from '../../context';
 import { CodeException, ValidationException } from '../../lib/exceptions/exceptions';
-import { User } from './models/user.model';
+import { User, UserEmailStatus } from './models/user.model';
 import { WalletLoginDto } from './dtos/wallet-login.dto';
+import { UserProfileDto } from './dtos/user-profile.dto';
+import { UserEmailDto } from './dtos/user-email.dto';
 
 @Injectable()
 export class UserService {
@@ -66,7 +68,7 @@ export class UserService {
       const conn = await context.mysql.start();
 
       user.walletAddress = data.address;
-      user.name = `Wallet ${data.address.slice(0, 6)}...${data.address.slice(-4)}`;
+      user.username = `Wallet ${data.address.slice(0, 6)}...${data.address.slice(-4)}`;
       try {
         await user.validate();
       } catch (error) {
@@ -89,6 +91,57 @@ export class UserService {
     }
 
     user.login();
+    return user.serialize(SerializeFor.USER);
+  }
+
+  public async updateProfile(data: UserProfileDto, context: Context) {
+    const user = context.user;
+    user.username = data.username;
+    try {
+      await user.validate();
+    } catch (error) {
+      await user.handle(error);
+
+      if (!user.isValid()) {
+        throw new ValidationException(error, ValidatorErrorCode);
+      }
+    }
+    await user.update(SerializeFor.UPDATE_DB);
+    return user.serialize(SerializeFor.USER);
+  }
+
+  public async updateEmail(data: UserEmailDto, context: Context) {
+    const user = context.user;
+    const existingEmail = await new User({}).populateByEmail(data.email);
+
+    if (existingEmail.exists()) {
+      if (existingEmail.id !== user.id) {
+        throw new CodeException({
+          status: HttpStatus.UNPROCESSABLE_ENTITY,
+          code: ValidatorErrorCode.USER_EMAIL_ALREADY_TAKEN,
+          errorCodes: ValidatorErrorCode,
+          errorMessage: `Email already taken`,
+          sourceFunction: `${this.constructor.name}/updateEmail`,
+          context
+        });
+      } else {
+        return { user: existingEmail };
+      }
+    }
+
+    user.email = data.email;
+    user.emailStatus = UserEmailStatus.PENDING;
+    try {
+      await user.validate();
+    } catch (error) {
+      await user.handle(error);
+
+      if (!user.isValid()) {
+        throw new ValidationException(error, ValidatorErrorCode);
+      }
+    }
+    await user.update(SerializeFor.UPDATE_DB);
+    // TODO: Send email verification email.
     return user.serialize(SerializeFor.USER);
   }
 
