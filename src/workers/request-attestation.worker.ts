@@ -5,7 +5,7 @@ import { WorkerLogStatus } from '../lib/worker/logger';
 import { BaseSingleThreadWorker, SingleThreadWorkerAlertType } from '../lib/worker/serverless-workers/base-single-thread-worker';
 import { Job } from '../modules/job/job.model';
 import { PredictionSetAttestation } from '../modules/prediction-set/models/prediction-set-attestation.model';
-import { PredictionSet, PredictionSetStatus } from '../modules/prediction-set/models/prediction-set.model';
+import { PredictionSet, PredictionSetStatus, ResolutionType } from '../modules/prediction-set/models/prediction-set.model';
 
 /**
  * Request prediction set attestation worker.
@@ -35,6 +35,7 @@ export class RequestAttestationWorker extends BaseSingleThreadWorker {
         WHERE 
           a.prediction_set_id IS NULL;
           AND ps.status = ${PredictionSetStatus.ACTIVE}
+          AND ps.resolutionType = ${ResolutionType.AUTOMATIC}
           AND ps.endTime <= NOW()
         `,
       {}

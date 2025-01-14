@@ -31,3 +31,18 @@ export async function setup(): Promise<{ provider: ethers.JsonRpcProvider; signe
 export async function addPredictionSet(predictionSet: PredictionSet) {
   return;
 }
+
+/**
+ * Finalizes prediction set results.
+ * @param proofs Results proof data.
+ */
+export async function finalizePredictionSetResults(proofs: any[]) {}
+
+/**
+ * Verifies prediction set results.
+ * @param proof Results proof data.
+ * @returns Boolean.
+ */
+export async function verifyPredictionSetResults(proof: any): Promise<boolean> {
+  return true;
+}

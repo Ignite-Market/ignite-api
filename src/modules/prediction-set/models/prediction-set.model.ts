@@ -1,20 +1,48 @@
 import { prop } from '@rawmodel/core';
 import { dateParser, floatParser, integerParser, stringParser } from '@rawmodel/parsers';
+import { isPresent } from '@rawmodel/utils';
 import { presenceValidator } from '@rawmodel/validators';
 import { PoolConnection } from 'mysql2/promise';
 import { DbTables, ErrorCode, PopulateFrom, SerializeFor, SqlModelStatus, ValidatorErrorCode } from '../../../config/types';
 import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
-import { enumInclusionValidator } from '../../../lib/validators';
-import { Outcome } from './outcome.model';
-import { getQueryParams, selectAndCountQuery } from '../../../lib/database/sql-utils';
 import { BaseQueryFilter } from '../../../lib/base-models/base-query-filter.model';
+import { getQueryParams, selectAndCountQuery } from '../../../lib/database/sql-utils';
+import { enumInclusionValidator } from '../../../lib/validators';
 import { DataSource } from './data-source.model';
+import { Outcome } from './outcome.model';
 
+/**
+ * Prediction set resolution type.
+ */
+export enum ResolutionType {
+  AUTOMATIC = 1,
+  VOTING = 2
+}
+
+/**
+ * Prediction set status.
+ */
 export enum PredictionSetStatus {
   INITIALIZED = 1,
   PENDING = 2,
   ACTIVE = 3,
-  ERROR = 4
+  ERROR = 4,
+  FINALIZED = 5
+}
+
+/**
+ * Consensus threshold conditional presence validator - threshold is required only in automatic resolution.
+ *
+ * @returns Boolean.
+ */
+export function consensusThresholdPresenceValidator() {
+  return function (this: PredictionSet, value: number) {
+    if (this.resolutionType === ResolutionType.VOTING) {
+      return true;
+    }
+
+    return isPresent(value);
+  };
 }
 
 /**
@@ -195,6 +223,42 @@ export class PredictionSet extends AdvancedSQLModel {
   public resolutionTime: Date;
 
   /**
+   * Prediction set resolution types:
+   * - 1: AUTOMATIC - Prediction set is resolved automatically.
+   * - 2: VOTING - Prediction set is resolved by whitelist users voting.
+   */
+  @prop({
+    parser: { resolver: integerParser() },
+    populatable: [PopulateFrom.USER, PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB],
+    validators: [
+      {
+        resolver: enumInclusionValidator(PredictionSetStatus),
+        code: ErrorCode.INVALID_STATUS
+      }
+    ],
+    emptyValue: () => ResolutionType.AUTOMATIC,
+    defaultValue: () => ResolutionType.AUTOMATIC
+  })
+  public resolutionType: number;
+
+  /**
+   * Prediction set consensus threshold
+   */
+  @prop({
+    parser: { resolver: integerParser() },
+    populatable: [PopulateFrom.USER, PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB],
+    validators: [
+      {
+        resolver: consensusThresholdPresenceValidator(),
+        code: ValidatorErrorCode.PREDICTION_SET_CONSENSUS_THRESHOLD_NOT_PRESENT
+      }
+    ]
+  })
+  public consensusThreshold: number;
+
+  /**
    * Set status.
    * - 1: INITIALIZED - When the set is created.
    * - 2: PENDING - When the set is syncing with the blockchain.
@@ -281,9 +345,9 @@ export class PredictionSet extends AdvancedSQLModel {
   public async deleteDataSources(conn?: PoolConnection): Promise<PredictionSet> {
     await this.db().paramExecute(
       `
-          DELETE FROM  ${DbTables.PREDICTION_SET_DATA_SOURCE} 
-          WHERE prediction_set_id = @predictionSetId
-        `,
+        DELETE FROM  ${DbTables.PREDICTION_SET_DATA_SOURCE} 
+        WHERE prediction_set_id = @predictionSetId
+      `,
       {
         predictionSetId: this.id
       },
@@ -301,9 +365,9 @@ export class PredictionSet extends AdvancedSQLModel {
   public async deleteOutcomes(conn?: PoolConnection): Promise<PredictionSet> {
     await this.db().paramExecute(
       `
-          DELETE FROM ${DbTables.OUTCOME} 
-          WHERE prediction_set_id = @predictionSetId
-        `,
+        DELETE FROM ${DbTables.OUTCOME}
+        WHERE prediction_set_id = @predictionSetId
+      `,
       {
         predictionSetId: this.id
       },
@@ -313,6 +377,11 @@ export class PredictionSet extends AdvancedSQLModel {
     return this;
   }
 
+  /**
+   *
+   * @param query
+   * @returns
+   */
   public async getList(query: BaseQueryFilter): Promise<any> {
     const defaultParams = {
       id: null

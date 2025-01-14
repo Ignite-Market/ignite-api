@@ -1,5 +1,5 @@
 import { DbTables, SqlModelStatus } from '../../config/types';
-import { PredictionSetStatus } from '../../modules/prediction-set/models/prediction-set.model';
+import { PredictionSetStatus, ResolutionType } from '../../modules/prediction-set/models/prediction-set.model';
 
 export async function upgrade(queryFn: (query: string, values?: any[]) => Promise<any[]>): Promise<void> {
   await queryFn(`
@@ -15,6 +15,8 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
     \`startTime\` DATETIME NULL,
     \`endTime\` DATETIME NULL,
     \`resolutionTime\` DATETIME NULL,
+    \`resolutionType\` INT NOT NULL DEFAULT '${ResolutionType.AUTOMATIC}',
+    \`consensusThreshold\` INT NULL,
     \`setStatus\` INT NOT NULL DEFAULT '${PredictionSetStatus.INITIALIZED}',
     \`status\` INT NOT NULL DEFAULT '${SqlModelStatus.ACTIVE}',
     \`createTime\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

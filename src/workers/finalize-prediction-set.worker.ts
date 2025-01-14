@@ -1,5 +1,5 @@
 import { DbTables } from '../config/types';
-import { getAttestationProof } from '../lib/flare/attestation';
+import { finalizePredictionSetResults, verifyPredictionSetResults } from '../lib/blockchain';
 import { WorkerLogStatus } from '../lib/worker/logger';
 import { BaseSingleThreadWorker, SingleThreadWorkerAlertType } from '../lib/worker/serverless-workers/base-single-thread-worker';
 import { Job } from '../modules/job/job.model';
@@ -7,20 +7,15 @@ import { PredictionSetAttestation } from '../modules/prediction-set/models/predi
 import { PredictionSet, PredictionSetStatus, ResolutionType } from '../modules/prediction-set/models/prediction-set.model';
 
 /**
- * Request attestation proof only after some time has passed.
+ * Finalize prediction set worker.
  */
-const ATTESTATION_RESULTS_OFFSET_MINUTES = 5;
-
-/**
- * Request prediction set attestation proof worker.
- */
-export class RequestAttestationProofWorker extends BaseSingleThreadWorker {
+export class FinalizePredictionSetWorker extends BaseSingleThreadWorker {
   /**
    * Runs worker executor.
    */
   public async runExecutor(_data?: any): Promise<any> {
     try {
-      await this.requestPredictionSetAttestationProofs();
+      await this.finalizePredictionSet();
     } catch (error) {
       await this.writeLogToDb(WorkerLogStatus.ERROR, `Error executing ${this.workerName}`, null, error);
       throw error;
@@ -28,9 +23,9 @@ export class RequestAttestationProofWorker extends BaseSingleThreadWorker {
   }
 
   /**
-   * Handles obtaining of the prediction set proofs for prediction sets that already requested their attestations.
+   * Handles finalization of the prediction set.
    */
-  public async requestPredictionSetAttestationProofs(): Promise<void> {
+  public async finalizePredictionSet(): Promise<void> {
     const predictionSets = await this.context.mysql.paramExecute(
       `
         SELECT ps.*,
@@ -43,6 +38,7 @@ export class RequestAttestationProofWorker extends BaseSingleThreadWorker {
                 'data_source_id', psa.data_source_id,
                 'roundId', psa.roundId,
                 'abiEncodedRequest', psa.abiEncodedRequest,
+                'proof', psa.proof,
                 'status', psa.status,
                 'createTime', psa.createTime,
                 'updateTime', psa.updateTime
@@ -54,12 +50,8 @@ export class RequestAttestationProofWorker extends BaseSingleThreadWorker {
         INNER JOIN ${DbTables.PREDICTION_SET_ATTESTATION} psa
           ON ps.id = psa.prediction_set_id
         WHERE 
-          psa.proof IS NULL
-          AND psa.createTime <= 
-            SUBDATE(
-              NOW(),
-              INTERVAL ${ATTESTATION_RESULTS_OFFSET_MINUTES} MINUTE
-            )
+          psa.proof IS NOT NULL
+          AND ps.resolutionTime >= NOW()
           AND ps.status = ${PredictionSetStatus.ACTIVE}
           AND ps.resolutionType = ${ResolutionType.AUTOMATIC}
           
@@ -69,23 +61,55 @@ export class RequestAttestationProofWorker extends BaseSingleThreadWorker {
 
     for (const data of predictionSets) {
       const predictionSet = new PredictionSet(data, this.context);
-
       const attestations: PredictionSetAttestation[] = JSON.parse(data.attestations).map((d: any) => new PredictionSetAttestation(d, this.context));
+      const dataSources = await predictionSet.getDataSources();
+
+      // If data sources and attestations results doesn't match we should wait a little longer.
+      if (attestations.length !== dataSources.length) {
+        return;
+      }
+
+      const validationResults = [];
       for (const attestation of attestations) {
         try {
-          attestation.proof = await getAttestationProof(attestation.roundId, attestation.abiEncodedRequest);
-          await attestation.update();
+          const validationResult = await verifyPredictionSetResults(attestation.proof);
+          if (!validationResult) {
+            await this.writeLogToDb(WorkerLogStatus.INFO, `Prediction set results not verified: `, {
+              predictionSetId: predictionSet.id,
+              attestationId: attestation.id
+            });
+          }
+
+          validationResults.push(validationResult);
         } catch (error) {
           await this.writeLogToDb(
             WorkerLogStatus.ERROR,
-            `Error while requesting attestation proof: `,
+            `Error while verifying prediction set: `,
             {
               predictionSetId: predictionSet.id,
               attestationId: attestation.id
             },
             error
           );
-          continue;
+          break;
+        }
+      }
+
+      const isVerified = validationResults.every((r) => !!r);
+      if (isVerified) {
+        try {
+          const proofs = attestations.map((a) => a.proof);
+
+          await finalizePredictionSetResults(proofs);
+        } catch (error) {
+          await this.writeLogToDb(
+            WorkerLogStatus.ERROR,
+            `Error while finalizing prediction set: `,
+            {
+              predictionSetId: predictionSet.id
+            },
+            error
+          );
         }
       }
     }

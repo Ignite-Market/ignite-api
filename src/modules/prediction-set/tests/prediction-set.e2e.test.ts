@@ -59,6 +59,7 @@ describe('Prediction set e2e tests', () => {
               name: 'No'
             }
           ],
+          consensusThreshold: dataSourceIds.length,
           dataSourceIds
         };
 
@@ -106,6 +107,7 @@ describe('Prediction set e2e tests', () => {
               name: 'No'
             }
           ],
+          consensusThreshold: dataSourceIds.length,
           dataSourceIds
         };
 
@@ -139,8 +141,10 @@ describe('Prediction set e2e tests', () => {
 
       it('Should not display prediction sets if not active', async () => {
         const predictions = await createPredictionSets(3, stage.context);
+
         await new PredictionSet({ ...predictions[0], setStatus: PredictionSetStatus.INITIALIZED }, stage.context).update();
         await new PredictionSet({ ...predictions[1], status: SqlModelStatus.DELETED }, stage.context).update();
+
         const res = await request(stage.http)
           .get('/prediction-sets')
           .set('Content-Type', 'application/json')
@@ -321,6 +325,7 @@ describe('Prediction set e2e tests', () => {
 
       it('Should cancel active prediction set', async () => {
         const prediction = await createPredictionSet(stage.context);
+
         await stage.db.paramExecute(
           `
             UPDATE \`${DbTables.PREDICTION_SET}\` 
@@ -328,6 +333,7 @@ describe('Prediction set e2e tests', () => {
             WHERE id = @predictionId`,
           { predictionId: prediction.id }
         );
+
         await request(stage.http)
           .patch(`/prediction-sets/${prediction.id}/cancel`)
           .set('Content-Type', 'application/json')
@@ -347,6 +353,7 @@ describe('Prediction set e2e tests', () => {
 
       it('Should not cancel prediction set if user is not admin', async () => {
         const prediction = await createPredictionSet(stage.context);
+
         await stage.db.paramExecute(
           `
             UPDATE \`${DbTables.PREDICTION_SET}\` 
@@ -354,6 +361,7 @@ describe('Prediction set e2e tests', () => {
             WHERE id = @predictionId`,
           { predictionId: prediction.id }
         );
+
         await request(stage.http)
           .patch(`/prediction-sets/${prediction.id}/cancel`)
           .set('Content-Type', 'application/json')
@@ -366,6 +374,7 @@ describe('Prediction set e2e tests', () => {
     describe('DELETE /prediction-sets/:id - Delete prediction set tests', () => {
       it('Should delete existing prediction set', async () => {
         const prediction = await createPredictionSet(stage.context);
+
         await request(stage.http)
           .delete(`/prediction-sets/${prediction.id}`)
           .set('Content-Type', 'application/json')
@@ -385,6 +394,7 @@ describe('Prediction set e2e tests', () => {
 
       it('Should not delete prediction set if user is not admin', async () => {
         const prediction = await createPredictionSet(stage.context);
+
         await request(stage.http)
           .delete(`/prediction-sets/${prediction.id}`)
           .set('Content-Type', 'application/json')

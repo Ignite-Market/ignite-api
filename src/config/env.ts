@@ -50,6 +50,8 @@ export interface IEnv {
   MYSQL_PORT_TEST: number;
   MYSQL_USER_TEST: string;
 
+  PREDICTION_SET_MINIMAL_DATA_SOURCES: number;
+
   PREDICTION_CONTRACT: string;
   TOKEN_CONTRACT: string;
 
@@ -106,6 +108,8 @@ export let env: IEnv = {
   MYSQL_PASSWORD_TEST: process.env['MYSQL_PASSWORD_TEST'],
   MYSQL_PORT_TEST: parseInt(process.env['MYSQL_PORT_TEST']),
   MYSQL_USER_TEST: process.env['MYSQL_USER_TEST'],
+
+  PREDICTION_SET_MINIMAL_DATA_SOURCES: parseInt(process.env['MYSQL_PORT_TEST']) || 3,
 
   PREDICTION_CONTRACT: process.env['PREDICTION_CONTRACT'],
 

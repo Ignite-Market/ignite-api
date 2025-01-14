@@ -1,22 +1,15 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import {
-  BadRequestErrorCode,
-  PopulateFrom,
-  ResourceNotFoundErrorCode,
-  SerializeFor,
-  SqlModelStatus,
-  SystemErrorCode,
-  ValidatorErrorCode
-} from '../../config/types';
+import { BadRequestErrorCode, PopulateFrom, ResourceNotFoundErrorCode, SerializeFor, SqlModelStatus, SystemErrorCode } from '../../config/types';
 import { Context } from '../../context';
 import { sendToWorkerQueue } from '../../lib/aws/aws-sqs';
-import { CodeException, ValidationException } from '../../lib/exceptions/exceptions';
+import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
+import { CodeException } from '../../lib/exceptions/exceptions';
 import { WorkerName } from '../../workers/worker-executor';
 import { PredictionSetDto } from './dtos/prediction-set.dto';
 import { DataSource } from './models/data-source.model';
 import { Outcome } from './models/outcome.model';
-import { PredictionSet, PredictionSetStatus } from './models/prediction-set.model';
-import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
+import { PredictionSet, PredictionSetStatus, ResolutionType } from './models/prediction-set.model';
+import { env } from '../../config/env';
 
 @Injectable()
 export class PredictionSetService {
@@ -100,34 +93,61 @@ export class PredictionSetService {
       });
     }
 
-    // Add data sources to the prediction set.
-    for (const dataSourceId of dataSourceIds) {
-      const dataSource = await new DataSource({}, context).populateById(dataSourceId, conn);
-      if (!dataSource.exists() || !dataSource.isEnabled()) {
-        await context.mysql.rollback(conn);
-
+    /**
+     * Handle data sources for automatic prediction set resolution.
+     */
+    if (predictionSet.resolutionType === ResolutionType.AUTOMATIC) {
+      // Minimal data sources threshold.
+      if (dataSourceIds.length < env.PREDICTION_SET_MINIMAL_DATA_SOURCES) {
         throw new CodeException({
-          code: ResourceNotFoundErrorCode.DATA_SOURCE_DOES_NOT_EXISTS,
-          errorCodes: ResourceNotFoundErrorCode,
-          status: HttpStatus.NOT_FOUND,
+          code: BadRequestErrorCode.INVALID_NUMBER_OF_PREDICTION_SET_DATA_SOURCES,
+          errorCodes: BadRequestErrorCode,
+          status: HttpStatus.BAD_REQUEST,
           sourceFunction: `${this.constructor.name}/createPredictionSet`,
           context
         });
       }
 
-      try {
-        await predictionSet.addDataSource(dataSource.id, conn);
-      } catch (error) {
-        await context.mysql.rollback(conn);
-
+      // There needs to be more datasource than consensus threshold.
+      if (dataSourceIds.length < predictionSet.consensusThreshold) {
         throw new CodeException({
-          code: SystemErrorCode.SQL_SYSTEM_ERROR,
-          errorCodes: SystemErrorCode,
-          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          code: BadRequestErrorCode.INVALID_NUMBER_OF_PREDICTION_SET_DATA_SOURCES,
+          errorCodes: BadRequestErrorCode,
+          status: HttpStatus.BAD_REQUEST,
           sourceFunction: `${this.constructor.name}/createPredictionSet`,
-          details: error,
           context
         });
+      }
+
+      // Add data sources to the prediction set.
+      for (const dataSourceId of dataSourceIds) {
+        const dataSource = await new DataSource({}, context).populateById(dataSourceId, conn);
+        if (!dataSource.exists() || !dataSource.isEnabled()) {
+          await context.mysql.rollback(conn);
+
+          throw new CodeException({
+            code: ResourceNotFoundErrorCode.DATA_SOURCE_DOES_NOT_EXISTS,
+            errorCodes: ResourceNotFoundErrorCode,
+            status: HttpStatus.NOT_FOUND,
+            sourceFunction: `${this.constructor.name}/createPredictionSet`,
+            context
+          });
+        }
+
+        try {
+          await predictionSet.addDataSource(dataSource.id, conn);
+        } catch (error) {
+          await context.mysql.rollback(conn);
+
+          throw new CodeException({
+            code: SystemErrorCode.SQL_SYSTEM_ERROR,
+            errorCodes: SystemErrorCode,
+            status: HttpStatus.INTERNAL_SERVER_ERROR,
+            sourceFunction: `${this.constructor.name}/createPredictionSet`,
+            details: error,
+            context
+          });
+        }
       }
     }
 

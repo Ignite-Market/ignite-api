@@ -120,7 +120,7 @@ export class UserService {
           status: HttpStatus.UNPROCESSABLE_ENTITY,
           code: ValidatorErrorCode.USER_EMAIL_ALREADY_TAKEN,
           errorCodes: ValidatorErrorCode,
-          errorMessage: `Email already taken`,
+          errorMessage: `Email already taken.`,
           sourceFunction: `${this.constructor.name}/updateEmail`,
           context
         });

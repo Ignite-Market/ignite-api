@@ -1,7 +1,5 @@
-import { SerializeFor } from '../../../../config/types';
 import { Context } from '../../../../context';
 import { PredictionSetDto } from '../../dtos/prediction-set.dto';
-import { DataSource } from '../../models/data-source.model';
 import { Outcome } from '../../models/outcome.model';
 import { PredictionSet, PredictionSetStatus } from '../../models/prediction-set.model';
 import { PredictionSetService } from '../../prediction-set.service';
@@ -33,11 +31,13 @@ export const createPredictionSet = async (context: Context, data?: PredictionSet
         name: 'No'
       }
     ],
-    dataSourceIds: data?.dataSourceIds || []
+    dataSourceIds: data?.dataSourceIds || [],
+    consensusThreshold: data?.dataSourceIds.length || 0
   };
 
   const predictionSet = new PredictionSet(body, context);
-  predictionSet.outcomes = body.predictionOutcomes.map((d) => new Outcome(d, context));
+  predictionSet.outcomes = body.predictionOutcomes.map((d: any) => new Outcome(d, context));
+
   const prediction = await new PredictionSetService().createPredictionSet(predictionSet, body.dataSourceIds, context);
   if (data?.setStatus && data?.setStatus != PredictionSetStatus.INITIALIZED) {
     prediction.setStatus = data.setStatus;

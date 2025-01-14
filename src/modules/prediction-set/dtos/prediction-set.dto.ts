@@ -2,8 +2,22 @@ import { prop } from '@rawmodel/core';
 import { integerParser } from '@rawmodel/parsers';
 import { arrayLengthValidator, presenceValidator } from '@rawmodel/validators';
 import { PopulateFrom, ValidatorErrorCode } from '../../../config/types';
-import { PredictionSet } from '../models/prediction-set.model';
+import { PredictionSet, ResolutionType } from '../models/prediction-set.model';
 import { Outcome } from '../models/outcome.model';
+import { isPresent } from '@rawmodel/utils';
+
+/**
+ * Data source IDs conditional presence validator.
+ */
+export function dataSourceIdsPresenceValidator() {
+  return function (this: PredictionSetDto, value: number) {
+    if (this.resolutionType === ResolutionType.VOTING) {
+      return true;
+    }
+
+    return isPresent(value);
+  };
+}
 
 export class PredictionSetDto extends PredictionSet {
   @prop({
@@ -11,12 +25,8 @@ export class PredictionSetDto extends PredictionSet {
     populatable: [PopulateFrom.USER],
     validators: [
       {
-        resolver: presenceValidator(),
+        resolver: dataSourceIdsPresenceValidator(),
         code: ValidatorErrorCode.PREDICTION_SET_DTO_DATA_SOURCE_IDS_NOT_PRESENT
-      },
-      {
-        resolver: arrayLengthValidator({ minOrEqual: 3 }),
-        code: ValidatorErrorCode.PREDICTION_SET_DTO_DATA_SOURCE_IDS_NOT_VALID
       }
     ]
   })
