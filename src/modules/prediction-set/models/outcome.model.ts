@@ -24,6 +24,16 @@ export class Outcome extends AdvancedSQLModel {
   public prediction_set_id: number;
 
   /**
+   * Outcome index.
+   */
+  @prop({
+    parser: { resolver: integerParser() },
+    populatable: [PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
+  })
+  public index: number;
+
+  /**
    * Outcome name.
    */
   @prop({

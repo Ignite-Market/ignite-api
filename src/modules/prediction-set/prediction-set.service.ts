@@ -99,6 +99,8 @@ export class PredictionSetService {
     if (predictionSet.resolutionType === ResolutionType.AUTOMATIC) {
       // Minimal data sources threshold.
       if (dataSourceIds.length < env.PREDICTION_SET_MINIMAL_DATA_SOURCES) {
+        await context.mysql.rollback(conn);
+
         throw new CodeException({
           code: BadRequestErrorCode.INVALID_NUMBER_OF_PREDICTION_SET_DATA_SOURCES,
           errorCodes: BadRequestErrorCode,
@@ -110,6 +112,8 @@ export class PredictionSetService {
 
       // There needs to be more datasource than consensus threshold.
       if (dataSourceIds.length < predictionSet.consensusThreshold) {
+        await context.mysql.rollback(conn);
+
         throw new CodeException({
           code: BadRequestErrorCode.INVALID_NUMBER_OF_PREDICTION_SET_DATA_SOURCES,
           errorCodes: BadRequestErrorCode,
@@ -153,9 +157,10 @@ export class PredictionSetService {
 
     // Add outcomes to the prediction set.
     const outcomePool = predictionSet.initialPool / predictionSet.outcomes.length;
-    for (const outcome of predictionSet.outcomes) {
+    for (const [index, outcome] of predictionSet.outcomes.entries()) {
       try {
         outcome.pool = outcomePool;
+        outcome.index = index;
         outcome.prediction_set_id = predictionSet.id;
 
         await outcome.insert(SerializeFor.INSERT_DB, conn);
@@ -299,6 +304,7 @@ export class PredictionSetService {
       await context.mysql.commit(conn);
     } catch (error) {
       await context.mysql.rollback(conn);
+
       throw new CodeException({
         code: SystemErrorCode.SQL_SYSTEM_ERROR,
         errorCodes: SystemErrorCode,
@@ -323,7 +329,7 @@ export class PredictionSetService {
   }
 
   /**
-   * Cancel prediction set.
+   * Cancel prediction set on CHAIN.
    * @param predictionSet Prediction set.
    * @param context Application context.
    */

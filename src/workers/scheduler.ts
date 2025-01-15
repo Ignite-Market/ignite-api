@@ -1,6 +1,7 @@
 import { Context } from '../context';
 import { WorkerLogStatus } from '../lib/worker/logger';
-import { WorkerScheduler, ServiceDefinition, WorkerDefinition } from '../lib/worker/serverless-workers';
+import { ServiceDefinition, WorkerDefinition } from '../lib/worker/serverless-workers';
+import { WorkerScheduler } from '../lib/worker/serverless-workers/worker-scheduler';
 import { Job } from '../modules/job/job.model';
 
 export class Scheduler extends WorkerScheduler {

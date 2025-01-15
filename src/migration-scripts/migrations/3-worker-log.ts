@@ -11,6 +11,7 @@ export const upgrade = async (queryFn: (query: string, values?: any[]) => Promis
     \`type\` VARCHAR(50) NULL,
     \`message\` TEXT NULL,
     \`data\` JSON NULL,
+    \`error\` JSON NULL,
     PRIMARY KEY (\`id\`)
   );
   `);

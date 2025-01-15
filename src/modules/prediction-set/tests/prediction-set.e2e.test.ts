@@ -249,8 +249,9 @@ describe('Prediction set e2e tests', () => {
     });
 
     describe('PATCH /prediction-sets/:id/process - Process prediction set tests', () => {
-      it('Should start processing initialized prediction set', async () => {
+      it.only('Should start processing initialized prediction set', async () => {
         const prediction = await createPredictionSet(stage.context);
+
         await request(stage.http)
           .patch(`/prediction-sets/${prediction.id}/process`)
           .set('Content-Type', 'application/json')
@@ -270,6 +271,7 @@ describe('Prediction set e2e tests', () => {
 
       it('Should not start processing active prediction set', async () => {
         const prediction = await createPredictionSet(stage.context);
+
         await stage.db.paramExecute(
           `
             UPDATE \`${DbTables.PREDICTION_SET}\` 
@@ -287,6 +289,7 @@ describe('Prediction set e2e tests', () => {
 
       it('Should not start processing prediction set if user is not admin', async () => {
         const prediction = await createPredictionSet(stage.context);
+
         await request(stage.http)
           .patch(`/prediction-sets/${prediction.id}/process`)
           .set('Content-Type', 'application/json')

@@ -60,24 +60,22 @@ export class CreatePredictionSetWorker extends BaseQueueWorkerExecutor {
       return;
     }
 
-    predictionSet.setStatus = PredictionSetStatus.ACTIVE;
     try {
-      await addPredictionSet(predictionSet);
+      await addPredictionSet(predictionSet, this.context);
     } catch (error) {
-      predictionSet.setStatus = PredictionSetStatus.ERROR;
-
       await this.writeLogToDb(WorkerLogStatus.ERROR, `Error while adding predictions set with ID: ${data.predictionSetId}.`, null, error);
-    }
 
-    try {
-      await predictionSet.update();
-    } catch (error) {
-      await this.writeLogToDb(
-        WorkerLogStatus.ERROR,
-        `Error while updating predictions set status. ID: ${data.predictionSetId}, Status: ${PredictionSetStatus[predictionSet.setStatus]}: ${predictionSet.setStatus}.`,
-        null,
-        error
-      );
+      predictionSet.setStatus = PredictionSetStatus.ERROR;
+      try {
+        await predictionSet.update();
+      } catch (error) {
+        await this.writeLogToDb(
+          WorkerLogStatus.ERROR,
+          `Error while updating predictions set status. ID: ${data.predictionSetId}, Status: ${PredictionSetStatus[predictionSet.setStatus]}: ${predictionSet.setStatus}.`,
+          null,
+          error
+        );
+      }
     }
   }
 }

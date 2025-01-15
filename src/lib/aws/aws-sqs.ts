@@ -1,12 +1,11 @@
-import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
 import type { SendMessageCommandInput } from '@aws-sdk/client-sqs';
+import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
 import { env } from '../../config/env';
 import { AppEnvironment } from '../../config/types';
-import { WorkerName } from '../../workers/worker-executor';
-import { TestWorker } from '../../workers/test-worker';
-import { QueueWorkerType, WorkerDefinition } from '../worker/serverless-workers';
 import { Context } from '../../context';
 import { CreatePredictionSetWorker } from '../../workers/create-prediction-set.worker';
+import { WorkerName } from '../../workers/worker-executor';
+import { WorkerDefinition } from '../worker/serverless-workers';
 
 /**
  * Creates an SQS client.
@@ -135,19 +134,6 @@ async function testSendToWorkerQueue(
 ): Promise<{ errCount: number; errMsgs: string[] }> {
   for (const msg of msgData) {
     switch (workerName) {
-      case WorkerName.TEST:
-        await new TestWorker(
-          new WorkerDefinition(null, WorkerName.TEST, {
-            parameters: msg
-          }),
-          context,
-          QueueWorkerType.PLANNER
-        ).run({
-          executeArg: msg
-        });
-
-        break;
-
       case WorkerName.CREATE_PREDICTION_SET:
         await new CreatePredictionSetWorker(
           new WorkerDefinition(null, WorkerName.CREATE_PREDICTION_SET, {

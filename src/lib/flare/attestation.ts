@@ -43,8 +43,8 @@ export async function prepareAttestationRequest(url: string, jq: string, abi: an
  */
 
 export async function submitAttestationRequest(request: EncodedAttestationRequest): Promise<number> {
-  const provider = new ethers.JsonRpcProvider(env.FLARE_RPC);
-  const signer = new ethers.Wallet(env.FLARE_ATTESTATION_PRIVATE_KEY, provider);
+  const provider = new ethers.JsonRpcProvider(env.RPC_URL);
+  const signer = new ethers.Wallet(env.SIGNER_PRIVATE_KEY, provider);
   const contractRegistry = new ethers.Contract(env.FLARE_CONTRACT_REGISTRY_ADDRESS, CONTRACT_REGISTRY_ABI, provider);
 
   // Flare system manager contract.

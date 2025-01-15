@@ -1,10 +1,10 @@
 import { WorkerDefinition } from '.';
-import { Context } from '../../../context';
 import { DbTables } from '../../../config/types';
-import { sendToQueue } from '../../aws/aws-sqs';
-import { BaseWorker } from './base-worker';
-import { WorkerLogStatus } from '../logger';
+import { Context } from '../../../context';
 import { Job } from '../../../modules/job/job.model';
+import { sendToQueue } from '../../aws/aws-sqs';
+import { WorkerLogStatus } from '../logger';
+import { BaseWorker } from './base-worker';
 
 export enum QueueWorkerType {
   PLANNER = 'PLANNER',

@@ -32,5 +32,22 @@
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen"
     },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Run current file",
+      "args": ["${relativeFile}"],
+      "env": {
+        "APP_ENV": "development",
+        // "LOG_TARGET": "color"
+        // "LOG_TARGET": "none"
+        // "LOG_TARGET": "console"
+      },
+      "runtimeArgs": ["--nolazy", "-r", "ts-node/register"],
+      "sourceMaps": true,
+      "cwd": "${workspaceRoot}",
+      "protocol": "inspector",
+      "console": "integratedTerminal"
+    },
   ]
 }

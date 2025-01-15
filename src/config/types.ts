@@ -19,11 +19,13 @@ export enum DbTables {
   ROLE = 'role',
   USER_ROLE = 'user_role',
   PREDICTION_SET = 'prediction_set',
+  PREDICTION_SET_CHAIN_DATA = 'prediction_set_chain_data',
   DATA_SOURCE = 'data_source',
   PREDICTION_SET_DATA_SOURCE = 'prediction_set_data_source',
   OUTCOME = 'outcome',
   COMMENT = 'comment',
-  PREDICTION_SET_ATTESTATION = 'prediction_set_attestation'
+  PREDICTION_SET_ATTESTATION = 'prediction_set_attestation',
+  CONTRACT = 'contract'
 }
 /**
  * Validation error codes - 422_00_000.
@@ -105,7 +107,8 @@ export enum SystemErrorCode {
   UNHANDLED_SYSTEM_ERROR = 500_00_001,
   SQL_SYSTEM_ERROR = 500_00_002,
   AWS_SYSTEM_ERROR = 500_00_003,
-  MICROSERVICE_SYSTEM_ERROR = 500_00_004
+  MICROSERVICE_SYSTEM_ERROR = 500_00_004,
+  BLOCKCHAIN_SYSTEM_ERROR = 500_00_005
 }
 
 /**

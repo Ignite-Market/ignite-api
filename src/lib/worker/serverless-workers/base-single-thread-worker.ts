@@ -88,8 +88,6 @@ export abstract class BaseSingleThreadWorker extends BaseWorker {
     if (!this.shouldRunJob) {
       return;
     }
-    await this.writeLogToDb(WorkerLogStatus.DEBUG, 'Started SINGLE THREAD worker');
-
     // All errors inside worker will cause job state update.
     await this.runExecutor(data ? JSON.parse(data) : null);
   }

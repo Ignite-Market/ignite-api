@@ -93,14 +93,14 @@ export async function rebuildTestDatabases(): Promise<void> {
     throw err;
   }
   await destroyTestMigrations();
-  await initSeeds();
-  try {
-    await dbTestSeed.reset();
-  } catch (err) {
-    console.error('error at seed.reset()', err);
-    throw err;
-  }
-  await destroyTestSeeds();
+  // await initSeeds();
+  // try {
+  //   await dbTestSeed.reset();
+  // } catch (err) {
+  //   console.error('error at seed.reset()', err);
+  //   throw err;
+  // }
+  // await destroyTestSeeds();
 }
 
 export async function dropTestDatabases(): Promise<void> {

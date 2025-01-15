@@ -4,17 +4,24 @@ import { Context } from '../context';
 import { MySql } from '../lib/database/mysql';
 
 import { WorkerLogStatus, writeWorkerLog } from '../lib/worker/logger';
-import { QueueWorkerType, ServiceDefinition, ServiceDefinitionType, WorkerDefinition } from '../lib/worker/serverless-workers';
+import { ServiceDefinition, ServiceDefinitionType, WorkerDefinition } from '../lib/worker/serverless-workers';
 
 import { Scheduler } from './scheduler';
-import { TestWorker } from './test-worker';
 
+/**
+ *
+ */
 export enum WorkerName {
   SCHEDULER = 'scheduler',
-  TEST = 'test',
-  CREATE_PREDICTION_SET = 'create_prediction_set'
+  CREATE_PREDICTION_SET = 'create_prediction_set',
+  PREDICTION_SETS_PARSER = 'prediction_sets_parser'
 }
 
+/**
+ *
+ * @param event
+ * @returns
+ */
 export async function handler(event: any) {
   await getEnvSecrets();
 
@@ -76,11 +83,6 @@ export async function handleLambdaEvent(event: any, context: Context, serviceDef
       await scheduler.run();
       break;
 
-    case WorkerName.TEST:
-      const worker = new TestWorker(workerDefinition, context, QueueWorkerType.PLANNER);
-      await worker.run();
-      break;
-
     default:
       console.error(`ERROR - INVALID WORKER NAME: ${workerDefinition.workerName}`);
       await writeWorkerLog(
@@ -127,12 +129,6 @@ export async function handleSqsMessages(event: any, context: Context, serviceDef
 
       // eslint-disable-next-line sonarjs/no-small-switch
       switch (workerName) {
-        case WorkerName.TEST:
-          const worker = new TestWorker(workerDefinition, context, QueueWorkerType.EXECUTOR);
-          await worker.run({
-            executeArg: message?.body
-          });
-          break;
         // case WorkerName.PASSIVE_EARNING:
         //   const worker = new PassiveEarningWorker(
         //     workerDefinition,
