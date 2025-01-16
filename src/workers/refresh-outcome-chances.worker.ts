@@ -10,8 +10,8 @@ import { PredictionSet, PredictionSetStatus } from '../modules/prediction-set/mo
  */
 export class RefreshOutcomeChancesWorker extends BaseQueueWorker {
   /**
-   * Gets outcome IDs of outcomes that should get their chances refreshed.
-   * @returns Array of outcome IDs.
+   * Gets outcome IDs of prediction sets that should get their outcome chances refreshed.
+   * @returns Array of prediction set IDs.
    */
   public async runPlanner(): Promise<number[]> {
     const predictionSetIds = await this.context.mysql.paramExecute(

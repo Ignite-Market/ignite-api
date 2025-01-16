@@ -22,6 +22,8 @@ export class OutcomeChance extends AdvancedSQLModel {
   })
   public outcome_id: number;
 
+  // TODO: add prediction_set_id
+
   /**
    * Outcome chance.
    */

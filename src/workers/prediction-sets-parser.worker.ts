@@ -65,7 +65,6 @@ export class PredictionSetsParserWorker extends BaseSingleThreadWorker {
         const lastProcessedBlock = event.blockNumber;
 
         const chainData = await new PredictionSetChainData({}, this.context).populateByConditionId(conditionId, conn);
-        await this.context.mysql.rollback(conn);
         if (!chainData.exists()) {
           await this.writeLogToDb(
             WorkerLogStatus.ERROR,

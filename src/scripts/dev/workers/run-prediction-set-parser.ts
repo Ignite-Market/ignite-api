@@ -4,6 +4,7 @@ import { WorkerName } from '../../../workers/worker-executor';
 import { createContext } from '../context';
 import { WorkerDefinition } from '../../../lib/worker/serverless-workers';
 import { QueueWorkerType } from '../../../lib/worker/serverless-workers/base-queue-worker';
+import { PredictionSetParserWorker } from '../../../workers/prediction-set-parser.worker';
 
 const PREDICTION_SET_ID = 36;
 
@@ -11,8 +12,8 @@ const PREDICTION_SET_ID = 36;
   const start = new Date();
   const context = await createContext();
 
-  const wd = new WorkerDefinition(null, WorkerName.REFRESH_OUTCOME_CHANCES);
-  const workerExecute = new RefreshOutcomeChancesWorker(wd, context, QueueWorkerType.EXECUTOR);
+  const wd = new WorkerDefinition(null, WorkerName.PREDICTION_SET_PARSER);
+  const workerExecute = new PredictionSetParserWorker(wd, context, QueueWorkerType.EXECUTOR);
   await workerExecute.runExecutor(PREDICTION_SET_ID);
 
   const end = new Date();

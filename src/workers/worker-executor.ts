@@ -15,7 +15,8 @@ export enum WorkerName {
   SCHEDULER = 'scheduler',
   CREATE_PREDICTION_SET = 'create_prediction_set',
   PREDICTION_SETS_PARSER = 'prediction_sets_parser',
-  REFRESH_OUTCOME_CHANCES = 'refresh_outcome_chances'
+  REFRESH_OUTCOME_CHANCES = 'refresh_outcome_chances',
+  PREDICTION_SET_PARSER = 'prediction_set_parser'
 }
 
 /**
