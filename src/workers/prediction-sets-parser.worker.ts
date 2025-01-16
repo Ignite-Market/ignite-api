@@ -2,14 +2,14 @@ import { randomUUID } from 'crypto';
 import { ethers } from 'ethers';
 import { env } from '../config/env';
 import { SerializeFor } from '../config/types';
-import { FPMM_FACTORY_ABI } from '../lib/abis';
+import { FPMM_ABI, FPMM_FACTORY_ABI } from '../lib/abis';
 import { sendSlackWebhook } from '../lib/slack-webhook';
-import { WorkerLogStatus } from '../lib/worker/logger';
-import { BaseSingleThreadWorker, SingleThreadWorkerAlertType } from '../lib/worker/serverless-workers/base-single-thread-worker';
 import { Contract, ContractId } from '../modules/contract/models/contract.model';
 import { Job } from '../modules/job/job.model';
 import { PredictionSetChainData } from '../modules/prediction-set/models/prediction-set-chain-data';
 import { PredictionSet, PredictionSetStatus } from '../modules/prediction-set/models/prediction-set.model';
+import { BaseSingleThreadWorker, SingleThreadWorkerAlertType } from '../lib/worker/serverless-workers/base-single-thread-worker';
+import { WorkerLogStatus } from '../lib/worker/logger';
 
 /**
  * Parses the creation of the prediction set on chain.
@@ -83,11 +83,11 @@ export class PredictionSetsParserWorker extends BaseSingleThreadWorker {
           continue;
         }
 
-        const predictionSet = await new PredictionSet({}, this.context).populateById(chainData.prediction_set_id, conn);
-        if (!chainData.exists()) {
+        const predictionSet = await new PredictionSet({}, this.context).populateById(chainData.prediction_set_id, conn, false, { outcomes: true });
+        if (!predictionSet.exists()) {
           await this.writeLogToDb(
             WorkerLogStatus.ERROR,
-            `Prediction set with ID: ${chainData.id} does not exists.`,
+            `Prediction set with ID: ${predictionSet.id} does not exists.`,
             {
               contractAddress,
               conditionId,
@@ -113,6 +113,15 @@ export class PredictionSetsParserWorker extends BaseSingleThreadWorker {
         // Update prediction set to active.
         predictionSet.setStatus = PredictionSetStatus.ACTIVE;
         await predictionSet.update(SerializeFor.UPDATE_DB, conn);
+
+        // Obtain and update outcome position IDs.
+        const fpmmContract = new ethers.Contract(chainData.contractAddress, FPMM_ABI, provider);
+        for (const outcome of predictionSet.outcomes) {
+          const positionId = await fpmmContract.positionIds(outcome.index);
+
+          outcome.positionId = BigInt(positionId).toString();
+          await outcome.update(SerializeFor.UPDATE_DB, conn);
+        }
       }
 
       await contract.updateLastProcessedBlock(toBlock, conn);

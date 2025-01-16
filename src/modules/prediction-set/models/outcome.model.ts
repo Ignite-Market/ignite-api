@@ -34,6 +34,16 @@ export class Outcome extends AdvancedSQLModel {
   public index: number;
 
   /**
+   * Outcome on chain position ID.
+   */
+  @prop({
+    parser: { resolver: stringParser() },
+    populatable: [PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB]
+  })
+  public positionId: string;
+
+  /**
    * Outcome name.
    */
   @prop({

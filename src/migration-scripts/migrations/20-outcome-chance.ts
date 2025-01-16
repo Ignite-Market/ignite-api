@@ -2,13 +2,12 @@ import { DbTables, SqlModelStatus } from '../../config/types';
 
 export async function upgrade(queryFn: (query: string, values?: any[]) => Promise<any[]>): Promise<void> {
   await queryFn(`
-  CREATE TABLE IF NOT EXISTS \`${DbTables.OUTCOME}\` (
+  CREATE TABLE IF NOT EXISTS \`${DbTables.OUTCOME_CHANCE}\` (
     \`id\` INT NOT NULL AUTO_INCREMENT,
-    \`prediction_set_id\` INT NOT NULL,
-    \`name\` VARCHAR(255) NULL,
-    \`index\` INT NULL,
-    \`positionId\` VARCHAR(77) NULL,
-    \`pool\` DECIMAL(10,2) NULL,
+    \`outcome_id\` INT NOT NULL,
+    \`chance\` DECIMAL(5, 2),
+    \`supply\` VARCHAR(255),
+    \`totalSupply\` VARCHAR(255),
     \`status\` INT NOT NULL DEFAULT '${SqlModelStatus.ACTIVE}',
     \`createTime\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     \`createUser\` INT NULL,
@@ -20,6 +19,6 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
 
 export async function downgrade(queryFn: (query: string, values?: any[]) => Promise<any[]>): Promise<void> {
   await queryFn(`
-    DROP TABLE IF EXISTS \`${DbTables.OUTCOME}\`;
+    DROP TABLE IF EXISTS \`${DbTables.OUTCOME_CHANCE}\`;
   `);
 }

@@ -10,6 +10,7 @@ import { getQueryParams, selectAndCountQuery } from '../../../lib/database/sql-u
 import { enumInclusionValidator } from '../../../lib/validators';
 import { DataSource } from './data-source.model';
 import { Outcome } from './outcome.model';
+import { PredictionSetChainData } from './prediction-set-chain-data';
 
 /**
  * Prediction set resolution type.
@@ -26,8 +27,9 @@ export enum PredictionSetStatus {
   INITIALIZED = 1,
   PENDING = 2,
   ACTIVE = 3,
-  ERROR = 4,
-  FINALIZED = 5
+  FUNDED = 4,
+  FINALIZED = 5,
+  ERROR = 6
 }
 
 /**
@@ -262,8 +264,10 @@ export class PredictionSet extends AdvancedSQLModel {
    * Set status.
    * - 1: INITIALIZED - When the set is created.
    * - 2: PENDING - When the set is syncing with the blockchain.
-   * - 3: ACTIVE - When the set is ready for predictions.
-   * - 4: ERROR - When the set is in error state.
+   * - 3: ACTIVE - When the set is ready and synced with blockchain.
+   * - 4: FUNDED - When the set is funded and ready for predictions.
+   * - 5: FINALIZED - When the set is finalized.
+   * - 6: ERROR - When the set is in error state.
    */
   @prop({
     parser: { resolver: integerParser() },
@@ -284,12 +288,73 @@ export class PredictionSet extends AdvancedSQLModel {
    * Prediction set's outcomes virtual property definition.
    */
   @prop({
-    parser: { resolver: Object, array: true },
+    parser: { resolver: Outcome, array: true },
     serializable: [SerializeFor.USER],
     populatable: [PopulateFrom.DB],
     defaultValue: () => []
   })
   public outcomes: Outcome[];
+
+  /**
+   * Prediction set's chain data virtual property definition.
+   */
+  @prop({
+    parser: { resolver: PredictionSetChainData },
+    serializable: [SerializeFor.USER],
+    populatable: [PopulateFrom.DB],
+    defaultValue: () => null
+  })
+  public chainData: PredictionSetChainData;
+
+  /**
+   *
+   * @param id
+   * @param conn
+   * @param forUpdate
+   * @param populate
+   * @returns
+   */
+  public async populateById(
+    id: any,
+    conn?: PoolConnection,
+    forUpdate?: boolean,
+    populate?: { outcomes?: boolean; chainData?: boolean }
+  ): Promise<this> {
+    const context = this.getContext();
+    const model = await super.populateById(id, conn, forUpdate);
+
+    if (populate.outcomes) {
+      this.outcomes = await this.getOutcomes(conn);
+    }
+
+    if (populate.chainData) {
+      this.chainData = await new PredictionSetChainData({}, context).populateByPredictionSetId(this.id, conn, forUpdate);
+    }
+
+    return model;
+  }
+
+  /**
+   *
+   * @param conn
+   * @returns
+   */
+  public async getOutcomes(conn?: PoolConnection): Promise<Outcome[]> {
+    const rows = await this.db().paramExecute(
+      `
+        SELECT *
+        FROM ${DbTables.OUTCOME} o
+        WHERE o.prediction_set_id = @predictionSetId
+          AND o.status <> ${SqlModelStatus.DELETED}
+        ORDER BY o.id
+      `,
+      { predictionSetId: this.id },
+      conn
+    );
+
+    const context = this.getContext();
+    return rows.map((r) => new Outcome(r, context));
+  }
 
   /**
    *
@@ -306,7 +371,7 @@ export class PredictionSet extends AdvancedSQLModel {
         WHERE psds.prediction_set_id = @predictionSetId
           AND r.status < ${SqlModelStatus.DELETED}
         ORDER BY ds.id;
-          `,
+      `,
       { predictionSetId: this.id },
       conn
     );

@@ -111,4 +111,33 @@ export class PredictionSetChainData extends AdvancedSQLModel {
 
     return data?.length ? this.populate(data[0], PopulateFrom.DB) : this.reset();
   }
+
+  /**
+   *
+   * @param predictionSetId
+   * @param conn
+   * @param forUpdate
+   * @returns
+   */
+  public async populateByPredictionSetId(predictionSetId: number, conn?: PoolConnection, forUpdate = false): Promise<this> {
+    if (!predictionSetId) {
+      return this.reset();
+    }
+    this.reset();
+
+    const data = await this.getContext().mysql.paramExecute(
+      `
+        SELECT *
+        FROM ${DbTables.PREDICTION_SET_CHAIN_DATA}
+        WHERE
+          prediction_set_id = @predictionSetId
+          AND status <> ${SqlModelStatus.DELETED}
+        ${conn && forUpdate ? 'FOR UPDATE' : ''};
+        `,
+      { predictionSetId },
+      conn
+    );
+
+    return data?.length ? this.populate(data[0], PopulateFrom.DB) : this.reset();
+  }
 }

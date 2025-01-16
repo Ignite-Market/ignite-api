@@ -5,7 +5,7 @@ import { SystemErrorCode } from '../config/types';
 import { Context } from '../context';
 import { PredictionSetChainData } from '../modules/prediction-set/models/prediction-set-chain-data';
 import { PredictionSet } from '../modules/prediction-set/models/prediction-set.model';
-import { CONDITIONAL_TOKEN_ABI, FPMM_FACTORY_ABI } from './abis';
+import { CONDITIONAL_TOKEN_ABI, FPMM_ABI, FPMM_FACTORY_ABI } from './abis';
 import { CodeException } from './exceptions/exceptions';
 
 /**
@@ -15,14 +15,15 @@ import { CodeException } from './exceptions/exceptions';
  * @returns fpmmfContract - FixedProductMarketMakerFactory contract - used for creation of prediction markets - every new prediction market is its own FixedProductMarketMaker contract.
  * @returns conditionalTokenContract - Conditional token contract.
  */
-export function setup() {
+export function setup(fpmmAddress: string = null) {
   const provider = new ethers.JsonRpcProvider(env.RPC_URL);
   const signer = new ethers.Wallet(env.SIGNER_PRIVATE_KEY, provider);
 
   const fpmmfContract = new ethers.Contract(env.FPMM_FACTORY_CONTRACT, FPMM_FACTORY_ABI, signer);
   const conditionalTokenContract = new ethers.Contract(env.CONDITIONAL_TOKEN_CONTRACT, CONDITIONAL_TOKEN_ABI, signer);
+  const fpmmContract = fpmmAddress ? new ethers.Contract(fpmmAddress, FPMM_ABI, signer) : null;
 
-  return { provider, signer, fpmmfContract, conditionalTokenContract };
+  return { provider, signer, fpmmfContract, conditionalTokenContract, fpmmContract };
 }
 
 /**

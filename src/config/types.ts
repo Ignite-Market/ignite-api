@@ -23,6 +23,7 @@ export enum DbTables {
   DATA_SOURCE = 'data_source',
   PREDICTION_SET_DATA_SOURCE = 'prediction_set_data_source',
   OUTCOME = 'outcome',
+  OUTCOME_CHANCE = 'outcome_chance',
   COMMENT = 'comment',
   PREDICTION_SET_ATTESTATION = 'prediction_set_attestation',
   CONTRACT = 'contract'

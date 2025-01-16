@@ -3,7 +3,7 @@ import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
 import { env } from '../../config/env';
 import { AppEnvironment } from '../../config/types';
 import { Context } from '../../context';
-import { CreatePredictionSetWorker } from '../../workers/create-prediction-set.worker';
+// import { CreatePredictionSetWorker } from '../../workers/create-prediction-set.worker';
 import { WorkerName } from '../../workers/worker-executor';
 import { WorkerDefinition } from '../worker/serverless-workers';
 
@@ -62,7 +62,8 @@ export async function sendToQueue(
 ): Promise<{ errCount: number; errMsgs: string[] }> {
   // If we are running in test mode, do not send the message to the queue, but execute worker directly.
   if (env.APP_ENV === AppEnvironment.TEST || env.APP_ENV === AppEnvironment.LOCAL_DEV) {
-    return testSendToWorkerQueue(workerName, msgData, context);
+    return;
+    // return testSendToWorkerQueue(workerName, msgData, context); // Circular dependency.....
   }
 
   const sqs = createSqsClient();
@@ -127,28 +128,28 @@ export async function sendToQueue(
  * @param msgData The data to send.
  * @returns The number of errors and the error messages.
  */
-async function testSendToWorkerQueue(
-  workerName: WorkerName,
-  msgData: Array<any>,
-  context: Context
-): Promise<{ errCount: number; errMsgs: string[] }> {
-  for (const msg of msgData) {
-    switch (workerName) {
-      case WorkerName.CREATE_PREDICTION_SET:
-        await new CreatePredictionSetWorker(
-          new WorkerDefinition(null, WorkerName.CREATE_PREDICTION_SET, {
-            parameters: msg
-          }),
-          context
-        ).run({
-          executeArg: msg
-        });
+// async function testSendToWorkerQueue(
+//   workerName: WorkerName,
+//   msgData: Array<any>,
+//   context: Context
+// ): Promise<{ errCount: number; errMsgs: string[] }> {
+//   for (const msg of msgData) {
+//     switch (workerName) {
+//       case WorkerName.CREATE_PREDICTION_SET:
+//         await new CreatePredictionSetWorker(
+//           new WorkerDefinition(null, WorkerName.CREATE_PREDICTION_SET, {
+//             parameters: msg
+//           }),
+//           context
+//         ).run({
+//           executeArg: msg
+//         });
 
-        break;
+//         break;
 
-      default:
-        break;
-    }
-  }
-  return { errCount: 0, errMsgs: [] };
-}
+//       default:
+//         break;
+//     }
+//   }
+//   return { errCount: 0, errMsgs: [] };
+// }

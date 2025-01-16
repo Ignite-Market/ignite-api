@@ -1,7 +1,7 @@
 import { exit } from 'process';
-import { WorkerDefinition } from '../../lib/worker/serverless-workers';
-import { WorkerName } from '../../workers/worker-executor';
+import { WorkerDefinition } from '../../lib/serverless-workers/worker-definition';
 import { PredictionSetsParserWorker } from '../../workers/prediction-sets-parser.worker';
+import { WorkerName } from '../../workers/worker-executor';
 import { createContext } from './context';
 
 /**

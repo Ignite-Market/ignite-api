@@ -1,4 +1,5 @@
 import { WorkerDefinition } from '.';
+import { env } from '../../../config/env';
 import { DbTables } from '../../../config/types';
 import { Context } from '../../../context';
 import { Job } from '../../../modules/job/job.model';
@@ -17,12 +18,12 @@ export abstract class BaseQueueWorker extends BaseWorker {
   protected workerName: any;
   protected workerQueueUrl: string;
 
-  public constructor(workerDefinition: WorkerDefinition, context: Context, type: QueueWorkerType, queueUrl: string) {
+  public constructor(workerDefinition: WorkerDefinition, context: Context, type: QueueWorkerType, queueUrl?: string) {
     super(workerDefinition, context);
     this.workerType = type;
     this.context = context;
     this.workerName = workerDefinition.workerName;
-    this.workerQueueUrl = queueUrl;
+    this.workerQueueUrl = queueUrl ? queueUrl : env.AWS_WORKER_SQS_URL;
   }
 
   public abstract runPlanner(data?: any): Promise<Array<any>>;

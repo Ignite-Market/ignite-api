@@ -1,5 +1,4 @@
 import { booleanParser, dateParser, integerParser, stringParser } from '@rawmodel/parsers';
-
 import { DbTables, PopulateFrom, SerializeFor, ValidatorErrorCode } from '../../config/types';
 import { AdvancedSQLModel, prop } from '../../lib/base-models/advanced-sql.model';
 import { presenceValidator } from '../../lib/validators';

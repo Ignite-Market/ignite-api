@@ -14,7 +14,8 @@ import { Scheduler } from './scheduler';
 export enum WorkerName {
   SCHEDULER = 'scheduler',
   CREATE_PREDICTION_SET = 'create_prediction_set',
-  PREDICTION_SETS_PARSER = 'prediction_sets_parser'
+  PREDICTION_SETS_PARSER = 'prediction_sets_parser',
+  REFRESH_OUTCOME_CHANCES = 'refresh_outcome_chances'
 }
 
 /**
