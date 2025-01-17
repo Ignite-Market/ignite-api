@@ -10,7 +10,7 @@ import { getQueryParams, selectAndCountQuery } from '../../../lib/database/sql-u
 import { enumInclusionValidator } from '../../../lib/validators';
 import { DataSource } from './data-source.model';
 import { Outcome } from './outcome.model';
-import { PredictionSetChainData } from './prediction-set-chain-data';
+import { PredictionSetChainData } from './prediction-set-chain-data.model';
 
 /**
  * Prediction set resolution type.

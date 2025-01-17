@@ -97,7 +97,7 @@ export class User extends AdvancedSQLModel {
    * @param address Wallet address.
    * @returns Populated user.
    */
-  async populateByWalletAddress(address: string): Promise<User> {
+  async populateByWalletAddress(address: string, conn?: PoolConnection): Promise<User> {
     this.reset();
 
     const data = await this.db().paramExecute(
@@ -107,7 +107,8 @@ export class User extends AdvancedSQLModel {
     `,
       {
         address
-      }
+      },
+      conn
     );
 
     if (data && data.length) {

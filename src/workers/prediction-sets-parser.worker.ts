@@ -6,7 +6,7 @@ import { FPMM_ABI, FPMM_FACTORY_ABI } from '../lib/abis';
 import { sendSlackWebhook } from '../lib/slack-webhook';
 import { Contract, ContractId } from '../modules/contract/models/contract.model';
 import { Job } from '../modules/job/job.model';
-import { PredictionSetChainData } from '../modules/prediction-set/models/prediction-set-chain-data';
+import { PredictionSetChainData } from '../modules/prediction-set/models/prediction-set-chain-data.model';
 import { PredictionSet, PredictionSetStatus } from '../modules/prediction-set/models/prediction-set.model';
 import { BaseSingleThreadWorker, SingleThreadWorkerAlertType } from '../lib/worker/serverless-workers/base-single-thread-worker';
 import { WorkerLogStatus } from '../lib/worker/logger';

@@ -1,17 +1,40 @@
 import { ethers } from 'ethers';
 import { env } from '../config/env';
-import { DbTables, SqlModelStatus } from '../config/types';
+import { DbTables, SerializeFor, SqlModelStatus } from '../config/types';
 import { setup } from '../lib/blockchain';
 import { WorkerLogStatus } from '../lib/worker/logger';
 import { BaseQueueWorker } from '../lib/worker/serverless-workers/base-queue-worker';
-import { OutcomeChance } from '../modules/prediction-set/models/outcome-chance.model';
+import { OutcomeShareTransaction, ShareTransactionType } from '../modules/prediction-set/models/outcome-share-transaction.model';
+import { Outcome } from '../modules/prediction-set/models/outcome.model';
+import { FundingTransactionType } from '../modules/prediction-set/models/prediction-set-funding-transaction.model';
 import { PredictionSet, PredictionSetStatus } from '../modules/prediction-set/models/prediction-set.model';
+import { User } from '../modules/user/models/user.model';
+import { sendToWorkerQueue } from '../lib/aws/aws-sqs';
+import { WorkerName } from './worker-executor';
 
-interface FundingAddedEvent {
+/**
+ * Funding event definition.
+ */
+interface FundingEvent {
+  type: FundingTransactionType;
   txHash: string;
-  funder: string;
+  wallet: string;
+  amounts: string;
+  shares: string;
+  collateralRemovedFromFeePool?: string;
+}
+
+/**
+ * Transaction event definition.
+ */
+interface TransactionEvent {
+  type: ShareTransactionType;
+  txHash: string;
+  wallet: string;
   amount: string;
-  sharesMinted: string;
+  feeAmount: string;
+  outcomeIndex: number;
+  outcomeTokens: string;
 }
 
 /**
@@ -81,29 +104,120 @@ export class PredictionSetParserWorker extends BaseQueueWorker {
         return;
       }
 
+      /**
+       *
+       * Funding events parsing - ADD or REMOVE.
+       *
+       */
+      const fundingEvents: FundingEvent[] = [];
+
       // Funding added events.
-      // FPMMFundingAdded (index_topic_1 address funder, uint256[] amountsAdded, uint256 sharesMinted)
-      const fundingEvents = (await fpmmContract.queryFilter(fpmmContract.filters.FPMMFundingAdded(), fromBlock, toBlock)) as ethers.EventLog[];
-      for (const fundingEvent of fundingEvents) {
-        console.log(fundingEvent);
-        // console.log(fundingEvent.args);
+      const fundingAddedEvents = (await fpmmContract.queryFilter(fpmmContract.filters.FPMMFundingAdded(), fromBlock, toBlock)) as ethers.EventLog[];
+      for (const fundingEvent of fundingAddedEvents) {
+        fundingEvents.push({
+          type: FundingTransactionType.ADDED,
+          txHash: fundingEvent.transactionHash,
+          wallet: fundingEvent.args[0],
+          amounts: fundingEvent.args[1].toString(),
+          shares: fundingEvent.args[2].toString()
+        });
       }
 
-      // Buy events.
-      // FPMMBuy (index_topic_1 address buyer, uint256 investmentAmount, uint256 feeAmount, index_topic_2 uint256 outcomeIndex, uint256 outcomeTokensBought)
-      const buyEvents = (await fpmmContract.queryFilter(fpmmContract.filters.FPMMBuy(), fromBlock, toBlock)) as ethers.EventLog[];
-      // console.log(buyEvents);
+      // Funding removed events.
+      const fundingRemovedEvents = (await fpmmContract.queryFilter(
+        fpmmContract.filters.FPMMFundingRemoved(),
+        fromBlock,
+        toBlock
+      )) as ethers.EventLog[];
+      for (const fundingEvent of fundingRemovedEvents) {
+        fundingEvents.push({
+          type: FundingTransactionType.REMOVED,
+          txHash: fundingEvent.transactionHash,
+          wallet: fundingEvent.args[0],
+          amounts: fundingEvent.args[1].toString(),
+          collateralRemovedFromFeePool: fundingEvent.args[2].toString(),
+          shares: fundingEvent.args[3].toString()
+        });
+      }
 
-      //   'inputs': [
-      //     { 'indexed': true, 'name': 'seller', 'type': 'address' },
-      //     { 'indexed': false, 'name': 'returnAmount', 'type': 'uint256' },
-      //     { 'indexed': false, 'name': 'feeAmount', 'type': 'uint256' },
-      //     { 'indexed': true, 'name': 'outcomeIndex', 'type': 'uint256' },
-      //     { 'indexed': false, 'name': 'outcomeTokensSold', 'type': 'uint256' }
-      //   ],
-      //   'name': 'FPMMSell',
+      // Insert funding events.
+      for (const fundingEvent of fundingEvents) {
+        const user = await new User({}, this.context).populateByWalletAddress(fundingEvent.wallet, conn);
+        await new OutcomeShareTransaction(
+          {
+            ...fundingEvent,
+            user_id: user.id,
+            prediction_set_id: predictionSet.id
+          },
+          this.context
+        ).insert(SerializeFor.INSERT_DB, conn);
+      }
+
+      if (fundingEvents.length) {
+        // TODO: Check if prediction set is funded on the contract.
+      }
+
+      /**
+       *
+       * Transaction events parsing - BUY or SELL.
+       *
+       */
+      const transactionEvents: TransactionEvent[] = [];
+
+      // Buy shares events parsing.
+      const buyEvents = (await fpmmContract.queryFilter(fpmmContract.filters.FPMMBuy(), fromBlock, toBlock)) as ethers.EventLog[];
+      for (const buyEvent of buyEvents) {
+        transactionEvents.push({
+          type: ShareTransactionType.BUY,
+          txHash: buyEvent.transactionHash,
+          wallet: buyEvent.args[0],
+          amount: buyEvent.args[1].toString(),
+          feeAmount: buyEvent.args[2].toString(),
+          outcomeIndex: Number(buyEvent.args[3]),
+          outcomeTokens: buyEvent.args[4].toString()
+        });
+      }
+
+      // Sell shares events parsing.
       const sellEvents = (await fpmmContract.queryFilter(fpmmContract.filters.FPMMSell(), fromBlock, toBlock)) as ethers.EventLog[];
+      for (const sellEvent of sellEvents) {
+        transactionEvents.push({
+          type: ShareTransactionType.SELL,
+          txHash: sellEvent.transactionHash,
+          wallet: sellEvent.args[0],
+          amount: sellEvent.args[1].toString(),
+          feeAmount: sellEvent.args[2].toString(),
+          outcomeIndex: Number(sellEvent.args[3]),
+          outcomeTokens: sellEvent.args[4].toString()
+        });
+      }
+
+      // Insert transaction events.
+      for (const transactionEvent of transactionEvents) {
+        const user = await new User({}, this.context).populateByWalletAddress(transactionEvent.wallet, conn);
+        const outcome = await new Outcome({}, this.context).populateByIndexAndPredictionSetId(transactionEvent.outcomeIndex, predictionSet.id, conn);
+        await new OutcomeShareTransaction(
+          {
+            ...transactionEvent,
+            user_id: user.id,
+            outcome_id: outcome.id,
+            prediction_set_id: predictionSet.id
+          },
+          this.context
+        ).insert(SerializeFor.INSERT_DB, conn);
+      }
+
+      // Refresh chances if any of the events happened.
+      if (fundingEvents.length || transactionEvents.length) {
+        await sendToWorkerQueue(WorkerName.REFRESH_OUTCOME_CHANCES, [predictionSetId], this.context); // TODO: Check if this is OK.
+      }
+
+      // Update blocks.
+      await predictionSet.chainData.updateLastProcessedBlock(toBlock, conn);
+      await this.context.mysql.commit(conn);
     } catch (error) {
+      await this.context.mysql.rollback(conn);
+
       await this.writeLogToDb(
         WorkerLogStatus.ERROR,
         'Error while parsing prediction set events: ',

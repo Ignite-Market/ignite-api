@@ -13,7 +13,9 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
     \`createUser\` INT NULL,
     \`updateTime\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     \`updateUser\` INT NULL,
-    PRIMARY KEY (\`id\`));
+    PRIMARY KEY (\`id\`),
+    UNIQUE KEY \`unique_index_prediction_set\` (\`index\`, \`prediction_set_id\`)
+  );
   `);
 }
 

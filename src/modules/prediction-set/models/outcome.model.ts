@@ -3,6 +3,7 @@ import { floatParser, integerParser, stringParser } from '@rawmodel/parsers';
 import { presenceValidator } from '@rawmodel/validators';
 import { DbTables, PopulateFrom, SerializeFor, ValidatorErrorCode } from '../../../config/types';
 import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
+import { PoolConnection } from 'mysql2/promise';
 
 /**
  * Prediction set outcome.
@@ -60,4 +61,8 @@ export class Outcome extends AdvancedSQLModel {
     ]
   })
   name: string;
+
+  public async populateByIndexAndPredictionSetId(index: number, predictionSetId: number, conn?: PoolConnection, forUpdate = false): Promise<this> {
+    return null;
+  }
 }

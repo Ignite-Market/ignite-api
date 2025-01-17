@@ -20,10 +20,12 @@ export enum DbTables {
   USER_ROLE = 'user_role',
   PREDICTION_SET = 'prediction_set',
   PREDICTION_SET_CHAIN_DATA = 'prediction_set_chain_data',
+  PREDICTION_SET_FUNDING_TRANSACTION = 'prediction_set_funding_transaction',
   DATA_SOURCE = 'data_source',
   PREDICTION_SET_DATA_SOURCE = 'prediction_set_data_source',
   OUTCOME = 'outcome',
   OUTCOME_CHANCE = 'outcome_chance',
+  OUTCOME_SHARE_TRANSACTION = 'outcome_share_transaction',
   COMMENT = 'comment',
   PREDICTION_SET_ATTESTATION = 'prediction_set_attestation',
   CONTRACT = 'contract'

@@ -3,7 +3,7 @@ import { ethers } from 'ethers';
 import { env } from '../config/env';
 import { SystemErrorCode } from '../config/types';
 import { Context } from '../context';
-import { PredictionSetChainData } from '../modules/prediction-set/models/prediction-set-chain-data';
+import { PredictionSetChainData } from '../modules/prediction-set/models/prediction-set-chain-data.model';
 import { PredictionSet } from '../modules/prediction-set/models/prediction-set.model';
 import { CONDITIONAL_TOKEN_ABI, FPMM_ABI, FPMM_FACTORY_ABI } from './abis';
 import { CodeException } from './exceptions/exceptions';

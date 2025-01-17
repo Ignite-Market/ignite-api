@@ -65,9 +65,9 @@ export class Contract extends AdvancedSQLModel {
   public parseBlockSize: number;
 
   /**
-   *
-   * @param lastProcessedBlock
-   * @param conn
+   * Updates last processed block.
+   * @param lastProcessedBlock New last processed block.
+   * @param conn Pool connection.
    */
   public async updateLastProcessedBlock(lastProcessedBlock: number, conn?: PoolConnection) {
     await this.db().paramExecute(

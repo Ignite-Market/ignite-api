@@ -3,9 +3,8 @@ import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
 import { env } from '../../config/env';
 import { AppEnvironment } from '../../config/types';
 import { Context } from '../../context';
-// import { CreatePredictionSetWorker } from '../../workers/create-prediction-set.worker';
 import { WorkerName } from '../../workers/worker-executor';
-import { WorkerDefinition } from '../worker/serverless-workers';
+import { testSendToWorkerQueue } from './aws-test';
 
 /**
  * Creates an SQS client.
@@ -62,8 +61,8 @@ export async function sendToQueue(
 ): Promise<{ errCount: number; errMsgs: string[] }> {
   // If we are running in test mode, do not send the message to the queue, but execute worker directly.
   if (env.APP_ENV === AppEnvironment.TEST || env.APP_ENV === AppEnvironment.LOCAL_DEV) {
+    // return await testSendToWorkerQueue(workerName, msgData, context); // Circular dependency.....
     return;
-    // return testSendToWorkerQueue(workerName, msgData, context); // Circular dependency.....
   }
 
   const sqs = createSqsClient();
@@ -120,36 +119,3 @@ export async function sendToQueue(
 
   return { errCount, errMsgs };
 }
-
-/**
- * Sends a message to an SQS queue for testing.
- * @param queueUrl The URL of the SQS queue.
- * @param workerName The name of the worker.
- * @param msgData The data to send.
- * @returns The number of errors and the error messages.
- */
-// async function testSendToWorkerQueue(
-//   workerName: WorkerName,
-//   msgData: Array<any>,
-//   context: Context
-// ): Promise<{ errCount: number; errMsgs: string[] }> {
-//   for (const msg of msgData) {
-//     switch (workerName) {
-//       case WorkerName.CREATE_PREDICTION_SET:
-//         await new CreatePredictionSetWorker(
-//           new WorkerDefinition(null, WorkerName.CREATE_PREDICTION_SET, {
-//             parameters: msg
-//           }),
-//           context
-//         ).run({
-//           executeArg: msg
-//         });
-
-//         break;
-
-//       default:
-//         break;
-//     }
-//   }
-//   return { errCount: 0, errMsgs: [] };
-// }

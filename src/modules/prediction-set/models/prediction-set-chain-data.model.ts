@@ -140,4 +140,24 @@ export class PredictionSetChainData extends AdvancedSQLModel {
 
     return data?.length ? this.populate(data[0], PopulateFrom.DB) : this.reset();
   }
+
+  /**
+   * Updates last processed block.
+   * @param lastProcessedBlock New last processed block.
+   * @param conn Pool connection.
+   */
+  public async updateLastProcessedBlock(lastProcessedBlock: number, conn?: PoolConnection) {
+    await this.db().paramExecute(
+      `
+        UPDATE ${DbTables.PREDICTION_SET_CHAIN_DATA}
+        SET lastProcessedBlock = @lastProcessedBlock
+        WHERE id = @dataId
+      `,
+      {
+        dataId: this.id,
+        lastProcessedBlock: (this.lastProcessedBlock = lastProcessedBlock)
+      },
+      conn
+    );
+  }
 }
