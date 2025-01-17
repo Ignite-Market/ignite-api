@@ -84,11 +84,11 @@ export class PredictionSetChainData extends AdvancedSQLModel {
   public parseBlockSize: number;
 
   /**
-   *
-   * @param conditionId
-   * @param conn
-   * @param forUpdate
-   * @returns
+   * Populated model by condition ID.
+   * @param conditionId Condition ID.
+   * @param conn Pool connection.
+   * @param forUpdate Lock model for update.
+   * @returns Populated model.
    */
   public async populateByConditionId(conditionId: string, conn?: PoolConnection, forUpdate = false): Promise<this> {
     if (!conditionId) {
@@ -113,11 +113,11 @@ export class PredictionSetChainData extends AdvancedSQLModel {
   }
 
   /**
-   *
-   * @param predictionSetId
-   * @param conn
-   * @param forUpdate
-   * @returns
+   * Populated model by prediction set ID.
+   * @param predictionSetId Prediction set ID.
+   * @param conn Pool connection.
+   * @param forUpdate Lock model for update.
+   * @returns Populated model.
    */
   public async populateByPredictionSetId(predictionSetId: number, conn?: PoolConnection, forUpdate = false): Promise<this> {
     if (!predictionSetId) {

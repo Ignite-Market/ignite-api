@@ -1,9 +1,9 @@
 import { prop } from '@rawmodel/core';
-import { floatParser, integerParser, stringParser } from '@rawmodel/parsers';
+import { integerParser, stringParser } from '@rawmodel/parsers';
 import { presenceValidator } from '@rawmodel/validators';
-import { DbTables, PopulateFrom, SerializeFor, ValidatorErrorCode } from '../../../config/types';
-import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
 import { PoolConnection } from 'mysql2/promise';
+import { DbTables, PopulateFrom, SerializeFor, SqlModelStatus, ValidatorErrorCode } from '../../../config/types';
+import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
 
 /**
  * Prediction set outcome.
@@ -62,7 +62,37 @@ export class Outcome extends AdvancedSQLModel {
   })
   name: string;
 
+  /**
+   * Populated model by index and prediction set ID.
+   * @param index Outcome index.
+   * @param predictionSetId Prediction set ID.
+   * @param conn Pool connection.
+   * @param forUpdate Lock model for update.
+   * @returns Populated model.
+   */
   public async populateByIndexAndPredictionSetId(index: number, predictionSetId: number, conn?: PoolConnection, forUpdate = false): Promise<this> {
-    return null;
+    if (!index || !predictionSetId) {
+      return this.reset();
+    }
+    this.reset();
+
+    const data = await this.getContext().mysql.paramExecute(
+      `
+          SELECT *
+          FROM ${DbTables.OUTCOME}
+          WHERE
+            index = @index
+            AND prediction_set_id = @predictionSetId
+            AND status <> ${SqlModelStatus.DELETED}
+          ${conn && forUpdate ? 'FOR UPDATE' : ''};
+          `,
+      {
+        index,
+        predictionSetId
+      },
+      conn
+    );
+
+    return data?.length ? this.populate(data[0], PopulateFrom.DB) : this.reset();
   }
 }

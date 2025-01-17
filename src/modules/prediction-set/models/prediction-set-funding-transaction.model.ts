@@ -1,17 +1,15 @@
 import { prop } from '@rawmodel/core';
 import { integerParser, stringParser } from '@rawmodel/parsers';
-import { DbTables, PopulateFrom, SerializeFor, SqlModelStatus } from '../../../config/types';
+import { DbTables, PopulateFrom, SerializeFor } from '../../../config/types';
 import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
-import { PoolConnection } from 'mysql2/promise';
 
+/**
+ * Funding transaction type definition.
+ */
 export enum FundingTransactionType {
   ADDED = 1,
   REMOVED = 2
 }
-
-// amounts: string;
-// shares: string;
-// collateralRemovedFromFeePool?: string;
 
 /**
  * Prediction set funding transaction.
