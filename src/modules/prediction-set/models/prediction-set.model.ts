@@ -69,24 +69,6 @@ export class PredictionSet extends AdvancedSQLModel {
   setId: string;
 
   /**
-   * Initial pool.
-   */
-  @prop({
-    parser: {
-      resolver: floatParser()
-    },
-    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
-    populatable: [PopulateFrom.DB, PopulateFrom.USER],
-    validators: [
-      {
-        resolver: presenceValidator(),
-        code: ValidatorErrorCode.PREDICTION_SET_INITIAL_POOL_NOT_PRESENT
-      }
-    ]
-  })
-  initialPool: number;
-
-  /**
    * Question - The central query or event being predicted, clearly framed to avoid ambiguity.
    */
   @prop({
@@ -468,7 +450,6 @@ export class PredictionSet extends AdvancedSQLModel {
               IF(o.id IS NOT NULL,
                 GROUP_CONCAT(DISTINCT JSON_OBJECT(
                   'name', o.name,
-                  'pool', o.pool
                 )), 
               ''),
             ']'

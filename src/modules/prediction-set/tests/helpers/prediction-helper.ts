@@ -12,7 +12,6 @@ import { PredictionSetService } from '../../prediction-set.service';
 export const createPredictionSet = async (context: Context, data?: PredictionSetDto): Promise<any> => {
   const body = {
     question: data?.question || 'Bitcoin all time high by January 31?',
-    initialPool: data?.initialPool || 1000,
     description: data?.description || 'Bitcoin all time high prediction.',
     generalResolutionDef:
       data?.generalResolutionDef || 'This market will resolve to "Yes" if Bitcoin reaches the all time high between December 30 and January 31.',

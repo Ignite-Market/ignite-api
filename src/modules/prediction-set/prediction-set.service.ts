@@ -156,10 +156,8 @@ export class PredictionSetService {
     }
 
     // Add outcomes to the prediction set.
-    const outcomePool = predictionSet.initialPool / predictionSet.outcomes.length;
     for (const [index, outcome] of predictionSet.outcomes.entries()) {
       try {
-        outcome.pool = outcomePool;
         outcome.index = index;
         outcome.prediction_set_id = predictionSet.id;
 
@@ -261,11 +259,10 @@ export class PredictionSetService {
 
     // Delete and add new outcomes to the prediction set
     await predictionSet.deleteOutcomes(conn);
-    const outcomePool = predictionSetData.initialPool / predictionSetData.predictionOutcomes.length;
-    for (const predictionOutcome of predictionSetData.predictionOutcomes) {
+    for (const [index, predictionOutcome] of predictionSetData.predictionOutcomes.entries()) {
       try {
         const outcome = new Outcome(predictionOutcome, context);
-        outcome.pool = outcomePool;
+        outcome.index = index;
         outcome.prediction_set_id = predictionSet.id;
 
         await outcome.insert(SerializeFor.INSERT_DB, conn);

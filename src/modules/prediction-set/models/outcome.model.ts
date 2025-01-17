@@ -60,16 +60,4 @@ export class Outcome extends AdvancedSQLModel {
     ]
   })
   name: string;
-
-  /**
-   * Outcome pool.
-   */
-  @prop({
-    parser: {
-      resolver: floatParser()
-    },
-    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
-    populatable: [PopulateFrom.DB, PopulateFrom.USER]
-  })
-  pool: number;
 }
