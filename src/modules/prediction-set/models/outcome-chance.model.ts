@@ -22,7 +22,15 @@ export class OutcomeChance extends AdvancedSQLModel {
   })
   public outcome_id: number;
 
-  // TODO: add prediction_set_id
+  /**
+   * Prediction set ID.
+   */
+  @prop({
+    parser: { resolver: integerParser() },
+    populatable: [PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
+  })
+  public prediction_set_id: number;
 
   /**
    * Outcome chance.

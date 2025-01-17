@@ -75,6 +75,7 @@ export class RefreshOutcomeChancesWorker extends BaseQueueWorker {
         await new OutcomeChance(
           {
             outcome_id: outcome.id,
+            prediction_set_id: predictionSet.id,
             chance: outcomeChance,
             supply: outcomeBalance.toString(),
             totalSupply: totalSupply.toString()
