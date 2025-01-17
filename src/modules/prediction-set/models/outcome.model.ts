@@ -32,7 +32,7 @@ export class Outcome extends AdvancedSQLModel {
     populatable: [PopulateFrom.DB],
     serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
   })
-  public index: number;
+  public outcomeIndex: number;
 
   /**
    * Outcome on chain position ID.
@@ -64,30 +64,32 @@ export class Outcome extends AdvancedSQLModel {
 
   /**
    * Populated model by index and prediction set ID.
-   * @param index Outcome index.
+   * @param outcomeIndex Outcome index.
    * @param predictionSetId Prediction set ID.
    * @param conn Pool connection.
    * @param forUpdate Lock model for update.
    * @returns Populated model.
    */
-  public async populateByIndexAndPredictionSetId(index: number, predictionSetId: number, conn?: PoolConnection, forUpdate = false): Promise<this> {
-    if (!index || !predictionSetId) {
-      return this.reset();
-    }
+  public async populateByIndexAndPredictionSetId(
+    outcomeIndex: number,
+    predictionSetId: number,
+    conn?: PoolConnection,
+    forUpdate = false
+  ): Promise<this> {
     this.reset();
 
     const data = await this.getContext().mysql.paramExecute(
       `
-          SELECT *
-          FROM ${DbTables.OUTCOME}
-          WHERE
-            index = @index
-            AND prediction_set_id = @predictionSetId
-            AND status <> ${SqlModelStatus.DELETED}
-          ${conn && forUpdate ? 'FOR UPDATE' : ''};
-          `,
+        SELECT *
+        FROM ${DbTables.OUTCOME}
+        WHERE
+          outcomeIndex = @outcomeIndex
+          AND prediction_set_id = @predictionSetId
+          AND status <> ${SqlModelStatus.DELETED}
+        ${conn && forUpdate ? 'FOR UPDATE' : ''};
+      `,
       {
-        index,
+        outcomeIndex,
         predictionSetId
       },
       conn

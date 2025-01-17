@@ -38,7 +38,7 @@
       "name": "Run current file",
       "args": ["${relativeFile}"],
       "env": {
-        "APP_ENV": "development",
+        "APP_ENV": "local",
         // "LOG_TARGET": "color"
         // "LOG_TARGET": "none"
         // "LOG_TARGET": "console"

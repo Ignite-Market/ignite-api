@@ -6,7 +6,7 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
     \`id\` INT NOT NULL AUTO_INCREMENT,
     \`prediction_set_id\` INT NOT NULL,
     \`name\` VARCHAR(255) NULL,
-    \`index\` INT NULL,
+    \`outcomeIndex\` INT NULL,
     \`positionId\` VARCHAR(77) NULL,
     \`status\` INT NOT NULL DEFAULT '${SqlModelStatus.ACTIVE}',
     \`createTime\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -14,7 +14,7 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
     \`updateTime\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     \`updateUser\` INT NULL,
     PRIMARY KEY (\`id\`),
-    UNIQUE KEY \`unique_index_prediction_set\` (\`index\`, \`prediction_set_id\`)
+    UNIQUE KEY \`unique_outcome_index_prediction_set_id\` (\`outcomeIndex\`, \`prediction_set_id\`)
   );
   `);
 }

@@ -1,9 +1,9 @@
 import { exit } from 'process';
+import { WorkerDefinition } from '../../../lib/worker/serverless-workers';
+import { QueueWorkerType } from '../../../lib/worker/serverless-workers/base-queue-worker';
 import { RefreshOutcomeChancesWorker } from '../../../workers/refresh-outcome-chances.worker';
 import { WorkerName } from '../../../workers/worker-executor';
 import { createContext } from '../context';
-import { WorkerDefinition } from '../../../lib/worker/serverless-workers';
-import { QueueWorkerType } from '../../../lib/worker/serverless-workers/base-queue-worker';
 
 const PREDICTION_SET_ID = 36;
 

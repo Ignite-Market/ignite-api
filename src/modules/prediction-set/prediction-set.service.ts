@@ -158,7 +158,7 @@ export class PredictionSetService {
     // Add outcomes to the prediction set.
     for (const [index, outcome] of predictionSet.outcomes.entries()) {
       try {
-        outcome.index = index;
+        outcome.outcomeIndex = index;
         outcome.prediction_set_id = predictionSet.id;
 
         await outcome.insert(SerializeFor.INSERT_DB, conn);
@@ -262,7 +262,7 @@ export class PredictionSetService {
     for (const [index, predictionOutcome] of predictionSetData.predictionOutcomes.entries()) {
       try {
         const outcome = new Outcome(predictionOutcome, context);
-        outcome.index = index;
+        outcome.outcomeIndex = index;
         outcome.prediction_set_id = predictionSet.id;
 
         await outcome.insert(SerializeFor.INSERT_DB, conn);

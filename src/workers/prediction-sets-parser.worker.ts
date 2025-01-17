@@ -116,7 +116,7 @@ export class PredictionSetsParserWorker extends BaseSingleThreadWorker {
         // Obtain and update outcome position IDs.
         const fpmmContract = new ethers.Contract(chainData.contractAddress, FPMM_ABI, provider);
         for (const outcome of predictionSet.outcomes) {
-          const positionId = await fpmmContract.positionIds(outcome.index);
+          const positionId = await fpmmContract.positionIds(outcome.outcomeIndex);
 
           outcome.positionId = BigInt(positionId).toString();
           await outcome.update(SerializeFor.UPDATE_DB, conn);

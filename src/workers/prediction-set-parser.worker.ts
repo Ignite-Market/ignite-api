@@ -6,7 +6,7 @@ import { WorkerLogStatus } from '../lib/worker/logger';
 import { BaseQueueWorker } from '../lib/worker/serverless-workers/base-queue-worker';
 import { OutcomeShareTransaction, ShareTransactionType } from '../modules/prediction-set/models/outcome-share-transaction.model';
 import { Outcome } from '../modules/prediction-set/models/outcome.model';
-import { FundingTransactionType } from '../modules/prediction-set/models/prediction-set-funding-transaction.model';
+import { FundingTransactionType, PredictionSetFundingTransaction } from '../modules/prediction-set/models/prediction-set-funding-transaction.model';
 import { PredictionSet, PredictionSetStatus } from '../modules/prediction-set/models/prediction-set.model';
 import { User } from '../modules/user/models/user.model';
 import { sendToWorkerQueue } from '../lib/aws/aws-sqs';
@@ -142,8 +142,9 @@ export class PredictionSetParserWorker extends BaseQueueWorker {
 
       // Insert funding events.
       for (const fundingEvent of fundingEvents) {
-        const user = await new User({}, this.context).populateByWalletAddress(fundingEvent.wallet, conn);
-        await new OutcomeShareTransaction(
+        const user = await new User({}, this.context).populateByWalletAddress(fundingEvent.wallet, conn); // TODO: Should we let parse it without user ID?
+
+        await new PredictionSetFundingTransaction(
           {
             ...fundingEvent,
             user_id: user.id,
@@ -194,8 +195,18 @@ export class PredictionSetParserWorker extends BaseQueueWorker {
 
       // Insert transaction events.
       for (const transactionEvent of transactionEvents) {
-        const user = await new User({}, this.context).populateByWalletAddress(transactionEvent.wallet, conn);
+        const user = await new User({}, this.context).populateByWalletAddress(transactionEvent.wallet, conn); // TODO: Should we let parse it without user ID?
         const outcome = await new Outcome({}, this.context).populateByIndexAndPredictionSetId(transactionEvent.outcomeIndex, predictionSet.id, conn);
+        if (!outcome.exists()) {
+          await this.writeLogToDb(WorkerLogStatus.ERROR, 'Outcome does not exists: ', {
+            predictionSetId,
+            outcomeIndex: transactionEvent.outcomeIndex
+          });
+
+          await this.context.mysql.rollback(conn);
+          return;
+        }
+
         await new OutcomeShareTransaction(
           {
             ...transactionEvent,
