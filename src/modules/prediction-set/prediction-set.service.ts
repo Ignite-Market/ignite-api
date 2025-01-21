@@ -110,19 +110,6 @@ export class PredictionSetService {
         });
       }
 
-      // There needs to be more datasource than consensus threshold.
-      if (dataSourceIds.length < predictionSet.consensusThreshold) {
-        await context.mysql.rollback(conn);
-
-        throw new CodeException({
-          code: BadRequestErrorCode.INVALID_NUMBER_OF_PREDICTION_SET_DATA_SOURCES,
-          errorCodes: BadRequestErrorCode,
-          status: HttpStatus.BAD_REQUEST,
-          sourceFunction: `${this.constructor.name}/createPredictionSet`,
-          context
-        });
-      }
-
       // Add data sources to the prediction set.
       for (const dataSourceId of dataSourceIds) {
         const dataSource = await new DataSource({}, context).populateById(dataSourceId, conn);

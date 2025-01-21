@@ -5,6 +5,7 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
   await queryFn(`
   CREATE TABLE IF NOT EXISTS \`${DbTables.PREDICTION_SET}\` (
     \`id\` INT NOT NULL AUTO_INCREMENT,
+    \`winner_outcome_id\` INT NULL,
     \`setId\` VARCHAR(255) NOT NULL UNIQUE,
     \`question\` VARCHAR(500) NULL,
     \`description\` TEXT NULL,

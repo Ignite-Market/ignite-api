@@ -1,12 +1,9 @@
 import { exit } from 'process';
-import { WorkerDefinition } from '../../lib/serverless-workers/worker-definition';
+import { WorkerDefinition } from '../../lib/worker/serverless-workers';
 import { PredictionSetsParserWorker } from '../../workers/prediction-sets-parser.worker';
 import { WorkerName } from '../../workers/worker-executor';
 import { createContext } from './context';
 
-/**
- *
- */
 const WORKER_NAME = WorkerName.PREDICTION_SETS_PARSER;
 const WorkerClass = PredictionSetsParserWorker;
 

@@ -33,17 +33,17 @@ export enum PredictionSetStatus {
 }
 
 /**
- * Consensus threshold conditional presence validator - threshold is required only in automatic resolution.
+ * Consensus threshold validator - threshold is required only in automatic resolution and must be between 51 and 100.
  *
  * @returns Boolean.
  */
-export function consensusThresholdPresenceValidator() {
+export function consensusThresholdValidator() {
   return function (this: PredictionSet, value: number) {
     if (this.resolutionType === ResolutionType.VOTING) {
       return true;
     }
 
-    return isPresent(value);
+    return isPresent(value) && value >= 51 && value <= 100;
   };
 }
 
@@ -55,6 +55,16 @@ export class PredictionSet extends AdvancedSQLModel {
    * Prediction set 's table.
    */
   public tableName = DbTables.PREDICTION_SET;
+
+  /**
+   * Winner outcome ID reference.
+   */
+  @prop({
+    parser: { resolver: integerParser() },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB],
+    populatable: [PopulateFrom.DB]
+  })
+  public winner_outcome_id: number;
 
   /**
    * Set ID - A distinct code that uniquely identifies each prediction set within the platform.
@@ -227,7 +237,7 @@ export class PredictionSet extends AdvancedSQLModel {
   public resolutionType: number;
 
   /**
-   * Prediction set consensus threshold
+   * Prediction set consensus threshold percentage.
    */
   @prop({
     parser: { resolver: integerParser() },
@@ -235,8 +245,8 @@ export class PredictionSet extends AdvancedSQLModel {
     serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB],
     validators: [
       {
-        resolver: consensusThresholdPresenceValidator(),
-        code: ValidatorErrorCode.PREDICTION_SET_CONSENSUS_THRESHOLD_NOT_PRESENT
+        resolver: consensusThresholdValidator(),
+        code: ValidatorErrorCode.PREDICTION_SET_CONSENSUS_THRESHOLD_NOT_PRESENT_OR_VALID
       }
     ]
   })
@@ -310,10 +320,21 @@ export class PredictionSet extends AdvancedSQLModel {
     }
 
     if (populate.chainData) {
-      this.chainData = await new PredictionSetChainData({}, context).populateByPredictionSetId(this.id, conn, forUpdate);
+      this.chainData = await this.getPredictionSetChainData(conn, forUpdate);
     }
 
     return model;
+  }
+
+  /**
+   *
+   * @param conn
+   * @returns
+   */
+  public async getPredictionSetChainData(conn?: PoolConnection, forUpdate?: boolean): Promise<PredictionSetChainData> {
+    const context = this.getContext();
+
+    return await new PredictionSetChainData({}, context).populateByPredictionSetId(this.id, conn, forUpdate);
   }
 
   /**
@@ -351,7 +372,7 @@ export class PredictionSet extends AdvancedSQLModel {
         JOIN ${DbTables.PREDICTION_SET_DATA_SOURCE} psds
           ON psds.data_source_id = ds.id
         WHERE psds.prediction_set_id = @predictionSetId
-          AND r.status < ${SqlModelStatus.DELETED}
+          AND ds.status <> ${SqlModelStatus.DELETED}
         ORDER BY ds.id;
       `,
       { predictionSetId: this.id },

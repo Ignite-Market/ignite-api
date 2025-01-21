@@ -31,7 +31,7 @@ export const createPredictionSet = async (context: Context, data?: PredictionSet
       }
     ],
     dataSourceIds: data?.dataSourceIds || [],
-    consensusThreshold: data?.dataSourceIds.length || 0
+    consensusThreshold: 60
   };
 
   const predictionSet = new PredictionSet(body, context);

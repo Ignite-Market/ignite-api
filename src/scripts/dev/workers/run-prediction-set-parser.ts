@@ -5,7 +5,7 @@ import { PredictionSetParserWorker } from '../../../workers/prediction-set-parse
 import { WorkerName } from '../../../workers/worker-executor';
 import { createContext } from '../context';
 
-const PREDICTION_SET_ID = 36;
+const PREDICTION_SET_ID = 39;
 
 (async () => {
   const start = new Date();

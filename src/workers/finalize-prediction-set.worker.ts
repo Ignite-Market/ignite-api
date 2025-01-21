@@ -1,10 +1,13 @@
+import { randomUUID } from 'crypto';
 import { DbTables } from '../config/types';
-import { finalizePredictionSetResults, verifyPredictionSetResults } from '../lib/blockchain';
+import { finalizePredictionSetResults, PredictionSetBcStatus, verifyPredictionSetResults } from '../lib/blockchain';
 import { WorkerLogStatus } from '../lib/worker/logger';
 import { BaseSingleThreadWorker, SingleThreadWorkerAlertType } from '../lib/worker/serverless-workers/base-single-thread-worker';
 import { Job } from '../modules/job/job.model';
+import { Outcome } from '../modules/prediction-set/models/outcome.model';
 import { PredictionSetAttestation } from '../modules/prediction-set/models/prediction-set-attestation.model';
 import { PredictionSet, PredictionSetStatus, ResolutionType } from '../modules/prediction-set/models/prediction-set.model';
+import { sendSlackWebhook } from '../lib/slack-webhook';
 
 /**
  * Finalize prediction set worker.
@@ -15,7 +18,7 @@ export class FinalizePredictionSetWorker extends BaseSingleThreadWorker {
    */
   public async runExecutor(_data?: any): Promise<any> {
     try {
-      await this.finalizePredictionSet();
+      await this.finalizePredictionSets();
     } catch (error) {
       await this.writeLogToDb(WorkerLogStatus.ERROR, `Error executing ${this.workerName}`, null, error);
       throw error;
@@ -23,9 +26,9 @@ export class FinalizePredictionSetWorker extends BaseSingleThreadWorker {
   }
 
   /**
-   * Handles finalization of the prediction set.
+   * Handles finalization of the prediction sets.
    */
-  public async finalizePredictionSet(): Promise<void> {
+  public async finalizePredictionSets(): Promise<void> {
     const predictionSets = await this.context.mysql.paramExecute(
       `
         SELECT ps.*,
@@ -63,10 +66,15 @@ export class FinalizePredictionSetWorker extends BaseSingleThreadWorker {
       const predictionSet = new PredictionSet(data, this.context);
       const attestations: PredictionSetAttestation[] = JSON.parse(data.attestations).map((d: any) => new PredictionSetAttestation(d, this.context));
       const dataSources = await predictionSet.getDataSources();
+      const chainData = await predictionSet.getPredictionSetChainData();
+
+      if (!chainData.exists()) {
+        continue;
+      }
 
       // If data sources and attestations results doesn't match we should wait a little longer.
       if (attestations.length !== dataSources.length) {
-        return;
+        continue;
       }
 
       const validationResults = [];
@@ -82,36 +90,108 @@ export class FinalizePredictionSetWorker extends BaseSingleThreadWorker {
 
           validationResults.push(validationResult);
         } catch (error) {
-          await this.writeLogToDb(
-            WorkerLogStatus.ERROR,
-            `Error while verifying prediction set: `,
+          await this._logError(
+            'Error while verifying prediction set.',
             {
               predictionSetId: predictionSet.id,
               attestationId: attestation.id
             },
             error
           );
-          break;
+
+          validationResults.push(false);
         }
       }
 
+      // Continue only if all proofs are verified.
       const isVerified = validationResults.every((r) => !!r);
       if (isVerified) {
+        let finalizationResults = null;
         try {
           const proofs = attestations.map((a) => a.proof);
 
-          await finalizePredictionSetResults(proofs);
+          finalizationResults = await finalizePredictionSetResults(chainData.questionId, proofs);
         } catch (error) {
-          await this.writeLogToDb(
-            WorkerLogStatus.ERROR,
-            `Error while finalizing prediction set: `,
+          await this._logError(
+            'Error while finalizing prediction set.',
             {
-              predictionSetId: predictionSet.id
+              predictionSetId: predictionSet.id,
+              isVerified
             },
             error
           );
+
+          continue;
+        }
+
+        if (finalizationResults.status === PredictionSetBcStatus.FINALIZED) {
+          const outcome = await new Outcome({}, this.context).populateByIndexAndPredictionSetId(finalizationResults.winnerIdx, predictionSet.id);
+          if (!outcome.exists()) {
+            await this._logError('Outcome ID for given outcome not found.', {
+              predictionSetId: predictionSet.id,
+              winnerIdx: finalizationResults.winnerIdx
+            });
+
+            continue;
+          }
+
+          predictionSet.winner_outcome_id = outcome.id;
+          predictionSet.setStatus = PredictionSetStatus.FINALIZED;
+          try {
+            await predictionSet.update();
+          } catch (error) {
+            await this._logError(
+              'Error while updating prediction set.',
+              {
+                predictionSetId: predictionSet.id,
+                winnerIdx: finalizationResults.winnerIdx
+              },
+              error
+            );
+
+            continue;
+          }
+        } else if (finalizationResults.status === PredictionSetBcStatus.VOTING) {
+          try {
+            predictionSet.resolutionType = ResolutionType.VOTING;
+            await predictionSet.update();
+          } catch (error) {
+            await this._logError(
+              'Error while updating prediction set.',
+              {
+                predictionSetId: predictionSet.id,
+                winnerIdx: finalizationResults.winnerIdx
+              },
+              error
+            );
+
+            continue;
+          }
         }
       }
+    }
+  }
+
+  /**
+   * Log error and send Slack webhook.
+   * @param message Error message.
+   * @param data Error data.
+   * @param error Error.
+   * @param sendWebhook Should webhook be sent.
+   */
+  private async _logError(message: string, data: any = null, error: any = null, sendWebhook = true) {
+    const errorId = randomUUID();
+
+    await this.writeLogToDb(WorkerLogStatus.ERROR, message, { ...data, errorId }, error);
+
+    if (sendWebhook) {
+      await sendSlackWebhook(
+        `
+        ${message} See DB worker logs for more info: \n
+        - Error ID: \`${errorId}\`
+        `,
+        true
+      );
     }
   }
 

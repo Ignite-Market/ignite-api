@@ -73,10 +73,10 @@ export class PredictionSetParserWorker extends BaseQueueWorker {
 
     try {
       const predictionSet = await new PredictionSet({}, this.context).populateById(predictionSetId, null, false, { outcomes: true, chainData: true });
-      if (!predictionSet.exists() && predictionSet.setStatus !== PredictionSetStatus.FUNDED) {
+      if (!predictionSet.exists()) {
         await this.writeLogToDb(
           WorkerLogStatus.ERROR,
-          `Prediction set with ID: ${predictionSetId} does not exists or is not funded.`,
+          `Prediction set with ID: ${predictionSetId} does not exists.`,
           {
             predictionSetId,
             predictionSetStatus: predictionSet.setStatus
@@ -155,7 +155,7 @@ export class PredictionSetParserWorker extends BaseQueueWorker {
       }
 
       if (fundingEvents.length) {
-        // TODO: Check if prediction set is funded on the contract.
+        // TODO: Check if prediction set is funded on the contract and update status.
       }
 
       /**

@@ -37,9 +37,12 @@ export class RequestAttestationWorker extends BaseSingleThreadWorker {
           AND ps.status = ${PredictionSetStatus.ACTIVE}
           AND ps.resolutionType = ${ResolutionType.AUTOMATIC}
           AND ps.endTime <= NOW()
+          AND ps.resolutionTime >= NOW()
         `,
       {}
     );
+
+    // TODO: Test resolution time.
 
     for (const data of predictionSets) {
       const predictionSet = new PredictionSet(data, this.context);

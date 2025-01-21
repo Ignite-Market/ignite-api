@@ -1,4 +1,5 @@
 import { addPredictionSet } from '../../lib/blockchain';
+import { DataSource } from '../../modules/prediction-set/models/data-source.model';
 import { Outcome } from '../../modules/prediction-set/models/outcome.model';
 import { PredictionSet, ResolutionType } from '../../modules/prediction-set/models/prediction-set.model';
 import { PredictionSetService } from '../../modules/prediction-set/prediction-set.service';
@@ -13,7 +14,8 @@ const data = {
   startTime: new Date(),
   endTime: new Date(),
   resolutionTime: new Date(),
-  resolutionType: ResolutionType.VOTING,
+  resolutionType: ResolutionType.AUTOMATIC,
+  consensusThreshold: 60,
   predictionOutcomes: [
     {
       name: 'Yes'
@@ -33,8 +35,25 @@ const processPredictionSet = async () => {
     const ps = new PredictionSet(data, context);
     ps.outcomes = data.predictionOutcomes.map((d) => new Outcome(d, context));
 
-    const predictionSet = await service.createPredictionSet(ps, null, context);
+    // Add data sources.
+    const dataSourceIds = [];
+    for (let i = 0; i < 3; i++) {
+      const ds = await new DataSource(
+        {
+          endpoint: 'https://endpoint/' + i,
+          jqQuery: 'JQ query ' + i,
+          abi: 'ABI ' + i
+        },
+        context
+      ).insert();
 
+      dataSourceIds.push(ds.id);
+    }
+
+    // Create prediction set.
+    const predictionSet = await service.createPredictionSet(ps, dataSourceIds, context);
+
+    // Add prediction set to blockchain.
     await addPredictionSet(predictionSet, context);
   } catch (error) {
     console.log(error);

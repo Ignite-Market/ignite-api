@@ -58,7 +58,7 @@ describe('Prediction set e2e tests', () => {
               name: 'No'
             }
           ],
-          consensusThreshold: dataSourceIds.length,
+          consensusThreshold: 60,
           dataSourceIds
         };
 
@@ -104,7 +104,7 @@ describe('Prediction set e2e tests', () => {
               name: 'No'
             }
           ],
-          consensusThreshold: dataSourceIds.length,
+          consensusThreshold: 60,
           dataSourceIds
         };
 

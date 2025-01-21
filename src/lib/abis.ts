@@ -782,3 +782,303 @@ export const CONDITIONAL_TOKEN_ABI = [
     'type': 'event'
   }
 ];
+
+/**
+ * Oracle ABI.
+ */
+export const ORACLE_ABI = [
+  {
+    'inputs': [
+      { 'internalType': 'address', 'name': '_admin', 'type': 'address' },
+      { 'internalType': 'address', 'name': '_conditionalTokens', 'type': 'address' },
+      { 'internalType': 'address', 'name': '_verification', 'type': 'address' },
+      { 'internalType': 'uint256', 'name': '_minVotes', 'type': 'uint256' }
+    ],
+    'stateMutability': 'nonpayable',
+    'type': 'constructor'
+  },
+  {
+    'anonymous': false,
+    'inputs': [
+      { 'indexed': true, 'internalType': 'bytes32', 'name': 'role', 'type': 'bytes32' },
+      { 'indexed': true, 'internalType': 'bytes32', 'name': 'previousAdminRole', 'type': 'bytes32' },
+      { 'indexed': true, 'internalType': 'bytes32', 'name': 'newAdminRole', 'type': 'bytes32' }
+    ],
+    'name': 'RoleAdminChanged',
+    'type': 'event'
+  },
+  {
+    'anonymous': false,
+    'inputs': [
+      { 'indexed': true, 'internalType': 'bytes32', 'name': 'role', 'type': 'bytes32' },
+      { 'indexed': true, 'internalType': 'address', 'name': 'account', 'type': 'address' },
+      { 'indexed': true, 'internalType': 'address', 'name': 'sender', 'type': 'address' }
+    ],
+    'name': 'RoleGranted',
+    'type': 'event'
+  },
+  {
+    'anonymous': false,
+    'inputs': [
+      { 'indexed': true, 'internalType': 'bytes32', 'name': 'role', 'type': 'bytes32' },
+      { 'indexed': true, 'internalType': 'address', 'name': 'account', 'type': 'address' },
+      { 'indexed': true, 'internalType': 'address', 'name': 'sender', 'type': 'address' }
+    ],
+    'name': 'RoleRevoked',
+    'type': 'event'
+  },
+  {
+    'inputs': [],
+    'name': 'DEFAULT_ADMIN_ROLE',
+    'outputs': [{ 'internalType': 'bytes32', 'name': '', 'type': 'bytes32' }],
+    'stateMutability': 'view',
+    'type': 'function'
+  },
+  {
+    'inputs': [],
+    'name': 'VOTER_ROLE',
+    'outputs': [{ 'internalType': 'bytes32', 'name': '', 'type': 'bytes32' }],
+    'stateMutability': 'view',
+    'type': 'function'
+  },
+  {
+    'inputs': [],
+    'name': 'conditionalTokens',
+    'outputs': [{ 'internalType': 'contract IConditionalTokens', 'name': '', 'type': 'address' }],
+    'stateMutability': 'view',
+    'type': 'function'
+  },
+  {
+    'inputs': [
+      { 'internalType': 'bytes32', 'name': 'questionId', 'type': 'bytes32' },
+      {
+        'components': [
+          { 'internalType': 'bytes32[]', 'name': 'merkleProof', 'type': 'bytes32[]' },
+          {
+            'components': [
+              { 'internalType': 'bytes32', 'name': 'attestationType', 'type': 'bytes32' },
+              { 'internalType': 'bytes32', 'name': 'sourceId', 'type': 'bytes32' },
+              { 'internalType': 'uint64', 'name': 'votingRound', 'type': 'uint64' },
+              { 'internalType': 'uint64', 'name': 'lowestUsedTimestamp', 'type': 'uint64' },
+              {
+                'components': [
+                  { 'internalType': 'string', 'name': 'url', 'type': 'string' },
+                  { 'internalType': 'string', 'name': 'postprocessJq', 'type': 'string' },
+                  { 'internalType': 'string', 'name': 'abi_signature', 'type': 'string' }
+                ],
+                'internalType': 'struct IJsonApi.RequestBody',
+                'name': 'requestBody',
+                'type': 'tuple'
+              },
+              {
+                'components': [{ 'internalType': 'bytes', 'name': 'abi_encoded_data', 'type': 'bytes' }],
+                'internalType': 'struct IJsonApi.ResponseBody',
+                'name': 'responseBody',
+                'type': 'tuple'
+              }
+            ],
+            'internalType': 'struct IJsonApi.Response',
+            'name': 'data',
+            'type': 'tuple'
+          }
+        ],
+        'internalType': 'struct IJsonApi.Proof[]',
+        'name': 'proofs',
+        'type': 'tuple[]'
+      }
+    ],
+    'name': 'finalizeQuestion',
+    'outputs': [],
+    'stateMutability': 'nonpayable',
+    'type': 'function'
+  },
+  {
+    'inputs': [{ 'internalType': 'bytes32', 'name': 'role', 'type': 'bytes32' }],
+    'name': 'getRoleAdmin',
+    'outputs': [{ 'internalType': 'bytes32', 'name': '', 'type': 'bytes32' }],
+    'stateMutability': 'view',
+    'type': 'function'
+  },
+  {
+    'inputs': [
+      { 'internalType': 'bytes32', 'name': 'role', 'type': 'bytes32' },
+      { 'internalType': 'address', 'name': 'account', 'type': 'address' }
+    ],
+    'name': 'grantRole',
+    'outputs': [],
+    'stateMutability': 'nonpayable',
+    'type': 'function'
+  },
+  {
+    'inputs': [
+      { 'internalType': 'bytes32', 'name': 'role', 'type': 'bytes32' },
+      { 'internalType': 'address', 'name': 'account', 'type': 'address' }
+    ],
+    'name': 'hasRole',
+    'outputs': [{ 'internalType': 'bool', 'name': '', 'type': 'bool' }],
+    'stateMutability': 'view',
+    'type': 'function'
+  },
+  {
+    'inputs': [
+      { 'internalType': 'bytes32', 'name': '', 'type': 'bytes32' },
+      { 'internalType': 'address', 'name': '', 'type': 'address' }
+    ],
+    'name': 'hasVoted',
+    'outputs': [{ 'internalType': 'bool', 'name': '', 'type': 'bool' }],
+    'stateMutability': 'view',
+    'type': 'function'
+  },
+  {
+    'inputs': [
+      { 'internalType': 'bytes32', 'name': 'questionId', 'type': 'bytes32' },
+      { 'internalType': 'uint256', 'name': 'outcomeSlotCount', 'type': 'uint256' },
+      { 'internalType': 'string[]', 'name': 'urlAr', 'type': 'string[]' },
+      { 'internalType': 'string[]', 'name': 'postprocessJqAr', 'type': 'string[]' },
+      { 'internalType': 'uint256', 'name': 'consensusPercent', 'type': 'uint256' },
+      { 'internalType': 'uint256', 'name': 'resolutionTime', 'type': 'uint256' }
+    ],
+    'name': 'initializeQuestion',
+    'outputs': [],
+    'stateMutability': 'nonpayable',
+    'type': 'function'
+  },
+  {
+    'inputs': [{ 'internalType': 'bytes32', 'name': '', 'type': 'bytes32' }],
+    'name': 'jqToQuestionId',
+    'outputs': [{ 'internalType': 'bytes32', 'name': '', 'type': 'bytes32' }],
+    'stateMutability': 'view',
+    'type': 'function'
+  },
+  {
+    'inputs': [],
+    'name': 'minVotes',
+    'outputs': [{ 'internalType': 'uint256', 'name': '', 'type': 'uint256' }],
+    'stateMutability': 'view',
+    'type': 'function'
+  },
+  {
+    'inputs': [],
+    'name': 'noOfVoters',
+    'outputs': [{ 'internalType': 'uint256', 'name': '', 'type': 'uint256' }],
+    'stateMutability': 'view',
+    'type': 'function'
+  },
+  {
+    'inputs': [{ 'internalType': 'bytes32', 'name': '', 'type': 'bytes32' }],
+    'name': 'question',
+    'outputs': [
+      { 'internalType': 'enum IgniteOracle.Status', 'name': 'status', 'type': 'uint8' },
+      { 'internalType': 'uint256', 'name': 'outcomeSlotCount', 'type': 'uint256' },
+      { 'internalType': 'uint256', 'name': 'apiSources', 'type': 'uint256' },
+      { 'internalType': 'uint256', 'name': 'consensusPercent', 'type': 'uint256' },
+      { 'internalType': 'uint256', 'name': 'resolutionTime', 'type': 'uint256' },
+      { 'internalType': 'uint256', 'name': 'winnerIdx', 'type': 'uint256' }
+    ],
+    'stateMutability': 'view',
+    'type': 'function'
+  },
+  {
+    'inputs': [
+      { 'internalType': 'bytes32', 'name': '', 'type': 'bytes32' },
+      { 'internalType': 'uint256', 'name': '', 'type': 'uint256' }
+    ],
+    'name': 'questionOutcomeVotes',
+    'outputs': [{ 'internalType': 'uint256', 'name': '', 'type': 'uint256' }],
+    'stateMutability': 'view',
+    'type': 'function'
+  },
+  {
+    'inputs': [
+      { 'internalType': 'bytes32', 'name': 'role', 'type': 'bytes32' },
+      { 'internalType': 'address', 'name': 'account', 'type': 'address' }
+    ],
+    'name': 'renounceRole',
+    'outputs': [],
+    'stateMutability': 'nonpayable',
+    'type': 'function'
+  },
+  {
+    'inputs': [
+      { 'internalType': 'bytes32', 'name': 'role', 'type': 'bytes32' },
+      { 'internalType': 'address', 'name': 'account', 'type': 'address' }
+    ],
+    'name': 'revokeRole',
+    'outputs': [],
+    'stateMutability': 'nonpayable',
+    'type': 'function'
+  },
+  {
+    'inputs': [{ 'internalType': 'bytes4', 'name': 'interfaceId', 'type': 'bytes4' }],
+    'name': 'supportsInterface',
+    'outputs': [{ 'internalType': 'bool', 'name': '', 'type': 'bool' }],
+    'stateMutability': 'view',
+    'type': 'function'
+  },
+  {
+    'inputs': [],
+    'name': 'verification',
+    'outputs': [{ 'internalType': 'contract IJsonApiVerification', 'name': '', 'type': 'address' }],
+    'stateMutability': 'view',
+    'type': 'function'
+  },
+  {
+    'inputs': [
+      { 'internalType': 'bytes32', 'name': 'questionId', 'type': 'bytes32' },
+      { 'internalType': 'uint256', 'name': 'outcomeIdx', 'type': 'uint256' }
+    ],
+    'name': 'vote',
+    'outputs': [],
+    'stateMutability': 'nonpayable',
+    'type': 'function'
+  }
+];
+
+/**
+ * JSON verifier ABI.
+ */
+export const JSON_VERIFIER_ABI = [
+  {
+    'inputs': [
+      {
+        'components': [
+          { 'internalType': 'bytes32[]', 'name': 'merkleProof', 'type': 'bytes32[]' },
+          {
+            'components': [
+              { 'internalType': 'bytes32', 'name': 'attestationType', 'type': 'bytes32' },
+              { 'internalType': 'bytes32', 'name': 'sourceId', 'type': 'bytes32' },
+              { 'internalType': 'uint64', 'name': 'votingRound', 'type': 'uint64' },
+              { 'internalType': 'uint64', 'name': 'lowestUsedTimestamp', 'type': 'uint64' },
+              {
+                'components': [
+                  { 'internalType': 'string', 'name': 'url', 'type': 'string' },
+                  { 'internalType': 'string', 'name': 'postprocessJq', 'type': 'string' },
+                  { 'internalType': 'string', 'name': 'abi_signature', 'type': 'string' }
+                ],
+                'internalType': 'struct IJsonApi.RequestBody',
+                'name': 'requestBody',
+                'type': 'tuple'
+              },
+              {
+                'components': [{ 'internalType': 'bytes', 'name': 'abi_encoded_data', 'type': 'bytes' }],
+                'internalType': 'struct IJsonApi.ResponseBody',
+                'name': 'responseBody',
+                'type': 'tuple'
+              }
+            ],
+            'internalType': 'struct IJsonApi.Response',
+            'name': 'data',
+            'type': 'tuple'
+          }
+        ],
+        'internalType': 'struct IJsonApi.Proof',
+        'name': '',
+        'type': 'tuple'
+      }
+    ],
+    'name': 'verifyJsonApi',
+    'outputs': [{ 'internalType': 'bool', 'name': '_proved', 'type': 'bool' }],
+    'stateMutability': 'view',
+    'type': 'function'
+  }
+];

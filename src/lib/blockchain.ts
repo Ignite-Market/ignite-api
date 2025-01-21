@@ -5,8 +5,18 @@ import { SystemErrorCode } from '../config/types';
 import { Context } from '../context';
 import { PredictionSetChainData } from '../modules/prediction-set/models/prediction-set-chain-data.model';
 import { PredictionSet } from '../modules/prediction-set/models/prediction-set.model';
-import { CONDITIONAL_TOKEN_ABI, FPMM_ABI, FPMM_FACTORY_ABI } from './abis';
+import { CONDITIONAL_TOKEN_ABI, FPMM_ABI, FPMM_FACTORY_ABI, JSON_VERIFIER_ABI, ORACLE_ABI } from './abis';
 import { CodeException } from './exceptions/exceptions';
+
+/**
+ * Prediction set blockchain status.
+ */
+export enum PredictionSetBcStatus {
+  INVALID,
+  ACTIVE,
+  VOTING,
+  FINALIZED
+}
 
 /**
  * Sets up contracts.
@@ -19,11 +29,21 @@ export function setup(fpmmAddress: string = null) {
   const provider = new ethers.JsonRpcProvider(env.RPC_URL);
   const signer = new ethers.Wallet(env.SIGNER_PRIVATE_KEY, provider);
 
+  const oracleContract = new ethers.Contract(env.ORACLE_CONTRACT, ORACLE_ABI, signer);
   const fpmmfContract = new ethers.Contract(env.FPMM_FACTORY_CONTRACT, FPMM_FACTORY_ABI, signer);
   const conditionalTokenContract = new ethers.Contract(env.CONDITIONAL_TOKEN_CONTRACT, CONDITIONAL_TOKEN_ABI, signer);
   const fpmmContract = fpmmAddress ? new ethers.Contract(fpmmAddress, FPMM_ABI, signer) : null;
+  const verifierContract = new ethers.Contract(env.JSON_VERIFIER_CONTRACT, JSON_VERIFIER_ABI, signer);
 
-  return { provider, signer, fpmmfContract, conditionalTokenContract, fpmmContract };
+  return {
+    provider,
+    signer,
+    oracleContract,
+    fpmmfContract,
+    conditionalTokenContract,
+    fpmmContract,
+    verifierContract
+  };
 }
 
 /**
@@ -32,14 +52,46 @@ export function setup(fpmmAddress: string = null) {
  * @param context
  */
 export async function addPredictionSet(predictionSet: PredictionSet, context: Context) {
-  const { fpmmfContract, conditionalTokenContract } = setup();
+  const { fpmmfContract, conditionalTokenContract, oracleContract } = setup();
 
   const questionId = numberToBytes32(predictionSet.id);
+  // try {
+  //   const prepareTx = await conditionalTokenContract.prepareCondition(env.ORACLE_CONTRACT, questionId, predictionSet.outcomes.length);
+  //   await prepareTx.wait();
+  // } catch (error) {
+  //   Logger.error(error, 'Error while preparing condition.');
+
+  //   throw new CodeException({
+  //     code: SystemErrorCode.BLOCKCHAIN_SYSTEM_ERROR,
+  //     errorCodes: SystemErrorCode,
+  //     status: HttpStatus.INTERNAL_SERVER_ERROR,
+  //     sourceFunction: `${this.constructor.name}/addPredictionSet`,
+  //     errorMessage: 'Error while preparing condition.',
+  //     details: error,
+  //     context
+  //   });
+  // }
+
+  const urls = [];
+  const jqs = [];
+  const dataSources = await predictionSet.getDataSources();
+  for (const dataSource of dataSources) {
+    urls.push(dataSource.endpoint);
+    jqs.push(dataSource.jqQuery);
+  }
+
   try {
-    const prepareTx = await conditionalTokenContract.prepareCondition(env.ORACLE_ADDRESS, questionId, predictionSet.outcomes.length);
-    await prepareTx.wait();
+    const initializeQuestionTx = await oracleContract.initializeQuestion(
+      questionId,
+      predictionSet.outcomes.length,
+      urls,
+      jqs,
+      predictionSet.consensusThreshold,
+      Number(predictionSet.resolutionTime)
+    );
+    await initializeQuestionTx.wait();
   } catch (error) {
-    Logger.error(error, 'Error while preparing condition.');
+    Logger.error(error, 'Error while initializing question.');
 
     throw new CodeException({
       code: SystemErrorCode.BLOCKCHAIN_SYSTEM_ERROR,
@@ -52,7 +104,7 @@ export async function addPredictionSet(predictionSet: PredictionSet, context: Co
     });
   }
 
-  const conditionId = await conditionalTokenContract.getConditionId(env.ORACLE_ADDRESS, questionId, predictionSet.outcomes.length);
+  const conditionId = await conditionalTokenContract.getConditionId(env.ORACLE_CONTRACT, questionId, predictionSet.outcomes.length);
   if (!conditionId) {
     Logger.error('No condition ID found.');
 
@@ -85,6 +137,7 @@ export async function addPredictionSet(predictionSet: PredictionSet, context: Co
       status: HttpStatus.INTERNAL_SERVER_ERROR,
       sourceFunction: `${this.constructor.name}/addPredictionSet`,
       errorMessage: 'Error while creating fixed product market maker contract.',
+      details: error,
       context
     });
   }
@@ -103,9 +156,33 @@ export async function addPredictionSet(predictionSet: PredictionSet, context: Co
 
 /**
  * Finalizes prediction set results.
+ * @param questionId Question ID.
  * @param proofs Results proof data.
  */
-export async function finalizePredictionSetResults(proofs: any[]) {}
+export async function finalizePredictionSetResults(questionId: string, proofs: any[]): Promise<{ status: PredictionSetBcStatus; winnerIdx: number }> {
+  const { oracleContract } = setup();
+
+  try {
+    const finalizeTx = await oracleContract.finalizeQuestion(questionId, proofs);
+    await finalizeTx.wait();
+  } catch (error) {
+    throw new CodeException({
+      code: SystemErrorCode.BLOCKCHAIN_SYSTEM_ERROR,
+      errorCodes: SystemErrorCode,
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      sourceFunction: `${this.constructor.name}/finalizePredictionSetResults`,
+      errorMessage: 'Error while finalizing prediction set results.',
+      details: error
+    });
+  }
+
+  const question = await oracleContract.question(questionId);
+
+  const status = Number(question.status);
+  const winnerIdx = question.winnerIdx;
+
+  return { status, winnerIdx };
+}
 
 /**
  * Verifies prediction set results.
@@ -113,7 +190,20 @@ export async function finalizePredictionSetResults(proofs: any[]) {}
  * @returns Boolean.
  */
 export async function verifyPredictionSetResults(proof: any): Promise<boolean> {
-  return true;
+  const { verifierContract } = setup();
+
+  try {
+    return await verifierContract.verifyJsonApi(proof);
+  } catch (error) {
+    throw new CodeException({
+      code: SystemErrorCode.BLOCKCHAIN_SYSTEM_ERROR,
+      errorCodes: SystemErrorCode,
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      sourceFunction: `${this.constructor.name}/verifyPredictionSetResults`,
+      errorMessage: 'Error while verifying prediction set results.',
+      details: error
+    });
+  }
 }
 
 /**
