@@ -18,7 +18,6 @@ custom:
 
 plugins:
   - serverless-webpack
-  - serverless-plugin-resource-tagging
 
 provider:
   name: aws

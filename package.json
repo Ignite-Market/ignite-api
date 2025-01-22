@@ -49,6 +49,7 @@
     "colors": "^1.4.0",
     "cron-parser": "^4.9.0",
     "cross-env": "^7.0.3",
+    "dayjs": "^1.11.13",
     "dotenv": "^16.4.5",
     "ethers": "^6.13.4",
     "express": "^4.19.2",
@@ -60,11 +61,9 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "serverless": "^3.39.0",
-    "serverless-plugin-resource-tagging": "^1.2.0",
     "serverless-webpack": "^5.15.0",
     "ts-mysql-migrate": "^1.1.2",
-    "uuid": "^11.0.2",
-    "dayjs": "^1.11.13"
+    "uuid": "^11.0.2"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.3.2",
