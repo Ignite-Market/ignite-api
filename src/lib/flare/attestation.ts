@@ -9,7 +9,7 @@ import { encodeAttestationData } from './utils';
  *
  * @param url API url for the data to attest.
  * @param jq JQ query to obtain data from API response.
- * @param abi ABI?
+ * @param abi ABI to encode/decode API response.
  * @returns Prepared attestation request.
  */
 export async function prepareAttestationRequest(url: string, jq: string, abi: any): Promise<EncodedAttestationRequest> {

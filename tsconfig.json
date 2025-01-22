@@ -17,7 +17,8 @@
     "noFallthroughCasesInSwitch": false,
     "noResolve": false,
     "allowJs": true,
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "rootDir": "./src"
   },
   "include": [
     "src/**/*.ts",
