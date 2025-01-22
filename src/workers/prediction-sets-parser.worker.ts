@@ -143,7 +143,8 @@ export class PredictionSetsParserWorker extends BaseSingleThreadWorker {
         {
           errorId
         },
-        error
+        error,
+        errorId
       );
     }
   }

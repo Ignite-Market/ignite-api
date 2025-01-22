@@ -181,8 +181,7 @@ export class FinalizePredictionSetWorker extends BaseSingleThreadWorker {
    */
   private async _logError(message: string, data: any = null, error: any = null, sendWebhook = true) {
     const errorId = randomUUID();
-
-    await this.writeLogToDb(WorkerLogStatus.ERROR, message, { ...data, errorId }, error);
+    await this.writeLogToDb(WorkerLogStatus.ERROR, message, { ...data, errorId }, error, errorId);
 
     if (sendWebhook) {
       await sendSlackWebhook(

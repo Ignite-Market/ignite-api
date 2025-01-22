@@ -9,6 +9,7 @@ export const upgrade = async (queryFn: (query: string, values?: any[]) => Promis
     \`status\` INT NOT NULL DEFAULT ${WorkerLogStatus.INFO},
     \`worker\` VARCHAR(255) NOT NULL,
     \`type\` VARCHAR(50) NULL,
+    \`uuid\` VARCHAR(45) NULL,
     \`message\` TEXT NULL,
     \`data\` JSON NULL,
     \`error\` JSON NULL,
