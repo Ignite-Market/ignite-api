@@ -1,0 +1,26 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+    commands:
+      - npm cache verify
+      - >
+        npm install --location=global
+        typescript
+        serverless@3 serverless-webpack
+        copy-webpack-plugin
+        webpack webpack-node-externals
+        ts-loader ts-node
+        copyfiles rimraf
+  pre_build:
+    commands:
+      - printenv
+      - echo `date +%s` > timestamp
+      - echo Build started on `date`
+      - chmod +x ./bin/deploy/build-aws.sh
+  build:
+    commands:
+      - pwd
+      - ls -l ./bin/deploy
+      - ./bin/deploy/build-aws.sh

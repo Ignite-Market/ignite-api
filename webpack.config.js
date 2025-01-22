@@ -2,7 +2,6 @@
 const path = require('path');
 const slsw = require('serverless-webpack');
 const nodeExternals = require('webpack-node-externals');
-// const CopyPlugin = require('copy-webpack-plugin');
 
 module.exports = {
   context: __dirname,
@@ -32,8 +31,7 @@ module.exports = {
       aws4: false,
       'mongodb-client-encryption': false,
       cardinal: false,
-      'gcp-metadata': false
-      // '@kalmia-monitor/lib': path.join(__dirname, '..', '..', 'packages', 'lib')
+      'gcp-metadata': false,
     },
   },
   output: {
@@ -47,9 +45,7 @@ module.exports = {
   },
   externals: [
     // nodeExternals()
-    nodeExternals({
-      allowlist: ['@kalmia-monitor/lib', '@kalmia-monitor/modules-lib'],
-    }),
+    nodeExternals({}),
   ],
   module: {
     rules: [
@@ -70,18 +66,5 @@ module.exports = {
         },
       },
     ],
-  },
-  // plugins: [
-  //   new CopyPlugin({
-  //     patterns: [
-  //       {
-  //         from: './../../packages/@kalmia-monitor/lib/dist/lib/mailing/templates/*.html',
-  //         to: './../../packages/@kalmia-monitor/lib/dist/lib/mailing/templates/'
-  //       }
-  //       // { from: './src/templates/mail/*.html' },
-  //       // { from: './src/templates/pdf/*.html' },
-  //       // { from: './src/locales/*.json' },
-  //     ],
-  //   }),
-  // ],
+  }
 };
