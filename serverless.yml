@@ -18,6 +18,7 @@ custom:
 
 plugins:
   - serverless-webpack
+  - serverless-plugin-resource-tagging
 
 provider:
   name: aws
@@ -28,6 +29,9 @@ provider:
     role: arn:aws:iam::108782093333:role/serverless-workers-executor
   apiGateway:
     minimumCompressionSize: 1024 # Enable gzip compression for responses > 1 KB
+  stackTags:
+    project: 'ignite-market'
+    env: '${self:provider.stage}'
 
   # you can define service wide environment variables here
   environment: ${file(./bin/deploy/env/env.yml)}
