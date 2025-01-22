@@ -16,4 +16,6 @@ phases:
     commands:
       - pwd
       - ls -l ./bin/deploy
+      - npm cache verify
+      - npm install
       - ./bin/deploy/build-aws.sh
