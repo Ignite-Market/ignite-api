@@ -13,7 +13,7 @@ This repository contains a backend application to support the creation of predic
 
 
 ## Technologies
-* Backend Framework: Nest.js
+* Backend Framework: NestJS
 * Database: MySQL
 * Deployment: AWS
 
