@@ -1,6 +1,6 @@
 {
   "ReceiveMessageWaitTimeSeconds": "5",
   "VisibilityTimeout": "900",
-  "Policy": "{\"Version\": \"2012-10-17\",\"Id\": \"__default_policy_ID\",\"Statement\": [{\"Sid\": \"__owner_statement\",\"Effect\": \"Allow\",\"Principal\": {\"AWS\": \"arn:aws:iam::006144262443:role/serverless-worker-executor\"},\"Action\": \"sqs:*\",\"Resource\": \"arn:aws:iam::006144262443:ignite-market-worker-queue-dev\"}]}",
-  "RedrivePolicy": "{\"deadLetterTargetArn\":\"arn:aws:sqs:eu-west-1:006144262443:ignite-market-worker-queue-dev-dlq\",\"maxReceiveCount\":\"30\"}"
+  "Policy": "{\"Version\": \"2012-10-17\",\"Id\": \"__default_policy_ID\",\"Statement\": [{\"Sid\": \"__owner_statement\",\"Effect\": \"Allow\",\"Principal\": {\"AWS\": \"arn:aws:iam::108782093333:role/serverless-workers-executor\"},\"Action\": \"sqs:*\",\"Resource\": \"arn:aws:iam::108782093333:ignite-market-worker-queue-dev\"}]}",
+  "RedrivePolicy": "{\"deadLetterTargetArn\":\"arn:aws:sqs:us-east-1:108782093333:ignite-market-worker-queue-dev-dlq\",\"maxReceiveCount\":\"30\"}"
 }
