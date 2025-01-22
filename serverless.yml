@@ -12,41 +12,31 @@ custom:
         - '@aws-sdk/client-secrets-manager'
         - '@aws-sdk/client-sqs'
         - '@aws-sdk/s3-request-presigner'
-      # forceInclude:
-      #   - follow-redirects
     packagerOptions:
       lockFile: './package-lock.json'
     excludeFiles: '**/*\.test\.js|**/*\.test\.ts|**/tests/**/*|**/test/**/|**/*\.spec\.ts|**/*\.spec\.js'
-  # serverlessPluginTypescript:
-  #   tsConfigFileLocation: './tsconfig.build.json'
 
 plugins:
   - serverless-webpack
   - serverless-plugin-resource-tagging
-  # - serverless-plugin-typescript
 
 provider:
   name: aws
   runtime: nodejs20.x
-  region: eu-west-1
+  region: us-east-1
   stage: ${opt:stage, 'dev'}
   iam:
-    role: arn:aws:iam::006144262443:role/serverless-worker-executor
+    role: arn:aws:iam::108782093333:role/serverless-workers-executor
   apiGateway:
     minimumCompressionSize: 1024 # Enable gzip compression for responses > 1 KB
-  # stackTags: TODO: Do we need this?
-    # project: 'tg-game-farm-factory'
-    # env: '${self:provider.stage}'
 
+  # you can define service wide environment variables here
   environment: ${file(./bin/deploy/env/env.yml)}
 
 # you can add packaging information here
 package:
   patterns:
     - '!dist/**'
-    # - '!**/*.*'
-    # - '!.turbo'
-    # - './dist/**'
   excludeDevDependencies: true
 
 functions:
@@ -69,13 +59,13 @@ functions:
   ignite-market-worker:
     handler: ./src/workers/worker-executor.handler
     name: 'ignite-market-worker-${self:provider.stage}'
-    description: Worker executor for scheduled tasks
+    description: Serverless worker executor for scheduled tasks.
     memorySize: 512
     timeout: 900
     events:
       - schedule: cron(${env:CRON_SCHEDULE, '0/1 * * * ? *'})
       - sqs:
-          arn: arn:aws:sqs:eu-west-1:006144262443:ignite-market-worker-queue-dev #${env:WORKER_SQS_ARN}
+          arn: ${env:WORKER_SQS_ARN}
           batchSize: 4
           maximumBatchingWindow: 5
           functionResponseType: ReportBatchItemFailures
