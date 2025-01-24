@@ -34,8 +34,6 @@ export interface IEnv {
   AWS_SECRETS_ID: string;
 
   AWS_KEY: string;
-  AWS_BUCKET: string;
-  AWS_ENDPOINT: string;
   AWS_SECRET: string;
 
   AWS_WORKER_LAMBDA_NAME: string;
@@ -58,7 +56,6 @@ export interface IEnv {
 
   PREDICTION_SET_MINIMAL_DATA_SOURCES: number;
 
-  PREDICTION_CONTRACT: string;
   SLACK_WEBHOOK_URL: string;
 
   ORACLE_CONTRACT: string;
@@ -75,7 +72,6 @@ export interface IEnv {
   FPMM_FACTORY_BLOCK_CONFIRMATIONS: number;
 
   RPC_URL: string;
-  FLARE_NETWORK: string;
   FLARE_DATA_AVAILABILITY_URL: string;
   FLARE_DATA_AVAILABILITY_API_KEY: string;
   FLARE_CONTRACT_REGISTRY_ADDRESS: string;
@@ -86,6 +82,9 @@ export interface IEnv {
 dotenv.config();
 
 export let env: IEnv = {
+  /**
+   * API settings.
+   */
   API_HOST: process.env['API_HOST'] || '0.0.0.0',
   API_PORT: parseInt(process.env['API_PORT']) || 6060,
 
@@ -98,18 +97,20 @@ export let env: IEnv = {
 
   LOG_TARGET: process.env['LOG_TARGET'] || 'color',
   LOG_LEVEL: process.env['LOG_LEVEL'] || LogLevel.DEBUG,
+  SLACK_WEBHOOK_URL: process.env['SLACK_WEBHOOK_URL'],
 
   DEFAULT_PAGE_SIZE: parseInt(process.env['DEFAULT_PAGE_SIZE']) || 20,
-  DEFAULT_CACHE_TTL: parseInt(process.env['DEFAULT_CACHE_TTL']) || CacheKeyTTL.DEFAULT,
 
+  /**
+   * Cache settings.
+   */
   REDIS_URL: process.env['REDIS_URL'],
+  DEFAULT_CACHE_TTL: parseInt(process.env['DEFAULT_CACHE_TTL']) || CacheKeyTTL.DEFAULT,
 
   /**
    * AWS S3 settings.
    */
   AWS_KEY: process.env['AWS_KEY'],
-  AWS_BUCKET: process.env['AWS_BUCKET'],
-  AWS_ENDPOINT: process.env['AWS_ENDPOINT'],
   AWS_SECRET: process.env['AWS_SECRET'],
   AWS_REGION: process.env['AWS_REGION'] || 'us-east-1',
   AWS_SECRETS_ID: process.env['AWS_SECRETS_ID'],
@@ -147,10 +148,6 @@ export let env: IEnv = {
 
   PREDICTION_SET_MINIMAL_DATA_SOURCES: parseInt(process.env['PREDICTION_SET_MINIMAL_DATA_SOURCES']) || 3,
 
-  PREDICTION_CONTRACT: process.env['PREDICTION_CONTRACT'],
-
-  SLACK_WEBHOOK_URL: process.env['SLACK_WEBHOOK_URL'],
-
   /**
    * Fixed product market maker & conditional token contracts.
    */
@@ -161,7 +158,6 @@ export let env: IEnv = {
   JSON_VERIFIER_CONTRACT: process.env['JSON_VERIFIER_CONTRACT'],
 
   RPC_URL: process.env['RPC_URL'],
-  FLARE_NETWORK: process.env['FLARE_NETWORK'] || 'coston',
   FLARE_DATA_AVAILABILITY_URL: process.env['FLARE_DATA_AVAILABILITY_URL'],
   FLARE_DATA_AVAILABILITY_API_KEY: process.env['FLARE_DATA_AVAILABILITY_API_KEY'],
   SIGNER_PRIVATE_KEY: process.env['SIGNER_PRIVATE_KEY'],
@@ -205,9 +201,9 @@ async function populateSecrets() {
   try {
     const secrets = await getSecrets(env.AWS_SECRETS_ID);
     env = { ...env, ...secrets };
-  } catch (err) {
+  } catch (error) {
     console.error('Error while populating env secretes: ');
-    console.error(err);
+    console.error(error);
   }
   isEnvReady = true;
 }

@@ -5,7 +5,7 @@ import { AppEnvironment } from '../../config/types';
 
 /**
  * Returns AWS secrets client.
- * Permission will be checked against execution role (of lambda)
+ * Permission will be checked against execution role (of lambda).
  */
 function createClient() {
   return new SecretsManagerClient({
@@ -19,11 +19,13 @@ function createClient() {
       : {}),
     region: env.AWS_REGION
   });
-  // return new aws.SecretsManager({
-  //   region: env.AWS_REGION,
-  // });
 }
 
+/**
+ *
+ * @param id
+ * @returns
+ */
 export async function getSecrets(id: string): Promise<any> {
   const command = new GetSecretValueCommand({
     SecretId: id
@@ -32,6 +34,12 @@ export async function getSecrets(id: string): Promise<any> {
   return safeJsonParse(response.SecretString);
 }
 
+/**
+ *
+ * @param id
+ * @param value
+ * @returns
+ */
 export async function updateSecret(id: string, value: string): Promise<any> {
   const command = new PutSecretValueCommand({
     SecretId: id,

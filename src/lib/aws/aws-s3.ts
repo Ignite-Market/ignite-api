@@ -14,6 +14,9 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { consumers, Readable } from 'stream';
 import { env } from '../../config/env';
 
+/**
+ * AWS S3 client.
+ */
 export class AWS_S3 {
   private s3Client: S3Client;
 
@@ -34,13 +37,10 @@ export class AWS_S3 {
       }
     } catch (err) {
       console.error(
-        'error creating AWS S3 client',
+        'Error while creating AWS S3 client:',
         {
           params: {
-            // key: env.AWS_KEY,
-            // secret: env.AWS_SECRET,
             reg: env.AWS_REGION,
-            endpoint: env.AWS_ENDPOINT,
             env: env.APP_ENV
           }
         },

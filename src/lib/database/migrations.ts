@@ -1,7 +1,9 @@
-import { Migration, MigrationConnection } from 'ts-mysql-migrate';
+import * as fs from 'fs';
 import { ConnectionOptions, createPool } from 'mysql2';
-import { AppEnvironment } from '../../config/types';
+import * as path from 'path';
+import { Migration, MigrationConnection } from 'ts-mysql-migrate';
 import { env } from '../../config/env';
+import { AppEnvironment } from '../../config/types';
 
 let dbMigration: Migration = null;
 let seedMigration: Migration = null;
@@ -98,8 +100,14 @@ async function initMigrations(
     user: user,
     password: password,
     database: database,
-    // debug: true,
-    connectionLimit: 1
+    connectionLimit: 1,
+    ssl: env.MYSQL_SSL_CA_FILE
+      ? {
+          ca: fs.readFileSync(path.resolve(process.cwd(), env.MYSQL_SSL_CA_FILE)).toString(),
+          key: env.MYSQL_SSL_KEY_FILE ? fs.readFileSync(path.resolve(process.cwd(), env.MYSQL_SSL_KEY_FILE)).toString() : undefined,
+          cert: env.MYSQL_SSL_CERT_FILE ? fs.readFileSync(path.resolve(process.cwd(), env.MYSQL_SSL_CERT_FILE)).toString() : undefined
+        }
+      : undefined
   };
 
   console.log(`Initializing migrations for ${env.APP_ENV} environment!`);
