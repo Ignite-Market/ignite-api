@@ -1,9 +1,11 @@
+import * as fs from 'fs';
 import * as mysql from 'mysql2/promise';
 import { PoolConnection } from 'mysql2/promise';
-import { writeLog } from './../logger';
+import * as path from 'path';
 import { env } from '../../config/env';
 import { AppEnvironment, LogType } from '../../config/types';
 import { isPlainObject } from '../utils';
+import { writeLog } from './../logger';
 
 export { PoolConnection } from 'mysql2/promise';
 
@@ -77,6 +79,10 @@ export class MySql {
     return this;
   }
 
+  /**
+   * Creates connection pool.
+   * @returns Connection pool.
+   */
   private createConnectionPool() {
     return mysql.createPool({
       host: this.host,
@@ -88,12 +94,14 @@ export class MySql {
       decimalNumbers: true,
       connectionLimit: 10,
       queueLimit: 100,
-      timezone: 'Z'
-      // ssl: env.USE_DB_SSL ? {
-      //   ca: fs.readFileSync(`${__dirname}/keys/ca-cert.pem`).toString(),
-      //   key: fs.readFileSync(`${__dirname}/keys/client-key.pem`).toString(),
-      //   cert: fs.readFileSync(`${__dirname}/keys/client-cert.pem`).toString()
-      // } : undefined
+      timezone: 'Z',
+      ssl: env.MYSQL_SSL_CA_FILE
+        ? {
+            ca: fs.readFileSync(path.resolve(process.cwd(), env.MYSQL_SSL_CA_FILE)).toString(),
+            key: env.MYSQL_SSL_KEY_FILE ? fs.readFileSync(path.resolve(process.cwd(), env.MYSQL_SSL_KEY_FILE)).toString() : undefined,
+            cert: env.MYSQL_SSL_CERT_FILE ? fs.readFileSync(path.resolve(process.cwd(), env.MYSQL_SSL_CERT_FILE)).toString() : undefined
+          }
+        : undefined
     });
   }
 

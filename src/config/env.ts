@@ -2,6 +2,9 @@ import { getSecrets } from '../lib/aws/aws-secrets';
 import { AppEnvironment, CacheKeyTTL, LogLevel } from './types';
 import * as dotenv from 'dotenv';
 
+/**
+ * Environment interface.
+ */
 export interface IEnv {
   API_HOST: string;
   API_PORT: number;
@@ -43,6 +46,9 @@ export interface IEnv {
   MYSQL_PASSWORD: string;
   MYSQL_PORT: number;
   MYSQL_USER: string;
+  MYSQL_SSL_CA_FILE: string;
+  MYSQL_SSL_KEY_FILE: string;
+  MYSQL_SSL_CERT_FILE: string;
 
   MYSQL_HOST_TEST: string;
   MYSQL_DATABASE_TEST: string;
@@ -98,23 +104,41 @@ export let env: IEnv = {
 
   REDIS_URL: process.env['REDIS_URL'],
 
-  AWS_SECRETS_ID: process.env['AWS_SECRETS_ID'],
-
+  /**
+   * AWS S3 settings.
+   */
   AWS_KEY: process.env['AWS_KEY'],
   AWS_BUCKET: process.env['AWS_BUCKET'],
   AWS_ENDPOINT: process.env['AWS_ENDPOINT'],
   AWS_SECRET: process.env['AWS_SECRET'],
   AWS_REGION: process.env['AWS_REGION'] || 'us-east-1',
+  AWS_SECRETS_ID: process.env['AWS_SECRETS_ID'],
 
+  /*
+   * Lambda worker settings.
+   */
   AWS_WORKER_LAMBDA_NAME: process.env['AWS_WORKER_LAMBDA_NAME'],
   AWS_WORKER_SQS_URL: process.env['AWS_WORKER_SQS_URL'],
 
+  /**
+   * MySQL connection settings.
+   */
   MYSQL_HOST: process.env['MYSQL_HOST'],
   MYSQL_DATABASE: process.env['MYSQL_DATABASE'],
   MYSQL_PASSWORD: process.env['MYSQL_PASSWORD'],
   MYSQL_PORT: parseInt(process.env['MYSQL_PORT']),
   MYSQL_USER: process.env['MYSQL_USER'],
 
+  /**
+   * MySQL SSL file paths.
+   */
+  MYSQL_SSL_CA_FILE: process.env['MYSQL_SSL_CA_FILE'],
+  MYSQL_SSL_KEY_FILE: process.env['MYSQL_SSL_KEY_FILE'],
+  MYSQL_SSL_CERT_FILE: process.env['MYSQL_SSL_CERT_FILE'],
+
+  /**
+   * MySQL connection settings for testing.
+   */
   MYSQL_HOST_TEST: process.env['MYSQL_HOST_TEST'],
   MYSQL_DATABASE_TEST: process.env['MYSQL_DATABASE_TEST'],
   MYSQL_PASSWORD_TEST: process.env['MYSQL_PASSWORD_TEST'],
@@ -152,18 +176,19 @@ export let env: IEnv = {
   FPMM_FACTORY_BLOCK_CONFIRMATIONS: parseInt(process.env['FPMM_FACTORY_BLOCK_CONFIRMATIONS']) || 5
 };
 
+/**
+ * Flag to check if environment is ready.
+ */
 export let isEnvReady = false;
 
 /**
  * Should be used for retrieving environment variables from AWS secret manager.
- * @returns IEnv dictionary
+ * @returns IEnv dictionary.
  */
 export async function getEnvSecrets() {
   if (!isEnvReady) {
     await populateSecrets();
   }
-  // only uncomment for debugging... should not print out in production!!!
-  // console.log(JSON.stringify(env, null, 2));
   return env;
 }
 
@@ -187,7 +212,9 @@ async function populateSecrets() {
   isEnvReady = true;
 }
 
-// startup populate
+/**
+ * Startup population of secrets.
+ */
 populateSecrets()
   .then(() => {
     console.log('Environment is ready.');

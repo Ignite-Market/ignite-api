@@ -8,6 +8,16 @@ import { AppModule } from './app.module';
 import { ExceptionsFilter } from './filters/exception.filter';
 import { ResponseInterceptor } from './interceptors/response.interceptor';
 
+/**
+ * Cached server.
+ */
+let cachedServer: Server;
+
+/**
+ * Bootstraps the module.
+ * @param module Module to bootstrap.
+ * @returns HTTP server.
+ */
 export async function bootstrapModule(module: any) {
   const expressApp = express();
   const adapter = new ExpressAdapter(expressApp);
@@ -21,12 +31,20 @@ export async function bootstrapModule(module: any) {
   return createServer(expressApp);
 }
 
+/**
+ * Bootstraps the application.
+ * @returns Bootstrapped module.
+ */
 export async function bootstrap() {
   return bootstrapModule(AppModule);
 }
 
-let cachedServer: Server;
-
+/**
+ * Lambda handler.
+ * @param event Lambda event.
+ * @param context Application context.
+ * @returns Lambda response.
+ */
 export async function handler(event: any, context: Context): Promise<Response> {
   if (!cachedServer) {
     cachedServer = await bootstrap();
