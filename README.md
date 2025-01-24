@@ -1,7 +1,7 @@
 # Ignite Market - Backend
 
-Ignite Market is a decentralized prediction market platform, designed to enable users to trade on the outcomes of real-world events. The initial implementation leverages the Gnosis FPMM (Fixed Product Market Maker) and conditional tokens, ensuring a robust and transparent trading mechanism. To power its resolution process, Ignite Market integrates Flare FDC (Flare Data Connector), ensuring accurate and trustless event resolution.
-
+Ignite Market is a decentralized prediction market platform, designed to enable users to trade on the outcomes of real-world events. 
+The product description can be found [here] (https://github.com/kalmiallc/ignite-market-contracts/blob/main/ProductDescription.md).
 
 This repository contains a backend application to support the creation of prediction markets, worker automatons and other admin tasks that are required for the performance of the marketplace.
 
