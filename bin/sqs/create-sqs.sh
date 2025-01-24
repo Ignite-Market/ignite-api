@@ -1,2 +1,2 @@
-aws sqs create-queue --queue-name ignite-market-worker-queue-dev-dlq --attributes file://worker-sqs-dev-dlq.json --region eu-west-1 --profile kalmia
-aws sqs create-queue --queue-name ignite-market-worker-queue-dev --attributes file://worker-sqs-dev.json  --region eu-west-1 --profile kalmia
+aws sqs create-queue --queue-name ignite-market-worker-queue-dev-dlq --attributes file://worker-sqs-dev-dlq.json --region us-east-1 --profile ignite
+aws sqs create-queue --queue-name ignite-market-worker-queue-dev --attributes file://worker-sqs-dev.json  --region us-east-1 --profile ignite

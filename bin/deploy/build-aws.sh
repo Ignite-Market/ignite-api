@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 echo "Starting build script..."
 TIMESTAMP="$(date +%s)"
@@ -12,10 +11,6 @@ echo "Reading ENV from:"
 echo $S3_CONFIG
 aws s3 cp ${S3_CONFIG} ./bin/deploy/env/env.yml
 cat ./bin/deploy/env/env.yml
-
-npm install
-npm run build
-npm run db-upgrade:ci
 
 if [ "$ENV" == "staging" ]
 then

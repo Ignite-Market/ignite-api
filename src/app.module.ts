@@ -1,13 +1,14 @@
 import { MiddlewareConsumer, Module, RequestMethod } from '@nestjs/common';
-import { ContextMiddleware } from './middlewares/context.middleware';
 import { AuthenticateUserMiddleware } from './middlewares/authentication.middleware';
-import { MySQLModule } from './modules/database/mysql.module';
-import { UserModule } from './modules/user/user.module';
-import { PredictionSetModule } from './modules/prediction-set/prediction-set.module';
+import { ContextMiddleware } from './middlewares/context.middleware';
+import { BaseModule } from './modules/base/base.module';
 import { CommentModule } from './modules/comment/comment.module';
+import { MySQLModule } from './modules/database/mysql.module';
+import { PredictionSetModule } from './modules/prediction-set/prediction-set.module';
+import { UserModule } from './modules/user/user.module';
 
 @Module({
-  imports: [MySQLModule, UserModule, PredictionSetModule, CommentModule],
+  imports: [MySQLModule, UserModule, PredictionSetModule, CommentModule, BaseModule],
   controllers: [],
   providers: []
 })

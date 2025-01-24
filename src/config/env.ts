@@ -104,7 +104,7 @@ export let env: IEnv = {
   AWS_BUCKET: process.env['AWS_BUCKET'],
   AWS_ENDPOINT: process.env['AWS_ENDPOINT'],
   AWS_SECRET: process.env['AWS_SECRET'],
-  AWS_REGION: process.env['AWS_REGION'] || 'eu-west-1',
+  AWS_REGION: process.env['AWS_REGION'] || 'us-east-1',
 
   AWS_WORKER_LAMBDA_NAME: process.env['AWS_WORKER_LAMBDA_NAME'],
   AWS_WORKER_SQS_URL: process.env['AWS_WORKER_SQS_URL'],
