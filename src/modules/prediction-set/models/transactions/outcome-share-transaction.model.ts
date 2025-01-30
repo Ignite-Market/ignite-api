@@ -1,24 +1,24 @@
 import { prop } from '@rawmodel/core';
 import { integerParser, stringParser } from '@rawmodel/parsers';
-import { DbTables, PopulateFrom, SerializeFor } from '../../../config/types';
-import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
+import { DbTables, PopulateFrom, SerializeFor } from '../../../../config/types';
+import { AdvancedSQLModel } from '../../../../lib/base-models/advanced-sql.model';
 
 /**
- * Funding transaction type definition.
+ * Outcome share transaction type.
  */
-export enum FundingTransactionType {
-  ADDED = 1,
-  REMOVED = 2
+export enum ShareTransactionType {
+  BUY = 1,
+  SELL = 2
 }
 
 /**
- * Prediction set funding transaction.
+ * Prediction set outcome share transaction model.
  */
-export class PredictionSetFundingTransaction extends AdvancedSQLModel {
+export class OutcomeShareTransaction extends AdvancedSQLModel {
   /**
-   * Prediction set funding transactions data table.
+   * Outcome shares transactions table.
    */
-  public tableName = DbTables.PREDICTION_SET_FUNDING_TRANSACTION;
+  public tableName = DbTables.OUTCOME_SHARE_TRANSACTION;
 
   /**
    * Prediction set ID.
@@ -41,6 +41,16 @@ export class PredictionSetFundingTransaction extends AdvancedSQLModel {
   public user_id: number;
 
   /**
+   * Outcome ID.
+   */
+  @prop({
+    parser: { resolver: integerParser() },
+    populatable: [PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
+  })
+  public outcome_id: number;
+
+  /**
    * Transaction hash.
    */
   @prop({
@@ -51,7 +61,7 @@ export class PredictionSetFundingTransaction extends AdvancedSQLModel {
   public txHash: string;
 
   /**
-   * Funder's user wallet.
+   * Transaction's user wallet.
    */
   @prop({
     parser: { resolver: stringParser() },
@@ -61,43 +71,52 @@ export class PredictionSetFundingTransaction extends AdvancedSQLModel {
   public wallet: string;
 
   /**
-   * Funding amounts.
-   * - String of funding amounts, separated by commas - position of funding amount corresponds to its outcome index.
+   * Transaction amount.
    */
   @prop({
     parser: { resolver: stringParser() },
     populatable: [PopulateFrom.DB],
     serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
   })
-  public amounts: string;
+  public amount: string;
 
   /**
-   * Transaction shares (minted or burned).
+   * Transaction fee amount.
    */
   @prop({
     parser: { resolver: stringParser() },
     populatable: [PopulateFrom.DB],
     serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
   })
-  public shares: string;
+  public feeAmount: string;
 
   /**
-   * Removed collateral from fee pool on funding removed transaction.
-   */
-  @prop({
-    parser: { resolver: stringParser() },
-    populatable: [PopulateFrom.DB],
-    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
-  })
-  public collateralRemovedFromFeePool: string;
-
-  /**
-   * Funding transaction type (ADDED/REMOVED).
+   * Transaction outcome index.
    */
   @prop({
     parser: { resolver: integerParser() },
     populatable: [PopulateFrom.DB],
     serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
   })
-  public type: FundingTransactionType;
+  public outcomeIndex: number;
+
+  /**
+   * Transaction outcome tokens (bought or sold).
+   */
+  @prop({
+    parser: { resolver: stringParser() },
+    populatable: [PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
+  })
+  public outcomeTokens: string;
+
+  /**
+   * Transaction type (BUY/SELL).
+   */
+  @prop({
+    parser: { resolver: integerParser() },
+    populatable: [PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
+  })
+  public type: ShareTransactionType;
 }

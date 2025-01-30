@@ -1,24 +1,16 @@
 import { prop } from '@rawmodel/core';
 import { integerParser, stringParser } from '@rawmodel/parsers';
-import { DbTables, PopulateFrom, SerializeFor } from '../../../config/types';
-import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
+import { DbTables, PopulateFrom, SerializeFor } from '../../../../config/types';
+import { AdvancedSQLModel } from '../../../../lib/base-models/advanced-sql.model';
 
 /**
- * Outcome share transaction type.
+ * Outcome voting transaction model.
  */
-export enum ShareTransactionType {
-  BUY = 1,
-  SELL = 2
-}
-
-/**
- * Prediction set outcome chance.
- */
-export class OutcomeShareTransaction extends AdvancedSQLModel {
+export class OutcomeVotingTransaction extends AdvancedSQLModel {
   /**
-   * Outcome chance's table.
+   * Outcome voting transactions table.
    */
-  public tableName = DbTables.OUTCOME_SHARE_TRANSACTION;
+  public tableName = DbTables.OUTCOME_VOTING_TRANSACTION;
 
   /**
    * Prediction set ID.
@@ -71,24 +63,14 @@ export class OutcomeShareTransaction extends AdvancedSQLModel {
   public wallet: string;
 
   /**
-   * Transaction amount.
+   * Transaction's question ID.
    */
   @prop({
     parser: { resolver: stringParser() },
     populatable: [PopulateFrom.DB],
     serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
   })
-  public amount: string;
-
-  /**
-   * Transaction fee amount.
-   */
-  @prop({
-    parser: { resolver: stringParser() },
-    populatable: [PopulateFrom.DB],
-    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
-  })
-  public feeAmount: string;
+  public questionId: string;
 
   /**
    * Transaction outcome index.
@@ -99,24 +81,4 @@ export class OutcomeShareTransaction extends AdvancedSQLModel {
     serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
   })
   public outcomeIndex: number;
-
-  /**
-   * Transaction outcome tokens (bought or sold).
-   */
-  @prop({
-    parser: { resolver: stringParser() },
-    populatable: [PopulateFrom.DB],
-    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
-  })
-  public outcomeTokens: string;
-
-  /**
-   * Transaction type (BUY/SELL).
-   */
-  @prop({
-    parser: { resolver: integerParser() },
-    populatable: [PopulateFrom.DB],
-    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
-  })
-  public type: OutcomeShareTransaction;
 }

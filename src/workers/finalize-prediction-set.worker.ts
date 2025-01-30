@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { DbTables } from '../config/types';
+import { DbTables, SqlModelStatus } from '../config/types';
 import { finalizePredictionSetResults, PredictionSetBcStatus, verifyPredictionSetResults } from '../lib/blockchain';
 import { WorkerLogStatus } from '../lib/worker/logger';
 import { BaseSingleThreadWorker, SingleThreadWorkerAlertType } from '../lib/worker/serverless-workers/base-single-thread-worker';
@@ -55,7 +55,8 @@ export class FinalizePredictionSetWorker extends BaseSingleThreadWorker {
         WHERE 
           psa.proof IS NOT NULL
           AND ps.resolutionTime >= NOW()
-          AND ps.status = ${PredictionSetStatus.ACTIVE}
+          AND ps.status = ${SqlModelStatus.ACTIVE}
+          AND ps.setStatus = ${PredictionSetStatus.FUNDED}
           AND ps.resolutionType = ${ResolutionType.AUTOMATIC}
           
         `,
@@ -153,7 +154,7 @@ export class FinalizePredictionSetWorker extends BaseSingleThreadWorker {
           }
         } else if (finalizationResults.status === PredictionSetBcStatus.VOTING) {
           try {
-            predictionSet.resolutionType = ResolutionType.VOTING;
+            predictionSet.setStatus = PredictionSetStatus.VOTING;
             await predictionSet.update();
           } catch (error) {
             await this._logError(

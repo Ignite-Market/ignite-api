@@ -43,7 +43,6 @@ export class RequestAttestationWorker extends BaseSingleThreadWorker {
     );
 
     // TODO: Test resolution time.
-
     for (const data of predictionSets) {
       const predictionSet = new PredictionSet(data, this.context);
 

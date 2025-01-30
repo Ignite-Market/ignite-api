@@ -828,6 +828,16 @@ export const ORACLE_ABI = [
     'type': 'event'
   },
   {
+    'anonymous': false,
+    'inputs': [
+      { 'indexed': true, 'internalType': 'address', 'name': 'voter', 'type': 'address' },
+      { 'indexed': true, 'internalType': 'bytes32', 'name': 'questionId', 'type': 'bytes32' },
+      { 'indexed': false, 'internalType': 'uint256', 'name': 'outcomeIdx', 'type': 'uint256' }
+    ],
+    'name': 'VoteSubmitted',
+    'type': 'event'
+  },
+  {
     'inputs': [],
     'name': 'DEFAULT_ADMIN_ROLE',
     'outputs': [{ 'internalType': 'bytes32', 'name': '', 'type': 'bytes32' }],
@@ -936,7 +946,8 @@ export const ORACLE_ABI = [
       { 'internalType': 'string[]', 'name': 'urlAr', 'type': 'string[]' },
       { 'internalType': 'string[]', 'name': 'postprocessJqAr', 'type': 'string[]' },
       { 'internalType': 'uint256', 'name': 'consensusPercent', 'type': 'uint256' },
-      { 'internalType': 'uint256', 'name': 'resolutionTime', 'type': 'uint256' }
+      { 'internalType': 'uint256', 'name': 'resolutionTime', 'type': 'uint256' },
+      { 'internalType': 'bool', 'name': 'automatic', 'type': 'bool' }
     ],
     'name': 'initializeQuestion',
     'outputs': [],
@@ -969,6 +980,7 @@ export const ORACLE_ABI = [
     'name': 'question',
     'outputs': [
       { 'internalType': 'enum IgniteOracle.Status', 'name': 'status', 'type': 'uint8' },
+      { 'internalType': 'bool', 'name': 'automatic', 'type': 'bool' },
       { 'internalType': 'uint256', 'name': 'outcomeSlotCount', 'type': 'uint256' },
       { 'internalType': 'uint256', 'name': 'apiSources', 'type': 'uint256' },
       { 'internalType': 'uint256', 'name': 'consensusPercent', 'type': 'uint256' },

@@ -17,7 +17,7 @@ import { PredictionSetChainData } from './prediction-set-chain-data.model';
  */
 export enum ResolutionType {
   AUTOMATIC = 1,
-  VOTING = 2
+  MANUAL = 2
 }
 
 /**
@@ -28,8 +28,9 @@ export enum PredictionSetStatus {
   PENDING = 2,
   ACTIVE = 3,
   FUNDED = 4,
-  FINALIZED = 5,
-  ERROR = 6
+  VOTING = 5,
+  FINALIZED = 6,
+  ERROR = 7
 }
 
 /**
@@ -39,7 +40,7 @@ export enum PredictionSetStatus {
  */
 export function consensusThresholdValidator() {
   return function (this: PredictionSet, value: number) {
-    if (this.resolutionType === ResolutionType.VOTING) {
+    if (this.resolutionType === ResolutionType.MANUAL) {
       return true;
     }
 
@@ -219,7 +220,7 @@ export class PredictionSet extends AdvancedSQLModel {
   /**
    * Prediction set resolution types:
    * - 1: AUTOMATIC - Prediction set is resolved automatically.
-   * - 2: VOTING - Prediction set is resolved by whitelist users voting.
+   * - 2: MANUAL - Prediction set is resolved by whitelist users voting.
    */
   @prop({
     parser: { resolver: integerParser() },

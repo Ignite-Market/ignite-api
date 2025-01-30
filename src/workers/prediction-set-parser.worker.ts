@@ -4,9 +4,12 @@ import { DbTables, SerializeFor, SqlModelStatus } from '../config/types';
 import { setup } from '../lib/blockchain';
 import { WorkerLogStatus } from '../lib/worker/logger';
 import { BaseQueueWorker } from '../lib/worker/serverless-workers/base-queue-worker';
-import { OutcomeShareTransaction, ShareTransactionType } from '../modules/prediction-set/models/outcome-share-transaction.model';
+import { OutcomeShareTransaction, ShareTransactionType } from '../modules/prediction-set/models/transactions/outcome-share-transaction.model';
 import { Outcome } from '../modules/prediction-set/models/outcome.model';
-import { FundingTransactionType, PredictionSetFundingTransaction } from '../modules/prediction-set/models/prediction-set-funding-transaction.model';
+import {
+  FundingTransactionType,
+  PredictionSetFundingTransaction
+} from '../modules/prediction-set/models/transactions/prediction-set-funding-transaction.model';
 import { PredictionSet, PredictionSetStatus } from '../modules/prediction-set/models/prediction-set.model';
 import { User } from '../modules/user/models/user.model';
 import { sendToWorkerQueue } from '../lib/aws/aws-sqs';

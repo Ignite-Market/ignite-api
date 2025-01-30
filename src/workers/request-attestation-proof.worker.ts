@@ -1,4 +1,4 @@
-import { DbTables } from '../config/types';
+import { DbTables, SqlModelStatus } from '../config/types';
 import { getAttestationProof } from '../lib/flare/attestation';
 import { WorkerLogStatus } from '../lib/worker/logger';
 import { BaseSingleThreadWorker, SingleThreadWorkerAlertType } from '../lib/worker/serverless-workers/base-single-thread-worker';
@@ -60,7 +60,8 @@ export class RequestAttestationProofWorker extends BaseSingleThreadWorker {
               NOW(),
               INTERVAL ${ATTESTATION_RESULTS_OFFSET_MINUTES} MINUTE
             )
-          AND ps.status = ${PredictionSetStatus.ACTIVE}
+          AND ps.status = ${SqlModelStatus.ACTIVE}
+          AND ps.setStatus = ${PredictionSetStatus.FUNDED}
           AND ps.resolutionType = ${ResolutionType.AUTOMATIC}
           
         `,

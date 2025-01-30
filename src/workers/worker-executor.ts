@@ -13,6 +13,7 @@ import { RefreshOutcomeChancesWorker } from './refresh-outcome-chances.worker';
 import { RequestAttestationProofWorker } from './request-attestation-proof.worker';
 import { RequestAttestationWorker } from './request-attestation.worker';
 import { Scheduler } from './scheduler';
+import { VotingParserWorker } from './voting-parser.worker';
 
 /**
  * Worker names definition.
@@ -25,7 +26,8 @@ export enum WorkerName {
   PREDICTION_SETS_PARSER = 'PredictionSetsParser',
   REFRESH_OUTCOME_CHANCES = 'RefreshOutcomeChances',
   REQUEST_ATTESTATION_PROOF = 'RequestAttestationProof',
-  REQUEST_ATTESTATION = 'RequestAttestation'
+  REQUEST_ATTESTATION = 'RequestAttestation',
+  VOTING_PARSER = 'VotingParser'
 }
 
 /**
@@ -124,6 +126,10 @@ export async function handleLambdaEvent(event: any, context: Context, serviceDef
       await new RequestAttestationWorker(workerDefinition, context).run();
       break;
 
+    case WorkerName.VOTING_PARSER:
+      await new VotingParserWorker(workerDefinition, context).run();
+      break;
+
     default:
       console.error(`ERROR - INVALID WORKER NAME: ${workerDefinition.workerName}`);
       await writeWorkerLog(
@@ -208,6 +214,12 @@ export async function handleSqsMessages(event: any, context: Context, serviceDef
 
         case WorkerName.REQUEST_ATTESTATION:
           await new RequestAttestationWorker(workerDefinition, context).run({
+            executeArg: message?.body
+          });
+          break;
+
+        case WorkerName.VOTING_PARSER:
+          await new VotingParserWorker(workerDefinition, context).run({
             executeArg: message?.body
           });
           break;
