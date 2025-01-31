@@ -1,6 +1,6 @@
 import { exit } from 'process';
 import { WorkerDefinition } from '../../lib/worker/serverless-workers';
-import { PredictionSetsParserWorker } from '../../workers/prediction-sets-parser.worker';
+import { PredictionSetsFactoryParserWorker } from '../../workers/prediction-sets-factory-parser.worker';
 import { WorkerName } from '../../workers/worker-executor';
 import { createContext } from './context';
 import { FinalizePredictionSetWorker } from '../../workers/finalize-prediction-set.worker';

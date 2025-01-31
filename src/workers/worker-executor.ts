@@ -8,7 +8,7 @@ import { QueueWorkerType } from '../lib/worker/serverless-workers/base-queue-wor
 import { CreatePredictionSetWorker } from './create-prediction-set.worker';
 import { FinalizePredictionSetWorker } from './finalize-prediction-set.worker';
 import { PredictionSetParserWorker } from './prediction-set-parser.worker';
-import { PredictionSetsParserWorker } from './prediction-sets-parser.worker';
+import { PredictionSetsFactoryParserWorker } from './prediction-sets-factory-parser.worker';
 import { RefreshOutcomeChancesWorker } from './refresh-outcome-chances.worker';
 import { RequestAttestationProofWorker } from './request-attestation-proof.worker';
 import { RequestAttestationWorker } from './request-attestation.worker';
@@ -23,7 +23,7 @@ export enum WorkerName {
   CREATE_PREDICTION_SET = 'CreatePredictionSet',
   FINALIZE_PREDICTION_SET = 'FinalizePredictionSet',
   PREDICTION_SET_PARSER = 'PredictionSetParser',
-  PREDICTION_SETS_PARSER = 'PredictionSetsParser',
+  PREDICTION_SETS_FACTORY_PARSER = 'PredictionSetsFactoryParser',
   REFRESH_OUTCOME_CHANCES = 'RefreshOutcomeChances',
   REQUEST_ATTESTATION_PROOF = 'RequestAttestationProof',
   REQUEST_ATTESTATION = 'RequestAttestation',
@@ -110,8 +110,8 @@ export async function handleLambdaEvent(event: any, context: Context, serviceDef
       await new PredictionSetParserWorker(workerDefinition, context, QueueWorkerType.PLANNER).run();
       break;
 
-    case WorkerName.PREDICTION_SETS_PARSER:
-      await new PredictionSetsParserWorker(workerDefinition, context).run();
+    case WorkerName.PREDICTION_SETS_FACTORY_PARSER:
+      await new PredictionSetsFactoryParserWorker(workerDefinition, context).run();
       break;
 
     case WorkerName.REFRESH_OUTCOME_CHANCES:
@@ -194,8 +194,8 @@ export async function handleSqsMessages(event: any, context: Context, serviceDef
           });
           break;
 
-        case WorkerName.PREDICTION_SETS_PARSER:
-          await new PredictionSetsParserWorker(workerDefinition, context).run({
+        case WorkerName.PREDICTION_SETS_FACTORY_PARSER:
+          await new PredictionSetsFactoryParserWorker(workerDefinition, context).run({
             executeArg: message?.body
           });
           break;

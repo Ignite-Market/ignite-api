@@ -14,7 +14,7 @@ import { WorkerLogStatus } from '../lib/worker/logger';
 /**
  * Parses the creation of the prediction set on chain.
  */
-export class PredictionSetsParserWorker extends BaseSingleThreadWorker {
+export class PredictionSetsFactoryParserWorker extends BaseSingleThreadWorker {
   /**
    * Runs worker executor.
    */
