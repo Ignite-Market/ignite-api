@@ -2,13 +2,12 @@
 const path = require('path');
 const slsw = require('serverless-webpack');
 const nodeExternals = require('webpack-node-externals');
+const CopyPlugin = require('copy-webpack-plugin');
 
 module.exports = {
   context: __dirname,
   mode: slsw.lib.webpack.isLocal ? 'development' : 'production',
-  // mode: 'production',
   entry: slsw.lib.entries,
-  // devtool: slsw.lib.webpack.isLocal ? 'cheap-module-eval-source-map' : 'source-map',
   devtool: 'source-map',
   resolve: {
     extensions: ['.mjs', '.json', '.ts', '.js'],
@@ -22,7 +21,6 @@ module.exports = {
       'class-transformer': false,
       '@nestjs/microservices/microservices-module': false,
       '@nestjs/microservices': false,
-      // '@nestjs/platform-express': false,
       'bson-ext': false,
       kerberos: false,
       '@mongodb-js/zstd': false,
@@ -44,12 +42,11 @@ module.exports = {
     __dirname: true,
   },
   externals: [
-    // nodeExternals()
     nodeExternals({}),
   ],
   module: {
     rules: [
-      // all files with a `.ts` or `.tsx` extension will be handled by `ts-loader`
+      // All files with a `.ts` or `.tsx` extension will be handled by `ts-loader`.
       {
         test: /\.(tsx?)$/,
         loader: 'ts-loader',
@@ -66,5 +63,12 @@ module.exports = {
         },
       },
     ],
-  }
+  },
+  plugins: [
+    new CopyPlugin({
+      patterns: [
+        { from: './src/res/keys/*.pem' },
+      ]
+    })
+  ]
 };

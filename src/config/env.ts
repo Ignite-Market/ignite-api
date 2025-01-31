@@ -2,6 +2,9 @@ import { getSecrets } from '../lib/aws/aws-secrets';
 import { AppEnvironment, CacheKeyTTL, LogLevel } from './types';
 import * as dotenv from 'dotenv';
 
+/**
+ * Environment interface.
+ */
 export interface IEnv {
   API_HOST: string;
   API_PORT: number;
@@ -31,8 +34,6 @@ export interface IEnv {
   AWS_SECRETS_ID: string;
 
   AWS_KEY: string;
-  AWS_BUCKET: string;
-  AWS_ENDPOINT: string;
   AWS_SECRET: string;
 
   AWS_WORKER_LAMBDA_NAME: string;
@@ -43,6 +44,9 @@ export interface IEnv {
   MYSQL_PASSWORD: string;
   MYSQL_PORT: number;
   MYSQL_USER: string;
+  MYSQL_SSL_CA_FILE: string;
+  MYSQL_SSL_KEY_FILE: string;
+  MYSQL_SSL_CERT_FILE: string;
 
   MYSQL_HOST_TEST: string;
   MYSQL_DATABASE_TEST: string;
@@ -52,7 +56,6 @@ export interface IEnv {
 
   PREDICTION_SET_MINIMAL_DATA_SOURCES: number;
 
-  PREDICTION_CONTRACT: string;
   SLACK_WEBHOOK_URL: string;
 
   ORACLE_CONTRACT: string;
@@ -64,12 +67,13 @@ export interface IEnv {
 
   FPMM_PARSE_BLOCK_SIZE: number;
   FPMM_FACTORY_PARSE_BLOCK_SIZE: number;
+  ORACLE_PARSE_BLOCK_SIZE: number;
 
   FPMM_BLOCK_CONFIRMATIONS: number;
   FPMM_FACTORY_BLOCK_CONFIRMATIONS: number;
+  ORACLE_BLOCK_CONFIRMATIONS: number;
 
   RPC_URL: string;
-  FLARE_NETWORK: string;
   FLARE_DATA_AVAILABILITY_URL: string;
   FLARE_DATA_AVAILABILITY_API_KEY: string;
   FLARE_CONTRACT_REGISTRY_ADDRESS: string;
@@ -80,6 +84,9 @@ export interface IEnv {
 dotenv.config();
 
 export let env: IEnv = {
+  /**
+   * API settings.
+   */
   API_HOST: process.env['API_HOST'] || '0.0.0.0',
   API_PORT: parseInt(process.env['API_PORT']) || 6060,
 
@@ -92,29 +99,49 @@ export let env: IEnv = {
 
   LOG_TARGET: process.env['LOG_TARGET'] || 'color',
   LOG_LEVEL: process.env['LOG_LEVEL'] || LogLevel.DEBUG,
+  SLACK_WEBHOOK_URL: process.env['SLACK_WEBHOOK_URL'],
 
   DEFAULT_PAGE_SIZE: parseInt(process.env['DEFAULT_PAGE_SIZE']) || 20,
+
+  /**
+   * Cache settings.
+   */
+  REDIS_URL: process.env['REDIS_URL'],
   DEFAULT_CACHE_TTL: parseInt(process.env['DEFAULT_CACHE_TTL']) || CacheKeyTTL.DEFAULT,
 
-  REDIS_URL: process.env['REDIS_URL'],
-
-  AWS_SECRETS_ID: process.env['AWS_SECRETS_ID'],
-
+  /**
+   * AWS S3 settings.
+   */
   AWS_KEY: process.env['AWS_KEY'],
-  AWS_BUCKET: process.env['AWS_BUCKET'],
-  AWS_ENDPOINT: process.env['AWS_ENDPOINT'],
   AWS_SECRET: process.env['AWS_SECRET'],
   AWS_REGION: process.env['AWS_REGION'] || 'us-east-1',
+  AWS_SECRETS_ID: process.env['AWS_SECRETS_ID'],
 
+  /*
+   * Lambda worker settings.
+   */
   AWS_WORKER_LAMBDA_NAME: process.env['AWS_WORKER_LAMBDA_NAME'],
   AWS_WORKER_SQS_URL: process.env['AWS_WORKER_SQS_URL'],
 
+  /**
+   * MySQL connection settings.
+   */
   MYSQL_HOST: process.env['MYSQL_HOST'],
   MYSQL_DATABASE: process.env['MYSQL_DATABASE'],
   MYSQL_PASSWORD: process.env['MYSQL_PASSWORD'],
   MYSQL_PORT: parseInt(process.env['MYSQL_PORT']),
   MYSQL_USER: process.env['MYSQL_USER'],
 
+  /**
+   * MySQL SSL file paths.
+   */
+  MYSQL_SSL_CA_FILE: process.env['MYSQL_SSL_CA_FILE'],
+  MYSQL_SSL_KEY_FILE: process.env['MYSQL_SSL_KEY_FILE'],
+  MYSQL_SSL_CERT_FILE: process.env['MYSQL_SSL_CERT_FILE'],
+
+  /**
+   * MySQL connection settings for testing.
+   */
   MYSQL_HOST_TEST: process.env['MYSQL_HOST_TEST'],
   MYSQL_DATABASE_TEST: process.env['MYSQL_DATABASE_TEST'],
   MYSQL_PASSWORD_TEST: process.env['MYSQL_PASSWORD_TEST'],
@@ -122,10 +149,6 @@ export let env: IEnv = {
   MYSQL_USER_TEST: process.env['MYSQL_USER_TEST'],
 
   PREDICTION_SET_MINIMAL_DATA_SOURCES: parseInt(process.env['PREDICTION_SET_MINIMAL_DATA_SOURCES']) || 3,
-
-  PREDICTION_CONTRACT: process.env['PREDICTION_CONTRACT'],
-
-  SLACK_WEBHOOK_URL: process.env['SLACK_WEBHOOK_URL'],
 
   /**
    * Fixed product market maker & conditional token contracts.
@@ -137,7 +160,6 @@ export let env: IEnv = {
   JSON_VERIFIER_CONTRACT: process.env['JSON_VERIFIER_CONTRACT'],
 
   RPC_URL: process.env['RPC_URL'],
-  FLARE_NETWORK: process.env['FLARE_NETWORK'] || 'coston',
   FLARE_DATA_AVAILABILITY_URL: process.env['FLARE_DATA_AVAILABILITY_URL'],
   FLARE_DATA_AVAILABILITY_API_KEY: process.env['FLARE_DATA_AVAILABILITY_API_KEY'],
   SIGNER_PRIVATE_KEY: process.env['SIGNER_PRIVATE_KEY'],
@@ -147,23 +169,26 @@ export let env: IEnv = {
 
   FPMM_PARSE_BLOCK_SIZE: parseInt(process.env['FPMM_PARSE_BLOCK_SIZE']) || 50_000,
   FPMM_FACTORY_PARSE_BLOCK_SIZE: parseInt(process.env['FPMM_FACTORY_PARSE_BLOCK_SIZE']) || 50_000,
+  ORACLE_PARSE_BLOCK_SIZE: parseInt(process.env['ORACLE_PARSE_BLOCK_SIZE']) || 50_000,
 
   FPMM_BLOCK_CONFIRMATIONS: parseInt(process.env['FPMM_BLOCK_CONFIRMATIONS']) || 5,
-  FPMM_FACTORY_BLOCK_CONFIRMATIONS: parseInt(process.env['FPMM_FACTORY_BLOCK_CONFIRMATIONS']) || 5
+  FPMM_FACTORY_BLOCK_CONFIRMATIONS: parseInt(process.env['FPMM_FACTORY_BLOCK_CONFIRMATIONS']) || 5,
+  ORACLE_BLOCK_CONFIRMATIONS: parseInt(process.env['ORACLE_BLOCK_CONFIRMATIONS']) || 5
 };
 
+/**
+ * Flag to check if environment is ready.
+ */
 export let isEnvReady = false;
 
 /**
  * Should be used for retrieving environment variables from AWS secret manager.
- * @returns IEnv dictionary
+ * @returns IEnv dictionary.
  */
 export async function getEnvSecrets() {
   if (!isEnvReady) {
     await populateSecrets();
   }
-  // only uncomment for debugging... should not print out in production!!!
-  // console.log(JSON.stringify(env, null, 2));
   return env;
 }
 
@@ -180,14 +205,16 @@ async function populateSecrets() {
   try {
     const secrets = await getSecrets(env.AWS_SECRETS_ID);
     env = { ...env, ...secrets };
-  } catch (err) {
+  } catch (error) {
     console.error('Error while populating env secretes: ');
-    console.error(err);
+    console.error(error);
   }
   isEnvReady = true;
 }
 
-// startup populate
+/**
+ * Startup population of secrets.
+ */
 populateSecrets()
   .then(() => {
     console.log('Environment is ready.');

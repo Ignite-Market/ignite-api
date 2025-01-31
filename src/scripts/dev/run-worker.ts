@@ -3,9 +3,12 @@ import { WorkerDefinition } from '../../lib/worker/serverless-workers';
 import { PredictionSetsParserWorker } from '../../workers/prediction-sets-parser.worker';
 import { WorkerName } from '../../workers/worker-executor';
 import { createContext } from './context';
+import { FinalizePredictionSetWorker } from '../../workers/finalize-prediction-set.worker';
+import { RequestAttestationWorker } from '../../workers/request-attestation.worker';
+import { RequestAttestationProofWorker } from '../../workers/request-attestation-proof.worker';
 
-const WORKER_NAME = WorkerName.PREDICTION_SETS_PARSER;
-const WorkerClass = PredictionSetsParserWorker;
+const WORKER_NAME = WorkerName.REQUEST_ATTESTATION_PROOF;
+const WorkerClass = RequestAttestationProofWorker;
 
 (async () => {
   const start = new Date();

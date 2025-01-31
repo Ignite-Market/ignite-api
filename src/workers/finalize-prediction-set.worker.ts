@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { DbTables } from '../config/types';
+import { DbTables, SqlModelStatus } from '../config/types';
 import { finalizePredictionSetResults, PredictionSetBcStatus, verifyPredictionSetResults } from '../lib/blockchain';
 import { WorkerLogStatus } from '../lib/worker/logger';
 import { BaseSingleThreadWorker, SingleThreadWorkerAlertType } from '../lib/worker/serverless-workers/base-single-thread-worker';
@@ -31,34 +31,38 @@ export class FinalizePredictionSetWorker extends BaseSingleThreadWorker {
   public async finalizePredictionSets(): Promise<void> {
     const predictionSets = await this.context.mysql.paramExecute(
       `
-        SELECT ps.*,
-        CONCAT(
-          '[',
-            GROUP_CONCAT(
-              JSON_OBJECT(
-                'id', psa.id,
-                'prediction_set_id', psa.prediction_set_id,
-                'data_source_id', psa.data_source_id,
-                'roundId', psa.roundId,
-                'abiEncodedRequest', psa.abiEncodedRequest,
-                'proof', psa.proof,
-                'status', psa.status,
-                'createTime', psa.createTime,
-                'updateTime', psa.updateTime
-              )
-            ),
-          ']'
-        ) AS attestations
+        SELECT 
+          ps.*, 
+          COALESCE(
+            CONCAT(
+              '[', 
+              GROUP_CONCAT(
+                JSON_OBJECT(
+                  'id', psa.id,
+                  'prediction_set_id', psa.prediction_set_id,
+                  'data_source_id', psa.data_source_id,
+                  'roundId', psa.roundId,
+                  'abiEncodedRequest', psa.abiEncodedRequest,
+                  'proof', psa.proof,
+                  'status', psa.status,
+                  'createTime', psa.createTime,
+                  'updateTime', psa.updateTime
+                )
+              ), 
+              ']'
+            ), 
+            '[]'
+          ) AS attestations
         FROM ${DbTables.PREDICTION_SET} ps
-        INNER JOIN ${DbTables.PREDICTION_SET_ATTESTATION} psa
+        LEFT JOIN ${DbTables.PREDICTION_SET_ATTESTATION} psa 
           ON ps.id = psa.prediction_set_id
         WHERE 
-          psa.proof IS NOT NULL
-          AND ps.resolutionTime >= NOW()
-          AND ps.status = ${PredictionSetStatus.ACTIVE}
+          ps.resolutionTime >= NOW()
+          AND ps.status = ${SqlModelStatus.ACTIVE}
+          AND ps.setStatus = ${PredictionSetStatus.FUNDED}
           AND ps.resolutionType = ${ResolutionType.AUTOMATIC}
-          
-        `,
+        GROUP BY ps.id
+      `,
       {}
     );
 
@@ -153,7 +157,7 @@ export class FinalizePredictionSetWorker extends BaseSingleThreadWorker {
           }
         } else if (finalizationResults.status === PredictionSetBcStatus.VOTING) {
           try {
-            predictionSet.resolutionType = ResolutionType.VOTING;
+            predictionSet.setStatus = PredictionSetStatus.VOTING;
             await predictionSet.update();
           } catch (error) {
             await this._logError(

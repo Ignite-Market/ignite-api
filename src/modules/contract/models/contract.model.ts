@@ -8,7 +8,8 @@ import { PoolConnection } from 'mysql2/promise';
  * List of contract IDs.
  */
 export enum ContractId {
-  FPMM_FACTORY = 1
+  FPMM_FACTORY = 1,
+  IGNITE_ORACLE = 2
 }
 
 /**

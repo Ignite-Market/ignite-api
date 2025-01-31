@@ -1,6 +1,7 @@
 // import { ApiProperty } from '@babel/core';
 import { prop } from '@rawmodel/core';
 import { integerParser, stringParser } from '@rawmodel/parsers';
+import { env } from '../../config/env';
 import { PopulateFrom } from '../../config/types';
 import { ModelBase } from './base';
 
@@ -19,9 +20,9 @@ export class BaseQueryFilter extends ModelBase {
     parser: { resolver: integerParser() },
     populatable: [PopulateFrom.USER, PopulateFrom.ADMIN],
     setter(v) {
-      return v < 1 ? 20 : v;
+      return v < 1 ? env.DEFAULT_PAGE_SIZE || 20 : v;
     },
-    defaultValue: 20
+    defaultValue: env.DEFAULT_PAGE_SIZE || 20
   })
   public limit: number;
 

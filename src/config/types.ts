@@ -28,7 +28,8 @@ export enum DbTables {
   OUTCOME_SHARE_TRANSACTION = 'outcome_share_transaction',
   COMMENT = 'comment',
   PREDICTION_SET_ATTESTATION = 'prediction_set_attestation',
-  CONTRACT = 'contract'
+  CONTRACT = 'contract',
+  OUTCOME_VOTING_TRANSACTION = 'outcome_voting_transaction'
 }
 /**
  * Validation error codes - 422_00_000.

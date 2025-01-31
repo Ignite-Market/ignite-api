@@ -5,7 +5,7 @@ import { createContext } from './context';
 
 const contractId = ContractId.FPMM_FACTORY;
 const contractAddress = '0x88436658f14A7cA6CE18C514A7af605Bb6329Bb7';
-const deployedBlock = 20542481;
+const deployedBlock = 21238203;
 const parseBlocks = env.FPMM_FACTORY_PARSE_BLOCK_SIZE;
 
 const addContract = async () => {

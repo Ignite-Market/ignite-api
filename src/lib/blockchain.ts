@@ -48,30 +48,13 @@ export function setup(fpmmAddress: string = null) {
 
 /**
  * Creates new prediction set on blockchain.
- * @param predictionSet
- * @param context
+ * @param predictionSet Prediction set data.
+ * @param context Application context.
  */
 export async function addPredictionSet(predictionSet: PredictionSet, context: Context) {
   const { fpmmfContract, conditionalTokenContract, oracleContract } = setup();
 
   const questionId = numberToBytes32(predictionSet.id);
-  // try {
-  //   const prepareTx = await conditionalTokenContract.prepareCondition(env.ORACLE_CONTRACT, questionId, predictionSet.outcomes.length);
-  //   await prepareTx.wait();
-  // } catch (error) {
-  //   Logger.error(error, 'Error while preparing condition.');
-
-  //   throw new CodeException({
-  //     code: SystemErrorCode.BLOCKCHAIN_SYSTEM_ERROR,
-  //     errorCodes: SystemErrorCode,
-  //     status: HttpStatus.INTERNAL_SERVER_ERROR,
-  //     sourceFunction: `${this.constructor.name}/addPredictionSet`,
-  //     errorMessage: 'Error while preparing condition.',
-  //     details: error,
-  //     context
-  //   });
-  // }
-
   const urls = [];
   const jqs = [];
   const dataSources = await predictionSet.getDataSources();
