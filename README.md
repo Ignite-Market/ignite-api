@@ -1,10 +1,16 @@
 # Ignite Market - Backend
 
+| Stage | Status | URL | 
+| ----- | ------ | ---- |
+| DEV | ![Build dev](https://codebuild.us-east-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiczBEdFN2NGtSVUZDQjlzYjg0aHk3WmFSSFlwazN3RkVPaDVnR1NvMis0S0c2eHBqVnBLRG8ySEpqY1pGcU9hWit0SU9vRUxmQy9ad1hjZWszdXNLeUZZPSIsIml2UGFyYW1ldGVyU3BlYyI6IjBWRDZ3dG1aUjlKYkpWSjYiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=develop) | https://api-dev.ignitemarket.xyz/ |
+| PROD | ![Build prod](https://codebuild.us-east-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiczBEdFN2NGtSVUZDQjlzYjg0aHk3WmFSSFlwazN3RkVPaDVnR1NvMis0S0c2eHBqVnBLRG8ySEpqY1pGcU9hWit0SU9vRUxmQy9ad1hjZWszdXNLeUZZPSIsIml2UGFyYW1ldGVyU3BlYyI6IjBWRDZ3dG1aUjlKYkpWSjYiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=main) | https://api.ignitemarket.xyz/ |
+
 Ignite Market is a decentralized prediction market platform, designed to enable users to trade on the outcomes of real-world events. 
 
 The detailed product description can be found [here](https://github.com/kalmiallc/ignite-market-contracts/blob/main/ProductDescription.md).
 
 This repository contains a backend application to support the creation of prediction markets, worker automatons and other admin tasks that are required for the performance of the marketplace.
+
 
 ## Features:
 * Create and manage new prediction markets
