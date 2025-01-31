@@ -14,7 +14,7 @@ const data = {
   startTime: new Date(),
   endTime: new Date(),
   resolutionTime: new Date(),
-  resolutionType: ResolutionType.AUTOMATIC,
+  resolutionType: ResolutionType.MANUAL,
   consensusThreshold: 60,
   predictionOutcomes: [
     {
@@ -35,19 +35,21 @@ const processPredictionSet = async () => {
     const ps = new PredictionSet(data, context);
     ps.outcomes = data.predictionOutcomes.map((d) => new Outcome(d, context));
 
-    // Add data sources.
     const dataSourceIds = [];
-    for (let i = 0; i < 3; i++) {
-      const ds = await new DataSource(
-        {
-          endpoint: 'https://endpoint/' + i,
-          jqQuery: 'JQ query ' + i,
-          abi: 'ABI ' + i
-        },
-        context
-      ).insert();
+    if (data.resolutionType === ResolutionType.AUTOMATIC) {
+      // Add data sources.
+      for (let i = 0; i < 3; i++) {
+        const ds = await new DataSource(
+          {
+            endpoint: 'https://endpoint/' + i,
+            jqQuery: 'JQ query ' + i,
+            abi: 'ABI ' + i
+          },
+          context
+        ).insert();
 
-      dataSourceIds.push(ds.id);
+        dataSourceIds.push(ds.id);
+      }
     }
 
     // Create prediction set.

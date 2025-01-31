@@ -381,7 +381,7 @@ export class PredictionSet extends AdvancedSQLModel {
     );
 
     const context = this.getContext();
-    return rows.map((r) => new DataSource(r, context));
+    return rows.length ? rows.map((r) => new DataSource(r, context)) : [];
   }
 
   /**

@@ -4,7 +4,7 @@ import { env } from '../config/env';
 import { SystemErrorCode } from '../config/types';
 import { Context } from '../context';
 import { PredictionSetChainData } from '../modules/prediction-set/models/prediction-set-chain-data.model';
-import { PredictionSet } from '../modules/prediction-set/models/prediction-set.model';
+import { PredictionSet, ResolutionType } from '../modules/prediction-set/models/prediction-set.model';
 import { CONDITIONAL_TOKEN_ABI, FPMM_ABI, FPMM_FACTORY_ABI, JSON_VERIFIER_ABI, ORACLE_ABI } from './abis';
 import { CodeException } from './exceptions/exceptions';
 
@@ -70,7 +70,8 @@ export async function addPredictionSet(predictionSet: PredictionSet, context: Co
       urls,
       jqs,
       predictionSet.consensusThreshold,
-      Number(predictionSet.resolutionTime)
+      Number(predictionSet.resolutionTime),
+      predictionSet.resolutionType === ResolutionType.AUTOMATIC
     );
     await initializeQuestionTx.wait();
   } catch (error) {
