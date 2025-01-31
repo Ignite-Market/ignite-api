@@ -223,7 +223,7 @@ export class PredictionSetParserWorker extends BaseQueueWorker {
 
       // Refresh chances if any of the events happened.
       if (fundingEvents.length || transactionEvents.length) {
-        await sendToWorkerQueue(WorkerName.REFRESH_OUTCOME_CHANCES, [predictionSetId], this.context); // TODO: Check if this is OK.
+        await sendToWorkerQueue(WorkerName.REFRESH_OUTCOME_CHANCES, [predictionSetId], this.context);
       }
 
       // Update blocks.
