@@ -27,22 +27,23 @@ export class RequestAttestationWorker extends BaseSingleThreadWorker {
    * Handles creation of prediction set attestations for prediction sets that ended.
    */
   public async requestPredictionSetAttestations(): Promise<void> {
+    // TODO: Test resolution time.
     const predictionSets = await this.context.mysql.paramExecute(
       `
         SELECT *
         FROM ${DbTables.PREDICTION_SET} ps
-        LEFT JOIN ${DbTables.PREDICTION_SET_ATTESTATION} a ON ps.id = a.prediction_set_id
+        LEFT JOIN ${DbTables.PREDICTION_SET_ATTESTATION} a 
+          ON ps.id = a.prediction_set_id
         WHERE 
-          a.prediction_set_id IS NULL;
-          AND ps.status = ${PredictionSetStatus.ACTIVE}
+          ps.status = ${PredictionSetStatus.ACTIVE}
           AND ps.resolutionType = ${ResolutionType.AUTOMATIC}
           AND ps.endTime <= NOW()
-          AND ps.resolutionTime >= NOW()
+          AND ps.resolutionTime >= NOW() 
+          AND a.prediction_set_id IS NULL
         `,
       {}
     );
 
-    // TODO: Test resolution time.
     for (const data of predictionSets) {
       const predictionSet = new PredictionSet(data, this.context);
 

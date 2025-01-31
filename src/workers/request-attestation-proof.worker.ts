@@ -33,23 +33,27 @@ export class RequestAttestationProofWorker extends BaseSingleThreadWorker {
   public async requestPredictionSetAttestationProofs(): Promise<void> {
     const predictionSets = await this.context.mysql.paramExecute(
       `
-        SELECT ps.*,
-        CONCAT(
-          '[',
-            GROUP_CONCAT(
-              JSON_OBJECT(
-                'id', psa.id,
-                'prediction_set_id', psa.prediction_set_id,
-                'data_source_id', psa.data_source_id,
-                'roundId', psa.roundId,
-                'abiEncodedRequest', psa.abiEncodedRequest,
-                'status', psa.status,
-                'createTime', psa.createTime,
-                'updateTime', psa.updateTime
-              )
-            ),
-          ']'
-        ) AS attestations
+        SELECT 
+          ps.*, 
+          COALESCE(
+            CONCAT(
+              '[', 
+              GROUP_CONCAT(
+                DISTINCT JSON_OBJECT(
+                  'id', psa.id,
+                  'prediction_set_id', psa.prediction_set_id,
+                  'data_source_id', psa.data_source_id,
+                  'roundId', psa.roundId,
+                  'abiEncodedRequest', psa.abiEncodedRequest,
+                  'status', psa.status,
+                  'createTime', psa.createTime,
+                  'updateTime', psa.updateTime
+                )
+              ), 
+              ']'
+            ), 
+            '[]'
+          ) AS attestations
         FROM ${DbTables.PREDICTION_SET} ps
         INNER JOIN ${DbTables.PREDICTION_SET_ATTESTATION} psa
           ON ps.id = psa.prediction_set_id
@@ -63,7 +67,7 @@ export class RequestAttestationProofWorker extends BaseSingleThreadWorker {
           AND ps.status = ${SqlModelStatus.ACTIVE}
           AND ps.setStatus = ${PredictionSetStatus.FUNDED}
           AND ps.resolutionType = ${ResolutionType.AUTOMATIC}
-          
+        GROUP BY ps.id
         `,
       {}
     );
