@@ -29,7 +29,7 @@ export class PredictionSetController {
 
   @Get('')
   @Validation({ dto: BaseQueryFilter, validateFor: ValidateFor.QUERY })
-  @UseGuards(AuthGuard, ValidationGuard)
+  @UseGuards(ValidationGuard)
   async getPredictions(@Query() query: BaseQueryFilter, @Ctx() context: Context) {
     return await this.predictionSetService.getPredictions(query, context);
   }
