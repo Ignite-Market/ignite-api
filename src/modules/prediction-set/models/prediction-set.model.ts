@@ -468,12 +468,14 @@ export class PredictionSet extends AdvancedSQLModel {
         SELECT 
           ${new PredictionSet({}).generateSelectFields('p')},
           CONCAT(
-            '[', 
-              IF(o.id IS NOT NULL,
-                GROUP_CONCAT(DISTINCT JSON_OBJECT(
-                  'name', o.name,
-                )), 
-              ''),
+            '[',
+            COALESCE(
+              GROUP_CONCAT(
+                DISTINCT 
+                JSON_OBJECT('name', o.name)
+              ),
+              ''
+            ),
             ']'
           ) AS outcomes
         `,
