@@ -65,7 +65,7 @@ export class RequestAttestationProofWorker extends BaseSingleThreadWorker {
               INTERVAL ${ATTESTATION_RESULTS_OFFSET_MINUTES} MINUTE
             )
           AND ps.status = ${SqlModelStatus.ACTIVE}
-          AND ps.setStatus = ${PredictionSetStatus.FUNDED}
+          AND ps.setStatus = ${PredictionSetStatus.ACTIVE}
           AND ps.resolutionType = ${ResolutionType.AUTOMATIC}
         GROUP BY ps.id
         `,

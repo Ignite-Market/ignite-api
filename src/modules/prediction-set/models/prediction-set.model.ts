@@ -1,5 +1,5 @@
 import { prop } from '@rawmodel/core';
-import { dateParser, floatParser, integerParser, stringParser } from '@rawmodel/parsers';
+import { booleanParser, dateParser, floatParser, integerParser, stringParser } from '@rawmodel/parsers';
 import { isPresent } from '@rawmodel/utils';
 import { presenceValidator } from '@rawmodel/validators';
 import { PoolConnection } from 'mysql2/promise';
@@ -26,8 +26,8 @@ export enum ResolutionType {
 export enum PredictionSetStatus {
   INITIALIZED = 1,
   PENDING = 2,
-  ACTIVE = 3,
-  FUNDED = 4,
+  FUNDING = 3,
+  ACTIVE = 4,
   VOTING = 5,
   FINALIZED = 6,
   ERROR = 7
@@ -257,10 +257,11 @@ export class PredictionSet extends AdvancedSQLModel {
    * Set status.
    * - 1: INITIALIZED - When the set is created.
    * - 2: PENDING - When the set is syncing with the blockchain.
-   * - 3: ACTIVE - When the set is ready and synced with blockchain.
-   * - 4: FUNDED - When the set is funded and ready for predictions.
-   * - 5: FINALIZED - When the set is finalized.
-   * - 6: ERROR - When the set is in error state.
+   * - 3: FUNDING - When the set is synced with blockchain and waiting for funding.
+   * - 4: ACTIVE - When the set is funded and ready for predictions.
+   * - 6: VOTING - When is in the voting phase.
+   * - 7: FINALIZED - When the set is finalized.
+   * - 8: ERROR - When the set is in error state.
    */
   @prop({
     parser: { resolver: integerParser() },
@@ -456,7 +457,6 @@ export class PredictionSet extends AdvancedSQLModel {
       id: null
     };
 
-    // Map url query with sql fields.
     const fieldMap = {
       id: 'p.id'
     };
@@ -472,7 +472,15 @@ export class PredictionSet extends AdvancedSQLModel {
             COALESCE(
               GROUP_CONCAT(
                 DISTINCT 
-                JSON_OBJECT('name', o.name)
+                JSON_OBJECT(
+                  'id', o.id,
+                  'name', o.name,
+                  'outcomeIndex', o.outcomeIndex,
+                  'positionId', o.positionId,
+                  'chance', oc.chance,
+                  'supply', oc.supply,
+                  'totalSupply', oc.totalSupply
+                )
               ),
               ''
             ),
@@ -484,7 +492,16 @@ export class PredictionSet extends AdvancedSQLModel {
         LEFT JOIN ${DbTables.OUTCOME} o
           ON o.prediction_set_id = p.id
           AND o.status = ${SqlModelStatus.ACTIVE}
-        WHERE p.setStatus = ${PredictionSetStatus.ACTIVE}
+        LEFT JOIN (
+          SELECT oc.*
+          FROM ${DbTables.OUTCOME_CHANCE} oc
+          INNER JOIN (
+            SELECT outcome_id, MAX(createTime) as latest_create_time
+            FROM ${DbTables.OUTCOME_CHANCE}
+            GROUP BY outcome_id
+          ) latest ON oc.outcome_id = latest.outcome_id AND oc.createTime = latest.latest_create_time
+        ) oc ON oc.outcome_id = o.id
+        WHERE p.setStatus NOT IN(${PredictionSetStatus.ERROR}, ${PredictionSetStatus.INITIALIZED}, ${PredictionSetStatus.PENDING})
         AND p.status <> ${SqlModelStatus.DELETED}
         `,
       qGroup: `

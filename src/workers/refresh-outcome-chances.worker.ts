@@ -4,7 +4,6 @@ import { WorkerLogStatus } from '../lib/worker/logger';
 import { BaseQueueWorker } from '../lib/worker/serverless-workers/base-queue-worker';
 import { OutcomeChance } from '../modules/prediction-set/models/outcome-chance.model';
 import { PredictionSet, PredictionSetStatus } from '../modules/prediction-set/models/prediction-set.model';
-import { ethers } from 'ethers';
 
 /**
  * Refreshes outcome chances worker.
@@ -22,7 +21,7 @@ export class RefreshOutcomeChancesWorker extends BaseQueueWorker {
         INNER JOIN ${DbTables.OUTCOME} o
           ON ps.id = o.prediction_set_id
         WHERE 
-          ps.setStatus = ${PredictionSetStatus.FUNDED}
+          ps.setStatus = ${PredictionSetStatus.ACTIVE}
           AND ps.status = ${SqlModelStatus.ACTIVE}
           AND o.status = ${SqlModelStatus.ACTIVE}
           AND o.positionId IS NOT NULL
@@ -42,7 +41,7 @@ export class RefreshOutcomeChancesWorker extends BaseQueueWorker {
 
     try {
       const predictionSet = await new PredictionSet({}, this.context).populateById(predictionSetId, null, false, { outcomes: true, chainData: true });
-      if (!predictionSet.exists() && predictionSet.setStatus !== PredictionSetStatus.FUNDED) {
+      if (!predictionSet.exists() && predictionSet.setStatus !== PredictionSetStatus.ACTIVE) {
         await this.writeLogToDb(
           WorkerLogStatus.ERROR,
           `Prediction set with ID: ${predictionSetId} does not exists or is not funded.`,

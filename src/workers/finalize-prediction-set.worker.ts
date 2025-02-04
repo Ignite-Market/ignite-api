@@ -59,7 +59,7 @@ export class FinalizePredictionSetWorker extends BaseSingleThreadWorker {
         WHERE 
           ps.resolutionTime >= NOW()
           AND ps.status = ${SqlModelStatus.ACTIVE}
-          AND ps.setStatus = ${PredictionSetStatus.FUNDED}
+          AND ps.setStatus = ${PredictionSetStatus.ACTIVE}
           AND ps.resolutionType = ${ResolutionType.AUTOMATIC}
         GROUP BY ps.id
       `,

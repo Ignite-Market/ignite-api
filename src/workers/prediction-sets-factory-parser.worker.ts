@@ -109,8 +109,8 @@ export class PredictionSetsFactoryParserWorker extends BaseSingleThreadWorker {
         });
         await chainData.update(SerializeFor.UPDATE_DB, conn);
 
-        // Update prediction set to active.
-        predictionSet.setStatus = PredictionSetStatus.ACTIVE;
+        // Update prediction set to funding.
+        predictionSet.setStatus = PredictionSetStatus.FUNDING;
         await predictionSet.update(SerializeFor.UPDATE_DB, conn);
 
         // Obtain and update outcome position IDs.
