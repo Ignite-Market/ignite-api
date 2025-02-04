@@ -23,7 +23,9 @@ export class AppModule {
         { path: '/favicon.ico', method: RequestMethod.GET },
         // Auth routes:
         { path: 'users/wallet-message', method: RequestMethod.GET },
-        { path: 'users/wallet-login', method: RequestMethod.POST }
+        { path: 'users/wallet-login', method: RequestMethod.POST },
+        // Public listings:
+        { path: 'prediction-sets', method: RequestMethod.GET }
       )
       .forRoutes({ path: '*', method: RequestMethod.ALL });
   }
