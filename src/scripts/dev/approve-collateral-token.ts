@@ -3,7 +3,7 @@ import { exit } from 'process';
 import { env } from '../../config/env';
 import { setup } from '../../lib/blockchain';
 
-const FPMM_CONTRACT = '0x2A104B398Ed8D479F01e90b943A709b8F88E0092';
+const FPMM_CONTRACT = '0xd64Bacbfe73361b6b3eB4C2D7125a51E26837569';
 
 (async () => {
   const { signer } = setup();

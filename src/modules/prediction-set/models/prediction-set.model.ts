@@ -347,11 +347,32 @@ export class PredictionSet extends AdvancedSQLModel {
   public async getOutcomes(conn?: PoolConnection): Promise<Outcome[]> {
     const rows = await this.db().paramExecute(
       `
-        SELECT *
+        SELECT 
+          o.*, 
+          JSON_OBJECT(
+            'id', oc.id,
+            'status', oc.status,
+            'createTime', oc.createTime,
+            'updateTime', oc.updateTime,
+            'outcome_id', oc.outcome_id,
+            'prediction_set_id', oc.prediction_set_id,
+            'chance', oc.chance,
+            'supply', oc.supply,
+            'totalSupply', oc.totalSupply
+        ) AS latestChance
         FROM ${DbTables.OUTCOME} o
+        LEFT JOIN (
+          SELECT oc.*
+          FROM (
+              SELECT *,
+                ROW_NUMBER() OVER (PARTITION BY outcome_id ORDER BY createTime DESC) AS rn
+              FROM ${DbTables.OUTCOME_CHANCE}
+          ) oc
+          WHERE oc.rn = 1
+        ) oc ON oc.outcome_id = o.id
         WHERE o.prediction_set_id = @predictionSetId
           AND o.status <> ${SqlModelStatus.DELETED}
-        ORDER BY o.id
+        ORDER BY o.id;
       `,
       { predictionSetId: this.id },
       conn
@@ -471,7 +492,7 @@ export class PredictionSet extends AdvancedSQLModel {
             '[',
             COALESCE(
               GROUP_CONCAT(
-                DISTINCT 
+                DISTINCT
                 JSON_OBJECT(
                   'id', o.id,
                   'name', o.name,
@@ -481,6 +502,7 @@ export class PredictionSet extends AdvancedSQLModel {
                   'supply', oc.supply,
                   'totalSupply', oc.totalSupply
                 )
+                ORDER BY o.id
               ),
               ''
             ),

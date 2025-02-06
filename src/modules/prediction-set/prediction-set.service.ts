@@ -312,6 +312,25 @@ export class PredictionSetService {
     return await new PredictionSet({}, context).getList(query);
   }
 
+  public async getPredictionById(id: number, context: Context) {
+    const predictionSet = await new PredictionSet({}, context).populateById(id, null, false, {
+      outcomes: true,
+      chainData: true
+    });
+
+    if (!predictionSet.exists() || !predictionSet.isEnabled()) {
+      throw new CodeException({
+        code: SystemErrorCode.SQL_SYSTEM_ERROR,
+        errorCodes: SystemErrorCode,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        sourceFunction: `${this.constructor.name}/getPredictionById`,
+        context
+      });
+    }
+
+    return predictionSet.serialize(SerializeFor.USER);
+  }
+
   /**
    * Cancel prediction set on CHAIN.
    * @param predictionSet Prediction set.

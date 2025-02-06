@@ -4,6 +4,7 @@ import { presenceValidator } from '@rawmodel/validators';
 import { PoolConnection } from 'mysql2/promise';
 import { DbTables, PopulateFrom, SerializeFor, SqlModelStatus, ValidatorErrorCode } from '../../../config/types';
 import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
+import { OutcomeChance } from './outcome-chance.model';
 
 /**
  * Prediction set outcome.
@@ -61,6 +62,14 @@ export class Outcome extends AdvancedSQLModel {
     ]
   })
   name: string;
+
+  @prop({
+    parser: { resolver: OutcomeChance },
+    serializable: [SerializeFor.USER],
+    populatable: [PopulateFrom.DB],
+    defaultValue: () => null
+  })
+  latestChance: OutcomeChance;
 
   /**
    * Populated model by index and prediction set ID.

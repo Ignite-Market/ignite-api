@@ -34,6 +34,13 @@ export class PredictionSetController {
     return await this.predictionSetService.getPredictions(query, context);
   }
 
+  @Get('/:id')
+  @Validation({ dto: BaseQueryFilter, validateFor: ValidateFor.QUERY })
+  @UseGuards(ValidationGuard)
+  async getPredictionById(@Param('id', ParseIntPipe) id: number, @Ctx() context: Context) {
+    return await this.predictionSetService.getPredictionById(id, context);
+  }
+
   @Put('/:id')
   @Validation({ dto: PredictionSetDto })
   @UseGuards(ValidationGuard, AuthGuard)
