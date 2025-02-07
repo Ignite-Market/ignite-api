@@ -5,15 +5,19 @@ import { PredictionSet, ResolutionType } from '../../modules/prediction-set/mode
 import { PredictionSetService } from '../../modules/prediction-set/prediction-set.service';
 import { createContext } from './context';
 
+const twoHours = 2 * 60 * 60 * 1000;
+const fourHours = 4 * 60 * 60 * 1000;
+const sixHours = 6 * 60 * 60 * 1000;
+
 const data = {
   question: 'Bitcoin all time high by March 31?',
   description: 'Bitcoin all time high prediction.',
   generalResolutionDef: 'This market will resolve to "Yes" if Bitcoin reaches the all time high between December 30 and January 31.',
   outcomeResolutionDef: `This market will resolve to "Yes" if any Binance 1 minute candle for BTCUSDT between 30 Dec '24 11:00 and 31 Jan '25 23:59 in the ET timezone has a final “high” price that is higher than any previous Binance 1 minute candle's "high" price on any prior date. Otherwise, this market will resolve to "No". The resolution source for this market is Binance, specifically the BTCUSDT "high" prices currently available at https://www.binance.com/en/trade/BTC_USDT with “1m” and “Candles” selected on the top bar. Please note that this market is about the price according to Binance BTCUSDT, not according to other sources or spot markets.`,
   outcomePriceDef: 'The full outcome price always resolves to 100%.',
-  startTime: new Date(Number(new Date()) + 10000),
-  endTime: new Date(Number(new Date()) + 100000),
-  resolutionTime: new Date(Number(new Date()) + 400000),
+  startTime: new Date(Number(new Date()) + twoHours),
+  endTime: new Date(Number(new Date()) + fourHours),
+  resolutionTime: new Date(Number(new Date()) + sixHours),
   resolutionType: ResolutionType.MANUAL,
   consensusThreshold: 60,
   predictionOutcomes: [

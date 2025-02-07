@@ -56,7 +56,7 @@ export class PredictionSetParserWorker extends BaseQueueWorker {
         INNER JOIN ${DbTables.PREDICTION_SET_CHAIN_DATA} cd
           ON ps.id = cd.prediction_set_id
         WHERE 
-          ps.setStatus = ${PredictionSetStatus.ACTIVE}
+          ps.setStatus IN (${PredictionSetStatus.ACTIVE}, ${PredictionSetStatus.FUNDING})
           AND ps.status = ${SqlModelStatus.ACTIVE}
           AND cd.status = ${SqlModelStatus.ACTIVE}
           AND cd.contractAddress IS NOT NULL
