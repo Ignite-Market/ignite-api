@@ -10,9 +10,9 @@ import { PredictionSet, PredictionSetStatus, ResolutionType } from '../modules/p
 import { sendSlackWebhook } from '../lib/slack-webhook';
 
 /**
- * Finalize prediction set worker.
+ * Finalize automatic resolution prediction set worker.
  */
-export class FinalizePredictionSetWorker extends BaseSingleThreadWorker {
+export class FinalizeAutomaticPredictionSetWorker extends BaseSingleThreadWorker {
   /**
    * Runs worker executor.
    */

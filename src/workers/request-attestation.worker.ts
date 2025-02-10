@@ -1,4 +1,4 @@
-import { DbTables } from '../config/types';
+import { DbTables, SqlModelStatus } from '../config/types';
 import { prepareAttestationRequest, submitAttestationRequest } from '../lib/flare/attestation';
 import { AttestationVerifierStatus } from '../lib/flare/types';
 import { WorkerLogStatus } from '../lib/worker/logger';
@@ -35,7 +35,8 @@ export class RequestAttestationWorker extends BaseSingleThreadWorker {
         LEFT JOIN ${DbTables.PREDICTION_SET_ATTESTATION} a 
           ON ps.id = a.prediction_set_id
         WHERE 
-          ps.status = ${PredictionSetStatus.ACTIVE}
+          ps.status = ${SqlModelStatus.ACTIVE}
+          AND ps.setStatus = ${PredictionSetStatus.ACTIVE}
           AND ps.resolutionType = ${ResolutionType.AUTOMATIC}
           AND ps.endTime <= NOW()
           AND ps.resolutionTime >= NOW() 

@@ -10,6 +10,7 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
       \`status\`
       )
       VALUES
+      ('${WorkerName.FINALIZE_MANUAL_PREDICTION_SET}', 0, '* * * * *', 5),
       ('${WorkerName.VOTING_PARSER}', 0, '* * * * *', 5),
       ('${WorkerName.PREDICTION_SET_PARSER}', 0, '* * * * *', 5),
       ('${WorkerName.PREDICTION_SETS_FACTORY_PARSER}', 0, '* * * * *', 5),
@@ -19,6 +20,7 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
 
 export async function downgrade(queryFn: (query: string, values?: any[]) => Promise<any[]>): Promise<void> {
   await queryFn(`
+    DELETE FROM ${DbTables.JOB} WHERE name IN ('${WorkerName.FINALIZE_MANUAL_PREDICTION_SET}');
     DELETE FROM ${DbTables.JOB} WHERE name IN ('${WorkerName.VOTING_PARSER}');
     DELETE FROM ${DbTables.JOB} WHERE name IN ('${WorkerName.PREDICTION_SET_PARSER}');
     DELETE FROM ${DbTables.JOB} WHERE name IN ('${WorkerName.PREDICTION_SETS_FACTORY_PARSER}');

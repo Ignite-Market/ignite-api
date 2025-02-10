@@ -3,7 +3,7 @@ import { WorkerDefinition } from '../../lib/worker/serverless-workers';
 import { PredictionSetsFactoryParserWorker } from '../../workers/prediction-sets-factory-parser.worker';
 import { WorkerName } from '../../workers/worker-executor';
 import { createContext } from './context';
-import { FinalizePredictionSetWorker } from '../../workers/finalize-prediction-set.worker';
+import { FinalizeAutomaticPredictionSetWorker } from '../../workers/finalize-automatic-prediction-sets.worker';
 import { RequestAttestationWorker } from '../../workers/request-attestation.worker';
 import { RequestAttestationProofWorker } from '../../workers/request-attestation-proof.worker';
 

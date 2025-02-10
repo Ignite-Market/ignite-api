@@ -126,8 +126,8 @@ export class VotingParserWorker extends BaseSingleThreadWorker {
         await new OutcomeVotingTransaction(
           {
             prediction_set_id: predictionSet.id,
-            outcome_id: outcome.id,
-            user_id: user.id,
+            outcome_id: outcome?.id,
+            user_id: user?.id,
             wallet: voterAddress,
             txHash,
             questionId,

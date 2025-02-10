@@ -6,7 +6,8 @@ import { WorkerLogStatus, writeWorkerLog } from '../lib/worker/logger';
 import { ServiceDefinition, ServiceDefinitionType, WorkerDefinition } from '../lib/worker/serverless-workers';
 import { QueueWorkerType } from '../lib/worker/serverless-workers/base-queue-worker';
 import { CreatePredictionSetWorker } from './create-prediction-set.worker';
-import { FinalizePredictionSetWorker } from './finalize-prediction-set.worker';
+import { FinalizeAutomaticPredictionSetWorker } from './finalize-automatic-prediction-sets.worker';
+import { FinalizeManualPredictionSetWorker } from './finalize-manual-prediction-sets.worker';
 import { PredictionSetParserWorker } from './prediction-set-parser.worker';
 import { PredictionSetsFactoryParserWorker } from './prediction-sets-factory-parser.worker';
 import { RefreshOutcomeChancesWorker } from './refresh-outcome-chances.worker';
@@ -21,7 +22,8 @@ import { VotingParserWorker } from './voting-parser.worker';
 export enum WorkerName {
   SCHEDULER = 'Scheduler',
   CREATE_PREDICTION_SET = 'CreatePredictionSet',
-  FINALIZE_PREDICTION_SET = 'FinalizePredictionSet',
+  FINALIZE_MANUAL_PREDICTION_SET = 'FinalizeManualPredictionSet',
+  FINALIZE_AUTOMATIC_PREDICTION_SET = 'FinalizeAutomaticPredictionSet',
   PREDICTION_SET_PARSER = 'PredictionSetParser',
   PREDICTION_SETS_FACTORY_PARSER = 'PredictionSetsFactoryParser',
   REFRESH_OUTCOME_CHANCES = 'RefreshOutcomeChances',
@@ -102,8 +104,12 @@ export async function handleLambdaEvent(event: any, context: Context, serviceDef
       await new CreatePredictionSetWorker(workerDefinition, context).run();
       break;
 
-    case WorkerName.FINALIZE_PREDICTION_SET:
-      await new FinalizePredictionSetWorker(workerDefinition, context).run();
+    case WorkerName.FINALIZE_AUTOMATIC_PREDICTION_SET:
+      await new FinalizeAutomaticPredictionSetWorker(workerDefinition, context).run();
+      break;
+
+    case WorkerName.FINALIZE_MANUAL_PREDICTION_SET:
+      await new FinalizeManualPredictionSetWorker(workerDefinition, context).run();
       break;
 
     case WorkerName.PREDICTION_SET_PARSER:
@@ -182,8 +188,14 @@ export async function handleSqsMessages(event: any, context: Context, serviceDef
           });
           break;
 
-        case WorkerName.FINALIZE_PREDICTION_SET:
-          await new FinalizePredictionSetWorker(workerDefinition, context).run({
+        case WorkerName.FINALIZE_AUTOMATIC_PREDICTION_SET:
+          await new FinalizeAutomaticPredictionSetWorker(workerDefinition, context).run({
+            executeArg: message?.body
+          });
+          break;
+
+        case WorkerName.FINALIZE_MANUAL_PREDICTION_SET:
+          await new FinalizeAutomaticPredictionSetWorker(workerDefinition, context).run({
             executeArg: message?.body
           });
           break;
