@@ -57,7 +57,7 @@ export class FinalizeAutomaticPredictionSetWorker extends BaseSingleThreadWorker
         LEFT JOIN ${DbTables.PREDICTION_SET_ATTESTATION} psa 
           ON ps.id = psa.prediction_set_id
         WHERE 
-          ps.resolutionTime >= NOW()
+          ps.resolutionTime <= NOW()
           AND ps.status = ${SqlModelStatus.ACTIVE}
           AND ps.setStatus = ${PredictionSetStatus.ACTIVE}
           AND ps.resolutionType = ${ResolutionType.AUTOMATIC}

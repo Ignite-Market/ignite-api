@@ -6,9 +6,10 @@ import { createContext } from './context';
 import { FinalizeAutomaticPredictionSetWorker } from '../../workers/finalize-automatic-prediction-sets.worker';
 import { RequestAttestationWorker } from '../../workers/request-attestation.worker';
 import { RequestAttestationProofWorker } from '../../workers/request-attestation-proof.worker';
+import { FinalizeManualPredictionSetWorker } from '../../workers/finalize-manual-prediction-sets.worker';
 
-const WORKER_NAME = WorkerName.REQUEST_ATTESTATION_PROOF;
-const WorkerClass = RequestAttestationProofWorker;
+const WORKER_NAME = WorkerName.FINALIZE_MANUAL_PREDICTION_SET;
+const WorkerClass = FinalizeManualPredictionSetWorker;
 
 (async () => {
   const start = new Date();

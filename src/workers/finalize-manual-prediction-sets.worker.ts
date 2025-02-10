@@ -31,10 +31,11 @@ export class FinalizeManualPredictionSetWorker extends BaseSingleThreadWorker {
         SELECT *
         FROM ${DbTables.PREDICTION_SET} ps
         WHERE 
-          ps.status = ${SqlModelStatus.ACTIVE}
+          ps.resolutionTime <= NOW()
+          AND ps.status = ${SqlModelStatus.ACTIVE}
           AND ps.setStatus = ${PredictionSetStatus.ACTIVE}
           AND ps.resolutionType = ${ResolutionType.MANUAL}
-          AND ps.endTime <= NOW()
+        LIMIT 1
         `,
       {}
     );

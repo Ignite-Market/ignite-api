@@ -70,7 +70,7 @@ export async function addPredictionSet(predictionSet: PredictionSet, context: Co
       urls,
       jqs,
       predictionSet.consensusThreshold,
-      Number(predictionSet.resolutionTime),
+      Number(predictionSet.resolutionTime) / 1000,
       predictionSet.resolutionType === ResolutionType.AUTOMATIC
     );
     await initializeQuestionTx.wait();
