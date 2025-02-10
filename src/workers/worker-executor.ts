@@ -195,7 +195,7 @@ export async function handleSqsMessages(event: any, context: Context, serviceDef
           break;
 
         case WorkerName.FINALIZE_MANUAL_PREDICTION_SET:
-          await new FinalizeAutomaticPredictionSetWorker(workerDefinition, context).run({
+          await new FinalizeManualPredictionSetWorker(workerDefinition, context).run({
             executeArg: message?.body
           });
           break;

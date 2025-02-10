@@ -75,7 +75,7 @@ export class FinalizeManualPredictionSetWorker extends BaseSingleThreadWorker {
       } catch (error) {
         await this.writeLogToDb(
           WorkerLogStatus.ERROR,
-          `Error while starting finalizing manual resolution prediction set.`,
+          `Error while finalizing manual resolution prediction set.`,
           {
             predictionSetId: predictionSet.id
           },
