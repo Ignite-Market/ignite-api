@@ -35,7 +35,6 @@ export class FinalizeManualPredictionSetWorker extends BaseSingleThreadWorker {
           AND ps.status = ${SqlModelStatus.ACTIVE}
           AND ps.setStatus = ${PredictionSetStatus.ACTIVE}
           AND ps.resolutionType = ${ResolutionType.MANUAL}
-        LIMIT 1
         `,
       {}
     );
