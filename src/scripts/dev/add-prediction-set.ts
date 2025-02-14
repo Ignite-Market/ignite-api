@@ -20,6 +20,7 @@ const data = {
   resolutionTime: new Date(Number(new Date()) + sixHours),
   resolutionType: ResolutionType.MANUAL,
   consensusThreshold: 60,
+  tags: 'github',
   predictionOutcomes: [
     {
       name: 'Yes'

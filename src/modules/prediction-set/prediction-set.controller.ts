@@ -11,6 +11,7 @@ import { Outcome } from './models/outcome.model';
 import { PredictionSet } from './models/prediction-set.model';
 import { PredictionSetService } from './prediction-set.service';
 import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
+import { PredictionSetQueryFilter } from './dtos/prediction-set-query-filter';
 
 @Controller('prediction-sets')
 export class PredictionSetController {
@@ -28,14 +29,13 @@ export class PredictionSetController {
   }
 
   @Get('')
-  @Validation({ dto: BaseQueryFilter, validateFor: ValidateFor.QUERY })
+  @Validation({ dto: PredictionSetQueryFilter, validateFor: ValidateFor.QUERY })
   @UseGuards(ValidationGuard)
-  async getPredictions(@Query() query: BaseQueryFilter, @Ctx() context: Context) {
+  async getPredictions(@Query() query: PredictionSetQueryFilter, @Ctx() context: Context) {
     return await this.predictionSetService.getPredictions(query, context);
   }
 
   @Get('/:id')
-  @Validation({ dto: BaseQueryFilter, validateFor: ValidateFor.QUERY })
   @UseGuards(ValidationGuard)
   async getPredictionById(@Param('id', ParseIntPipe) id: number, @Ctx() context: Context) {
     return await this.predictionSetService.getPredictionById(id, context);

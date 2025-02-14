@@ -11,6 +11,7 @@ import { enumInclusionValidator } from '../../../lib/validators';
 import { DataSource } from './data-source.model';
 import { Outcome } from './outcome.model';
 import { PredictionSetChainData } from './prediction-set-chain-data.model';
+import { PredictionSetQueryFilter } from '../dtos/prediction-set-query-filter';
 
 /**
  * Prediction set resolution type.
@@ -279,6 +280,18 @@ export class PredictionSet extends AdvancedSQLModel {
   public setStatus: PredictionSetStatus;
 
   /**
+   * Tags - Used for filtering prediction sets.
+   */
+  @prop({
+    parser: {
+      resolver: stringParser()
+    },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER]
+  })
+  tags: string;
+
+  /**
    * Prediction set's outcomes virtual property definition.
    */
   @prop({
@@ -473,7 +486,7 @@ export class PredictionSet extends AdvancedSQLModel {
    * @param query
    * @returns
    */
-  public async getList(query: BaseQueryFilter): Promise<any> {
+  public async getList(query: PredictionSetQueryFilter): Promise<any> {
     const defaultParams = {
       id: null
     };
@@ -525,6 +538,12 @@ export class PredictionSet extends AdvancedSQLModel {
         ) oc ON oc.outcome_id = o.id
         WHERE p.setStatus NOT IN(${PredictionSetStatus.ERROR}, ${PredictionSetStatus.INITIALIZED}, ${PredictionSetStatus.PENDING})
         AND p.status <> ${SqlModelStatus.DELETED}
+        AND (@search IS NULL
+          OR p.question LIKE CONCAT('%', @search, '%')
+        )
+        AND (@tag IS NULL
+          OR p.tags LIKE CONCAT('%', @tag, '%')
+        )
         `,
       qGroup: `
         GROUP BY p.id

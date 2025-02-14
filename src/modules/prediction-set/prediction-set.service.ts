@@ -10,6 +10,7 @@ import { DataSource } from './models/data-source.model';
 import { Outcome } from './models/outcome.model';
 import { PredictionSet, PredictionSetStatus, ResolutionType } from './models/prediction-set.model';
 import { env } from '../../config/env';
+import { PredictionSetQueryFilter } from './dtos/prediction-set-query-filter';
 
 @Injectable()
 export class PredictionSetService {
@@ -308,10 +309,16 @@ export class PredictionSetService {
    * @param context Application context.
    * @returns Prediction group.
    */
-  public async getPredictions(query: BaseQueryFilter, context: Context) {
+  public async getPredictions(query: PredictionSetQueryFilter, context: Context) {
     return await new PredictionSet({}, context).getList(query);
   }
 
+  /**
+   *
+   * @param id
+   * @param context
+   * @returns
+   */
   public async getPredictionById(id: number, context: Context) {
     const predictionSet = await new PredictionSet({}, context).populateById(id, null, false, {
       outcomes: true,
