@@ -7,6 +7,7 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
       \`prediction_set_id\` INT NOT NULL,
       \`user_id\` INT NOT NULL,
       \`parent_comment_id\` INT NULL,
+      \`reply_user_id\` INT NULL,
       \`content\` TEXT NOT NULL,
       \`status\` INT NOT NULL DEFAULT '${SqlModelStatus.ACTIVE}',
       \`createTime\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

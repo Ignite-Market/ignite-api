@@ -1,17 +1,16 @@
 import { prop } from '@rawmodel/core';
-import { booleanParser, dateParser, floatParser, integerParser, stringParser } from '@rawmodel/parsers';
+import { dateParser, integerParser, stringParser } from '@rawmodel/parsers';
 import { isPresent } from '@rawmodel/utils';
 import { presenceValidator } from '@rawmodel/validators';
 import { PoolConnection } from 'mysql2/promise';
 import { DbTables, ErrorCode, PopulateFrom, SerializeFor, SqlModelStatus, ValidatorErrorCode } from '../../../config/types';
 import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
-import { BaseQueryFilter } from '../../../lib/base-models/base-query-filter.model';
 import { getQueryParams, selectAndCountQuery } from '../../../lib/database/sql-utils';
 import { enumInclusionValidator } from '../../../lib/validators';
+import { PredictionSetQueryFilter } from '../dtos/prediction-set-query-filter';
 import { DataSource } from './data-source.model';
 import { Outcome } from './outcome.model';
 import { PredictionSetChainData } from './prediction-set-chain-data.model';
-import { PredictionSetQueryFilter } from '../dtos/prediction-set-query-filter';
 
 /**
  * Prediction set resolution type.
@@ -330,11 +329,11 @@ export class PredictionSet extends AdvancedSQLModel {
     const context = this.getContext();
     const model = await super.populateById(id, conn, forUpdate);
 
-    if (populate.outcomes) {
+    if (populate?.outcomes) {
       this.outcomes = await this.getOutcomes(conn);
     }
 
-    if (populate.chainData) {
+    if (populate?.chainData) {
       this.chainData = await this.getPredictionSetChainData(conn, forUpdate);
     }
 

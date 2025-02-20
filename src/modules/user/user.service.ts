@@ -68,7 +68,7 @@ export class UserService {
       const conn = await context.mysql.start();
 
       user.walletAddress = data.address;
-      user.username = `Wallet ${data.address.slice(0, 6)}...${data.address.slice(-4)}`;
+      user.username = `${data.address.slice(0, 6)}...${data.address.slice(-4)}`;
       try {
         await user.validate();
       } catch (error) {

@@ -29,7 +29,17 @@ export class CommentCreateDto extends ModelBase {
     populatable: [PopulateFrom.USER],
     serializable: [SerializeFor.USER]
   })
-  public parent_comment_id?: number;
+  public parent_comment_id: number;
+
+  /**
+   * Reply user ID for replies.
+   */
+  @prop({
+    parser: { resolver: integerParser() },
+    populatable: [PopulateFrom.USER],
+    serializable: [SerializeFor.USER]
+  })
+  public reply_user_id: number;
 
   /**
    * Comment content.

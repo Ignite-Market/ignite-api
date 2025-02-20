@@ -7,7 +7,7 @@ import { releaseStage } from '../../../../test/setup-context-and-sql';
 import { DbTables, SqlModelStatus } from '../../../config/types';
 import { AUTHORIZATION_HEADER } from '../../../middlewares/authentication.middleware';
 import { createPredictionSet } from '../../prediction-set/tests/helpers/prediction-helper';
-import { Comment } from '../models/comment.model';
+import { Comment, DELETED_COMMENT_CONTENT } from '../models/comment.model';
 import { createComment, createComments } from './helpers/comment-helper';
 
 describe('Comment e2e tests', () => {
@@ -101,7 +101,7 @@ describe('Comment e2e tests', () => {
         expect(res.body.data.total).toBe(3);
         expect(res.body.data.items).toHaveLength(3);
         expect(res.body.data.items[0].content).not.toBe(comments[0].content);
-        expect(res.body.data.items[0].content).toBe('This comment has been deleted');
+        expect(res.body.data.items[0].content).toBe(DELETED_COMMENT_CONTENT);
         expect(res.body.data.items[1].content).toBe(comments[1].content);
         expect(res.body.data.items[2].content).toBe(comments[2].content);
       });

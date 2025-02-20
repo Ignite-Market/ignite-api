@@ -19,12 +19,12 @@ export class CommentController {
   @Validation({ dto: CommentCreateDto })
   @UseGuards(AuthGuard, ValidationGuard)
   async create(@Body() data: CommentCreateDto, @Ctx() context: Context): Promise<any> {
-    return (await this.commentService.createComment(data, context)).serialize(SerializeFor.USER);
+    return await this.commentService.createComment(data, context);
   }
 
   @Get('prediction-set/:predictionSetId')
   @Validation({ dto: BaseQueryFilter, validateFor: ValidateFor.QUERY })
-  @UseGuards(AuthGuard, ValidationGuard)
+  @UseGuards(ValidationGuard)
   async getByPredictionSetId(
     @Param('predictionSetId') predictionSetId: number,
     @Query() query: BaseQueryFilter,
@@ -42,7 +42,7 @@ export class CommentController {
 
   @Delete(':id')
   @UseGuards(AuthGuard)
-  async delete(@Param('id') id: number, @Ctx() context: Context): Promise<void> {
+  async delete(@Param('id') id: number, @Ctx() context: Context): Promise<any> {
     return this.commentService.deleteComment(id, context);
   }
 }

@@ -26,7 +26,8 @@ export class AppModule {
         { path: 'users/wallet-login', method: RequestMethod.POST },
         // Public listings:
         { path: 'prediction-sets', method: RequestMethod.GET },
-        { path: 'prediction-sets/:id', method: RequestMethod.GET }
+        { path: 'prediction-sets/:id', method: RequestMethod.GET },
+        { path: 'comments/prediction-sets/:id', method: RequestMethod.GET }
       )
       .forRoutes({ path: '*', method: RequestMethod.ALL });
   }

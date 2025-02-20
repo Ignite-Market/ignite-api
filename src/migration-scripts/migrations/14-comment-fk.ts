@@ -10,6 +10,10 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
       FOREIGN KEY (\`parent_comment_id\`) 
       REFERENCES \`${DbTables.COMMENT}\` (\`id\`)
       ON DELETE CASCADE,
+    ADD CONSTRAINT \`fk_comment__reply_user_id\` 
+      FOREIGN KEY (\`reply_user_id\`) 
+      REFERENCES \`${DbTables.USER}\` (\`id\`)
+      ON DELETE CASCADE;  
     ADD CONSTRAINT \`fk_comment__user\` 
       FOREIGN KEY (\`user_id\`) 
       REFERENCES \`${DbTables.USER}\` (\`id\`)
@@ -21,7 +25,8 @@ export async function downgrade(queryFn: (query: string, values?: any[]) => Prom
   await queryFn(`
     ALTER TABLE \`${DbTables.COMMENT}\`
     DROP FOREIGN KEY \`fk_comment__prediction_set\`,
-    DROP FOREIGN KEY \`fk_comment__parent_comment\`,
+    DROP FOREIGN KEY \`fk_comment__prediction_set\`,
+    DROP FOREIGN KEY \`reply_user_id\`,
     DROP FOREIGN KEY \`fk_comment__user\`;
   `);
 }
