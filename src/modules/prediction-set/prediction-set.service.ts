@@ -11,6 +11,7 @@ import { Outcome } from './models/outcome.model';
 import { PredictionSet, PredictionSetStatus, ResolutionType } from './models/prediction-set.model';
 import { env } from '../../config/env';
 import { PredictionSetQueryFilter } from './dtos/prediction-set-query-filter';
+import { PredictionSetChanceHistoryQueryFilter } from './dtos/prediciton-set-chance-history-query-filter';
 
 @Injectable()
 export class PredictionSetService {
@@ -384,6 +385,22 @@ export class PredictionSetService {
 
     predictionSet.status = SqlModelStatus.DELETED;
     await predictionSet.update();
+  }
+
+  public async getPredictionChanceHistory(predictionSetId: number, query: PredictionSetChanceHistoryQueryFilter, context: Context) {
+    const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId);
+
+    if (!predictionSet.exists() || !predictionSet.isEnabled()) {
+      throw new CodeException({
+        code: SystemErrorCode.SQL_SYSTEM_ERROR,
+        errorCodes: SystemErrorCode,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        sourceFunction: `${this.constructor.name}/getPredictionChanceHistory`,
+        context
+      });
+    }
+
+    return await predictionSet.getChanceHistory(query);
   }
 
   /**
