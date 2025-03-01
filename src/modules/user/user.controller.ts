@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { AuthGuard } from '../../guards/auth.guard';
 import { Context } from '../../context';
@@ -8,6 +8,9 @@ import { WalletLoginDto } from './dtos/wallet-login.dto';
 import { ValidationGuard } from '../../guards/validation.guard';
 import { UserProfileDto } from './dtos/user-profile.dto';
 import { UserEmailDto } from './dtos/user-email.dto';
+import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
+import { ValidateFor } from '../../config/types';
+import { UserActivityQueryFilter } from './dtos/user-activity-query-filter';
 
 @Controller('users')
 export class UserController {
@@ -22,6 +25,25 @@ export class UserController {
   @Get('wallet-message')
   getWalletAuthMessage(): any {
     return this.userService.getWalletAuthMessage();
+  }
+
+  @Get('/:id')
+  async getUserById(@Param('id', ParseIntPipe) id: number, @Ctx() context: Context) {
+    return await this.userService.getUserById(id, context);
+  }
+
+  @Get('/:id/predictions')
+  @Validation({ dto: BaseQueryFilter, validateFor: ValidateFor.QUERY })
+  @UseGuards(ValidationGuard, AuthGuard)
+  async getUserPredictions(@Param('id', ParseIntPipe) id: number, @Query() query: BaseQueryFilter, @Ctx() context: Context) {
+    return await this.userService.getUserPredictions(id, query, context);
+  }
+
+  @Get('/:id/activity')
+  @Validation({ dto: UserActivityQueryFilter, validateFor: ValidateFor.QUERY })
+  @UseGuards(ValidationGuard, AuthGuard)
+  async getUserActivity(@Param('id', ParseIntPipe) id: number, @Query() query: UserActivityQueryFilter, @Ctx() context: Context) {
+    return await this.userService.getUserActivity(id, query, context);
   }
 
   @Post('wallet-login')

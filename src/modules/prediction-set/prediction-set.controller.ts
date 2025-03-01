@@ -10,7 +10,6 @@ import { PredictionSetDto } from './dtos/prediction-set.dto';
 import { Outcome } from './models/outcome.model';
 import { PredictionSet } from './models/prediction-set.model';
 import { PredictionSetService } from './prediction-set.service';
-import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
 import { PredictionSetQueryFilter } from './dtos/prediction-set-query-filter';
 import { PredictionSetChanceHistoryQueryFilter } from './dtos/prediciton-set-chance-history-query-filter';
 
@@ -41,23 +40,23 @@ export class PredictionSetController {
     return await this.predictionSetService.getPredictionById(id, context);
   }
 
-  @Put('/:id')
-  @Validation({ dto: PredictionSetDto })
-  @UseGuards(ValidationGuard, AuthGuard)
-  @Roles(DefaultUserRole.ADMIN)
-  async updatePredictionSet(@Param('id', ParseIntPipe) id: number, @Body() data: PredictionSetDto, @Ctx() context: Context) {
-    return await this.predictionSetService.updatePredictionSet(id, data, context);
-  }
-
   @Get('/:id/chance-history')
   @Validation({ dto: PredictionSetChanceHistoryQueryFilter, validateFor: ValidateFor.QUERY })
-  @UseGuards(ValidationGuard)
+  @UseGuards(ValidationGuard, AuthGuard)
   async getPredictionChanceHistory(
     @Param('id', ParseIntPipe) id: number,
     @Query() query: PredictionSetChanceHistoryQueryFilter,
     @Ctx() context: Context
   ) {
     return await this.predictionSetService.getPredictionChanceHistory(id, query, context);
+  }
+
+  @Put('/:id')
+  @Validation({ dto: PredictionSetDto })
+  @UseGuards(ValidationGuard, AuthGuard)
+  @Roles(DefaultUserRole.ADMIN)
+  async updatePredictionSet(@Param('id', ParseIntPipe) id: number, @Body() data: PredictionSetDto, @Ctx() context: Context) {
+    return await this.predictionSetService.updatePredictionSet(id, data, context);
   }
 
   @Patch('/:id/cancel')

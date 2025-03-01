@@ -7,6 +7,9 @@ import { User, UserEmailStatus } from './models/user.model';
 import { WalletLoginDto } from './dtos/wallet-login.dto';
 import { UserProfileDto } from './dtos/user-profile.dto';
 import { UserEmailDto } from './dtos/user-email.dto';
+import { PredictionSet } from '../prediction-set/models/prediction-set.model';
+import { UserActivityQueryFilter } from './dtos/user-activity-query-filter';
+import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
 
 @Injectable()
 export class UserService {
@@ -17,6 +20,38 @@ export class UserService {
    */
   public async getUserProfile(context: Context) {
     return context.user?.serialize(SerializeFor.USER);
+  }
+
+  /**
+   * Returns user by id.
+   * @param id User id.
+   * @param context Application context.
+   * @returns User data.
+   */
+  public async getUserById(id: number, context: Context) {
+    return (await new User({}, context).populateById(id))?.serialize(SerializeFor.USER);
+  }
+
+  /**
+   * Returns users predictions.
+   * @param id User id.
+   * @param query Query filter.
+   * @param context Application context.
+   * @returns User data.
+   */
+  public async getUserPredictions(id: number, query: BaseQueryFilter, context: Context) {
+    return await new PredictionSet({}, context).getUserList(id, query);
+  }
+
+  /**
+   * Returns users activity.
+   * @param id User id.
+   * @param query Query filter.
+   * @param context Application context.
+   * @returns User data.
+   */
+  public async getUserActivity(id: number, query: UserActivityQueryFilter, context: Context) {
+    return await new PredictionSet({}, context).getUserActivityList(id, query);
   }
 
   /**

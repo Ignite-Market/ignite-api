@@ -9,6 +9,8 @@ const twoHours = 2 * 60 * 60 * 1000;
 const fourHours = 4 * 60 * 60 * 1000;
 const sixHours = 6 * 60 * 60 * 1000;
 
+const oneWeek = 7 * 24 * 60 * 60 * 1000;
+
 const data = {
   question: 'Bitcoin all time high by March 31?',
   description: 'Bitcoin all time high prediction.',
@@ -16,8 +18,8 @@ const data = {
   outcomeResolutionDef: `This market will resolve to "Yes" if any Binance 1 minute candle for BTCUSDT between 30 Dec '24 11:00 and 31 Jan '25 23:59 in the ET timezone has a final “high” price that is higher than any previous Binance 1 minute candle's "high" price on any prior date. Otherwise, this market will resolve to "No". The resolution source for this market is Binance, specifically the BTCUSDT "high" prices currently available at https://www.binance.com/en/trade/BTC_USDT with “1m” and “Candles” selected on the top bar. Please note that this market is about the price according to Binance BTCUSDT, not according to other sources or spot markets.`,
   outcomePriceDef: 'The full outcome price always resolves to 100%.',
   startTime: new Date(Number(new Date()) + twoHours),
-  endTime: new Date(Number(new Date()) + fourHours),
-  resolutionTime: new Date(Number(new Date()) + sixHours),
+  endTime: new Date(Number(new Date()) + oneWeek),
+  resolutionTime: new Date(Number(new Date()) + oneWeek + twoHours),
   resolutionType: ResolutionType.MANUAL,
   consensusThreshold: 60,
   tags: 'github',
