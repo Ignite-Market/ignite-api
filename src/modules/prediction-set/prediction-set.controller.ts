@@ -12,6 +12,7 @@ import { PredictionSet } from './models/prediction-set.model';
 import { PredictionSetService } from './prediction-set.service';
 import { PredictionSetQueryFilter } from './dtos/prediction-set-query-filter';
 import { PredictionSetChanceHistoryQueryFilter } from './dtos/prediciton-set-chance-history-query-filter';
+import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
 
 @Controller('prediction-sets')
 export class PredictionSetController {
@@ -38,6 +39,13 @@ export class PredictionSetController {
   @Get('/:id')
   async getPredictionById(@Param('id', ParseIntPipe) id: number, @Ctx() context: Context) {
     return await this.predictionSetService.getPredictionById(id, context);
+  }
+
+  @Get('/:id/activity')
+  @Validation({ dto: BaseQueryFilter, validateFor: ValidateFor.QUERY })
+  @UseGuards(ValidationGuard)
+  async getPredictionActivity(@Param('id', ParseIntPipe) id: number, @Query() query: BaseQueryFilter, @Ctx() context: Context) {
+    return await this.predictionSetService.getPredictionActivity(id, query, context);
   }
 
   @Get('/:id/chance-history')
@@ -78,5 +86,17 @@ export class PredictionSetController {
   @Roles(DefaultUserRole.ADMIN)
   async processPredictionSet(@Param('id', ParseIntPipe) predictionSetId: number, @Ctx() context: Context) {
     return await this.predictionSetService.processPredictionSet(predictionSetId, context);
+  }
+
+  @Post('/:id/watchlist')
+  @UseGuards(AuthGuard)
+  async addUserWatchlist(@Param('id', ParseIntPipe) id: number, @Ctx() context: Context) {
+    return await this.predictionSetService.addUserWatchlist(id, context);
+  }
+
+  @Delete('/:id/watchlist')
+  @UseGuards(AuthGuard)
+  async removeUserWatchlist(@Param('id', ParseIntPipe) id: number, @Ctx() context: Context) {
+    return await this.predictionSetService.removeUserWatchlist(id, context);
   }
 }

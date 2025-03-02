@@ -1,5 +1,5 @@
 import { prop } from '@rawmodel/core';
-import { dateParser, integerParser, stringParser } from '@rawmodel/parsers';
+import { booleanParser, dateParser, integerParser, stringParser } from '@rawmodel/parsers';
 import { isPresent } from '@rawmodel/utils';
 import { presenceValidator } from '@rawmodel/validators';
 import { PoolConnection } from 'mysql2/promise';
@@ -17,6 +17,7 @@ import { groupBy } from 'lodash';
 import { ShareTransactionType } from './transactions/outcome-share-transaction.model';
 import { BaseQueryFilter } from '../../../lib/base-models/base-query-filter.model';
 import { UserActivityQueryFilter } from '../../user/dtos/user-activity-query-filter';
+import { UserWatchlist } from './user-watchlist';
 
 /**
  * Prediction set resolution type.
@@ -319,6 +320,17 @@ export class PredictionSet extends AdvancedSQLModel {
   public chainData: PredictionSetChainData;
 
   /**
+   * Prediction set's chain data virtual property definition.
+   */
+  @prop({
+    parser: { resolver: booleanParser() },
+    serializable: [SerializeFor.USER],
+    populatable: [PopulateFrom.USER],
+    defaultValue: () => false
+  })
+  public isWatched: boolean;
+
+  /**
    *
    * @param id
    * @param conn
@@ -330,7 +342,7 @@ export class PredictionSet extends AdvancedSQLModel {
     id: any,
     conn?: PoolConnection,
     forUpdate?: boolean,
-    populate?: { outcomes?: boolean; chainData?: boolean }
+    populate?: { outcomes?: boolean; chainData?: boolean; isWatched?: boolean }
   ): Promise<this> {
     const context = this.getContext();
     const model = await super.populateById(id, conn, forUpdate);
@@ -341,6 +353,10 @@ export class PredictionSet extends AdvancedSQLModel {
 
     if (populate?.chainData) {
       this.chainData = await this.getPredictionSetChainData(conn, forUpdate);
+    }
+
+    if (populate?.isWatched) {
+      this.isWatched = await this.getIsWatched(conn);
     }
 
     return model;
@@ -355,6 +371,21 @@ export class PredictionSet extends AdvancedSQLModel {
     const context = this.getContext();
 
     return await new PredictionSetChainData({}, context).populateByPredictionSetId(this.id, conn, forUpdate);
+  }
+
+  /**
+   *
+   * @param conn
+   * @returns
+   */
+  public async getIsWatched(conn?: PoolConnection): Promise<boolean> {
+    const context = this.getContext();
+
+    if (!context.user) {
+      return false;
+    }
+
+    return (await new UserWatchlist({}, context).populateByUserAndPredictionSetId(context.user.id, this.id, conn)).exists();
   }
 
   /**
@@ -486,6 +517,63 @@ export class PredictionSet extends AdvancedSQLModel {
     return this;
   }
 
+  public async getActivityList(query: BaseQueryFilter): Promise<any> {
+    const defaultParams = {
+      id: null
+    };
+
+    const fieldMap = {
+      id: 'p.id',
+      userAmount: 'ost.amount',
+      userId: 'u.id',
+      userWallet: 'u.walletAddress'
+    };
+
+    const { params, filters } = getQueryParams(defaultParams, 'ost', fieldMap, query.serialize());
+
+    params.id = this.id;
+
+    const sqlQuery = {
+      qSelect: `
+        SELECT 
+          ${new PredictionSet({}).generateSelectFields('p')},
+          u.id as userId,
+          u.username,
+          u.walletAddress as userWallet,
+          o.name AS outcomeName,
+          ost.amount AS userAmount,
+          ost.type,
+          ost.outcomeTokens,
+          ost.txHash,
+          ost.createTime AS transactionTime
+        `,
+      qFrom: `
+        FROM ${DbTables.OUTCOME_SHARE_TRANSACTION} ost
+        JOIN ${DbTables.PREDICTION_SET} p
+          ON ost.prediction_set_id = p.id
+        LEFT JOIN ${DbTables.USER} u
+          ON u.id = ost.user_id
+        LEFT JOIN ${DbTables.OUTCOME} o 
+          ON o.id = ost.outcome_id
+        WHERE p.status <> ${SqlModelStatus.DELETED}
+        AND p.id = @id
+        AND ost.id IS NOT NULL
+        AND (@type IS NULL OR ost.type = @type)
+        AND (@search IS NULL
+          OR p.question LIKE CONCAT('%', @search, '%')
+        )
+        `,
+      qGroup: `
+        GROUP BY ost.id
+      `,
+      qFilter: `
+        ORDER BY ${filters.orderStr}
+        LIMIT ${filters.limit} OFFSET ${filters.offset};
+      `
+    };
+    return await selectAndCountQuery(this.getContext().mysql, sqlQuery, params, 'ost.id');
+  }
+
   /**
    *
    * @param query
@@ -501,6 +589,10 @@ export class PredictionSet extends AdvancedSQLModel {
     };
 
     const { params, filters } = getQueryParams(defaultParams, 'p', fieldMap, query.serialize());
+
+    if (this.getContext()?.user?.id) {
+      params.userId = this.getContext().user.id;
+    }
 
     const sqlQuery = {
       qSelect: `
@@ -525,7 +617,8 @@ export class PredictionSet extends AdvancedSQLModel {
               ''
             ),
             ']'
-          ) AS outcomes
+          ) AS outcomes,
+        IF(uw.id IS NOT NULL, 1, 0) AS isWatched
         `,
       qFrom: `
         FROM ${DbTables.PREDICTION_SET} p
@@ -541,6 +634,9 @@ export class PredictionSet extends AdvancedSQLModel {
             GROUP BY outcome_id
           ) latest ON oc.outcome_id = latest.outcome_id AND oc.createTime = latest.latest_create_time
         ) oc ON oc.outcome_id = o.id
+        LEFT JOIN ${DbTables.USER_WATCHLIST} uw 
+          ON uw.prediction_set_id = p.id
+          AND uw.user_id = @userId
         WHERE p.setStatus NOT IN(${PredictionSetStatus.ERROR}, ${PredictionSetStatus.INITIALIZED}, ${PredictionSetStatus.PENDING})
         AND p.status <> ${SqlModelStatus.DELETED}
         AND (@search IS NULL
@@ -587,7 +683,8 @@ export class PredictionSet extends AdvancedSQLModel {
           ost.amount AS userAmount,
           ost.type,
           ost.outcomeTokens,
-          ost.txHash
+          ost.txHash,
+          ost.createTime AS transactionTime
         `,
       qFrom: `
         FROM ${DbTables.PREDICTION_SET} p
@@ -611,7 +708,7 @@ export class PredictionSet extends AdvancedSQLModel {
         LIMIT ${filters.limit} OFFSET ${filters.offset};
       `
     };
-    return await selectAndCountQuery(this.getContext().mysql, sqlQuery, params, 'p.id');
+    return await selectAndCountQuery(this.getContext().mysql, sqlQuery, params, 'p.id, ost.id');
   }
 
   public async getUserList(id: number, query: BaseQueryFilter): Promise<any> {

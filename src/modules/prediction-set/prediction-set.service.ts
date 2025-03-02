@@ -12,6 +12,7 @@ import { PredictionSet, PredictionSetStatus, ResolutionType } from './models/pre
 import { env } from '../../config/env';
 import { PredictionSetQueryFilter } from './dtos/prediction-set-query-filter';
 import { PredictionSetChanceHistoryQueryFilter } from './dtos/prediciton-set-chance-history-query-filter';
+import { UserWatchlist } from './models/user-watchlist';
 
 @Injectable()
 export class PredictionSetService {
@@ -323,7 +324,8 @@ export class PredictionSetService {
   public async getPredictionById(id: number, context: Context) {
     const predictionSet = await new PredictionSet({}, context).populateById(id, null, false, {
       outcomes: true,
-      chainData: true
+      chainData: true,
+      isWatched: true
     });
 
     if (!predictionSet.exists() || !predictionSet.isEnabled()) {
@@ -337,6 +339,28 @@ export class PredictionSetService {
     }
 
     return predictionSet.serialize(SerializeFor.USER);
+  }
+
+  /**
+   * Get prediction set activity.
+   * @param id
+   * @param context
+   * @returns
+   */
+  public async getPredictionActivity(id: number, query: BaseQueryFilter, context: Context) {
+    const predictionSet = await new PredictionSet({}, context).populateById(id);
+
+    if (!predictionSet.exists() || !predictionSet.isEnabled()) {
+      throw new CodeException({
+        code: SystemErrorCode.SQL_SYSTEM_ERROR,
+        errorCodes: SystemErrorCode,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        sourceFunction: `${this.constructor.name}/getPredictionById`,
+        context
+      });
+    }
+
+    return await predictionSet.getActivityList(query);
   }
 
   /**
@@ -403,6 +427,32 @@ export class PredictionSetService {
     return await predictionSet.getChanceHistory(query);
   }
 
+  public async addUserWatchlist(predictionSetId: number, context: Context) {
+    const existingWatchlist = await new UserWatchlist({}, context).populateByUserAndPredictionSetId(context.user.id, predictionSetId);
+
+    if (existingWatchlist.exists()) {
+      return true;
+    }
+
+    const watchlist = new UserWatchlist({}, context).populate({
+      prediction_set_id: predictionSetId,
+      user_id: context.user.id
+    });
+
+    await watchlist.insert();
+
+    return true;
+  }
+
+  public async removeUserWatchlist(predictionSetId: number, context: Context) {
+    const existingWatchlist = await new UserWatchlist({}, context).populateByUserAndPredictionSetId(context.user.id, predictionSetId);
+
+    if (existingWatchlist.exists()) {
+      await existingWatchlist.delete();
+    }
+
+    return true;
+  }
   /**
    * Get prediction set ID.
    *
