@@ -564,62 +564,6 @@ export class PredictionSet extends AdvancedSQLModel {
     return this;
   }
 
-  public async getActivityLista(query: ActivityQueryFilter): Promise<any> {
-    const defaultParams = {
-      id: null
-    };
-
-    const fieldMap = {
-      id: 'p.id',
-      userAmount: 'ost.amount',
-      userId: 'u.id',
-      userWallet: 'u.walletAddress',
-      transactionTime: 'ost.createTime'
-    };
-
-    const { params, filters } = getQueryParams(defaultParams, 'ost', fieldMap, query.serialize());
-
-    const sqlQuery = {
-      qSelect: `
-        SELECT 
-          ${new PredictionSet({}).generateSelectFields('p')},
-          u.id as userId,
-          u.username,
-          u.walletAddress as userWallet,
-          o.name AS outcomeName,
-          ost.amount AS userAmount,
-          ost.type,
-          ost.outcomeTokens,
-          ost.txHash,
-          ost.createTime AS transactionTime
-        `,
-      qFrom: `
-        FROM ${DbTables.OUTCOME_SHARE_TRANSACTION} ost
-        JOIN ${DbTables.PREDICTION_SET} p
-          ON ost.prediction_set_id = p.id
-        LEFT JOIN ${DbTables.USER} u
-          ON u.id = ost.user_id
-        LEFT JOIN ${DbTables.OUTCOME} o 
-          ON o.id = ost.outcome_id
-        WHERE p.status <> ${SqlModelStatus.DELETED}
-        AND (@predictionId IS NULL OR ost.prediction_set_id = @predictionId)
-        AND (@userId IS NULL OR ost.user_id = @userId)
-        AND (@type IS NULL OR ost.type = @type)
-        AND (@search IS NULL
-          OR p.question LIKE CONCAT('%', @search, '%')
-        )
-        `,
-      qGroup: `
-        GROUP BY ost.id
-      `,
-      qFilter: `
-        ORDER BY ${filters.orderStr}
-        LIMIT ${filters.limit} OFFSET ${filters.offset};
-      `
-    };
-    return await selectAndCountQuery(this.getContext().mysql, sqlQuery, params, 'ost.id');
-  }
-
   public async getActivityList(query: ActivityQueryFilter): Promise<any> {
     const defaultParams = {
       id: null
