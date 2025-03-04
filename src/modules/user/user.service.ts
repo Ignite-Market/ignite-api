@@ -8,7 +8,7 @@ import { WalletLoginDto } from './dtos/wallet-login.dto';
 import { UserProfileDto } from './dtos/user-profile.dto';
 import { UserEmailDto } from './dtos/user-email.dto';
 import { PredictionSet } from '../prediction-set/models/prediction-set.model';
-import { UserActivityQueryFilter } from './dtos/user-activity-query-filter';
+import { ActivityQueryFilter } from '../prediction-set/dtos/activity-query-filter';
 import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
 
 @Injectable()
@@ -41,17 +41,6 @@ export class UserService {
    */
   public async getUserPredictions(id: number, query: BaseQueryFilter, context: Context) {
     return await new PredictionSet({}, context).getUserList(id, query);
-  }
-
-  /**
-   * Returns users activity.
-   * @param id User id.
-   * @param query Query filter.
-   * @param context Application context.
-   * @returns User data.
-   */
-  public async getUserActivity(id: number, query: UserActivityQueryFilter, context: Context) {
-    return await new PredictionSet({}, context).getUserActivityList(id, query);
   }
 
   /**

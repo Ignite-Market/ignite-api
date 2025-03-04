@@ -13,6 +13,8 @@ import { env } from '../../config/env';
 import { PredictionSetQueryFilter } from './dtos/prediction-set-query-filter';
 import { PredictionSetChanceHistoryQueryFilter } from './dtos/prediciton-set-chance-history-query-filter';
 import { UserWatchlist } from './models/user-watchlist';
+import { ActivityQueryFilter } from './dtos/activity-query-filter';
+import { HoldersQueryFilter } from './dtos/holders-query-filter';
 
 @Injectable()
 export class PredictionSetService {
@@ -347,20 +349,18 @@ export class PredictionSetService {
    * @param context
    * @returns
    */
-  public async getPredictionActivity(id: number, query: BaseQueryFilter, context: Context) {
-    const predictionSet = await new PredictionSet({}, context).populateById(id);
+  public async getPredictionActivity(query: ActivityQueryFilter, context: Context) {
+    return await new PredictionSet({}, context).getActivityList(query);
+  }
 
-    if (!predictionSet.exists() || !predictionSet.isEnabled()) {
-      throw new CodeException({
-        code: SystemErrorCode.SQL_SYSTEM_ERROR,
-        errorCodes: SystemErrorCode,
-        status: HttpStatus.INTERNAL_SERVER_ERROR,
-        sourceFunction: `${this.constructor.name}/getPredictionById`,
-        context
-      });
-    }
-
-    return await predictionSet.getActivityList(query);
+  /**
+   * Get prediction set holders.
+   * @param id
+   * @param context
+   * @returns
+   */
+  public async getPredictionHolders(query: HoldersQueryFilter, context: Context) {
+    return await new PredictionSet({}, context).getHoldersList(query);
   }
 
   /**

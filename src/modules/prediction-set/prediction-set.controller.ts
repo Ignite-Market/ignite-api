@@ -13,6 +13,8 @@ import { PredictionSetService } from './prediction-set.service';
 import { PredictionSetQueryFilter } from './dtos/prediction-set-query-filter';
 import { PredictionSetChanceHistoryQueryFilter } from './dtos/prediciton-set-chance-history-query-filter';
 import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
+import { ActivityQueryFilter } from './dtos/activity-query-filter';
+import { HoldersQueryFilter } from './dtos/holders-query-filter';
 
 @Controller('prediction-sets')
 export class PredictionSetController {
@@ -36,16 +38,23 @@ export class PredictionSetController {
     return await this.predictionSetService.getPredictions(query, context);
   }
 
+  @Get('/activity')
+  @Validation({ dto: ActivityQueryFilter, validateFor: ValidateFor.QUERY })
+  @UseGuards(ValidationGuard)
+  async getPredictionActivity(@Query() query: ActivityQueryFilter, @Ctx() context: Context) {
+    return await this.predictionSetService.getPredictionActivity(query, context);
+  }
+
+  @Get('/holders')
+  @Validation({ dto: HoldersQueryFilter, validateFor: ValidateFor.QUERY })
+  @UseGuards(ValidationGuard)
+  async getPredictionHolders(@Query() query: HoldersQueryFilter, @Ctx() context: Context) {
+    return await this.predictionSetService.getPredictionHolders(query, context);
+  }
+
   @Get('/:id')
   async getPredictionById(@Param('id', ParseIntPipe) id: number, @Ctx() context: Context) {
     return await this.predictionSetService.getPredictionById(id, context);
-  }
-
-  @Get('/:id/activity')
-  @Validation({ dto: BaseQueryFilter, validateFor: ValidateFor.QUERY })
-  @UseGuards(ValidationGuard)
-  async getPredictionActivity(@Param('id', ParseIntPipe) id: number, @Query() query: BaseQueryFilter, @Ctx() context: Context) {
-    return await this.predictionSetService.getPredictionActivity(id, query, context);
   }
 
   @Get('/:id/chance-history')

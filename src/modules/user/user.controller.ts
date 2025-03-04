@@ -10,7 +10,7 @@ import { UserProfileDto } from './dtos/user-profile.dto';
 import { UserEmailDto } from './dtos/user-email.dto';
 import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
 import { ValidateFor } from '../../config/types';
-import { UserActivityQueryFilter } from './dtos/user-activity-query-filter';
+import { ActivityQueryFilter } from '../prediction-set/dtos/activity-query-filter';
 
 @Controller('users')
 export class UserController {
@@ -34,16 +34,9 @@ export class UserController {
 
   @Get('/:id/predictions')
   @Validation({ dto: BaseQueryFilter, validateFor: ValidateFor.QUERY })
-  @UseGuards(ValidationGuard, AuthGuard)
+  @UseGuards(ValidationGuard)
   async getUserPredictions(@Param('id', ParseIntPipe) id: number, @Query() query: BaseQueryFilter, @Ctx() context: Context) {
     return await this.userService.getUserPredictions(id, query, context);
-  }
-
-  @Get('/:id/activity')
-  @Validation({ dto: UserActivityQueryFilter, validateFor: ValidateFor.QUERY })
-  @UseGuards(ValidationGuard, AuthGuard)
-  async getUserActivity(@Param('id', ParseIntPipe) id: number, @Query() query: UserActivityQueryFilter, @Ctx() context: Context) {
-    return await this.userService.getUserActivity(id, query, context);
   }
 
   @Post('wallet-login')

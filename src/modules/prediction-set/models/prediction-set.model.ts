@@ -16,8 +16,9 @@ import { dateToSqlString } from '../../../lib/utils';
 import { groupBy } from 'lodash';
 import { ShareTransactionType } from './transactions/outcome-share-transaction.model';
 import { BaseQueryFilter } from '../../../lib/base-models/base-query-filter.model';
-import { UserActivityQueryFilter } from '../../user/dtos/user-activity-query-filter';
+import { ActivityQueryFilter } from '../dtos/activity-query-filter';
 import { UserWatchlist } from './user-watchlist';
+import { HoldersQueryFilter } from '../dtos/holders-query-filter';
 
 /**
  * Prediction set resolution type.
@@ -517,7 +518,7 @@ export class PredictionSet extends AdvancedSQLModel {
     return this;
   }
 
-  public async getActivityList(query: BaseQueryFilter): Promise<any> {
+  public async getActivityList(query: ActivityQueryFilter): Promise<any> {
     const defaultParams = {
       id: null
     };
@@ -526,12 +527,11 @@ export class PredictionSet extends AdvancedSQLModel {
       id: 'p.id',
       userAmount: 'ost.amount',
       userId: 'u.id',
-      userWallet: 'u.walletAddress'
+      userWallet: 'u.walletAddress',
+      transactionTime: 'ost.createTime'
     };
 
     const { params, filters } = getQueryParams(defaultParams, 'ost', fieldMap, query.serialize());
-
-    params.id = this.id;
 
     const sqlQuery = {
       qSelect: `
@@ -556,8 +556,8 @@ export class PredictionSet extends AdvancedSQLModel {
         LEFT JOIN ${DbTables.OUTCOME} o 
           ON o.id = ost.outcome_id
         WHERE p.status <> ${SqlModelStatus.DELETED}
-        AND p.id = @id
-        AND ost.id IS NOT NULL
+        AND (@predictionId IS NULL OR ost.prediction_set_id = @predictionId)
+        AND (@userId IS NULL OR ost.user_id = @userId)
         AND (@type IS NULL OR ost.type = @type)
         AND (@search IS NULL
           OR p.question LIKE CONCAT('%', @search, '%')
@@ -572,6 +572,110 @@ export class PredictionSet extends AdvancedSQLModel {
       `
     };
     return await selectAndCountQuery(this.getContext().mysql, sqlQuery, params, 'ost.id');
+  }
+
+  public async getHoldersList(query: HoldersQueryFilter): Promise<any> {
+    const defaultParams = {
+      id: null
+    };
+
+    const fieldMap = {
+      id: 'p.id',
+      userAmount: 'ost.amount',
+      userId: 'u.id',
+      userWallet: 'u.walletAddress',
+      boughtAmount: `SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0))`,
+      soldAmount: `SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0))`,
+      outcomeTokens: `SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.outcomeTokens, 0))`
+    };
+
+    const { params, filters } = getQueryParams(defaultParams, 'ost', fieldMap, query.serialize());
+
+    const sqlQuery = {
+      qSelect: `
+        SELECT 
+          ${new PredictionSet({}).generateSelectFields('p')},
+          u.id as userId,
+          u.username,
+          u.walletAddress as userWallet,
+          o.name AS outcomeName,
+          SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)) AS boughtAmount,
+          SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0)) AS soldAmount,
+          SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.outcomeTokens, 0)) AS outcomeTokens
+        `,
+      qFrom: `
+        FROM ${DbTables.OUTCOME_SHARE_TRANSACTION} ost
+        JOIN ${DbTables.PREDICTION_SET} p
+          ON ost.prediction_set_id = p.id
+        LEFT JOIN ${DbTables.USER} u
+          ON u.id = ost.user_id
+        LEFT JOIN ${DbTables.OUTCOME} o 
+          ON o.id = ost.outcome_id
+        WHERE p.status <> ${SqlModelStatus.DELETED}
+        AND (@predictionId IS NULL OR ost.prediction_set_id = @predictionId)
+        AND (@outcomeId IS NULL OR ost.outcome_id = @outcomeId)
+        AND (@search IS NULL
+          OR p.question LIKE CONCAT('%', @search, '%')
+        )
+        `,
+      qGroup: `
+        GROUP BY u.id
+      `,
+      qFilter: `
+        ORDER BY ${filters.orderStr}
+        LIMIT ${filters.limit} OFFSET ${filters.offset};
+      `
+    };
+    return await selectAndCountQuery(this.getContext().mysql, sqlQuery, params, 'ost.id');
+  }
+
+  public async getUserList(id: number, query: BaseQueryFilter): Promise<any> {
+    const defaultParams = {
+      id: null
+    };
+
+    const fieldMap = {
+      id: 'p.id',
+      boughtAmount: `SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0))`,
+      soldAmount: `SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0))`,
+      outcomeTokens: `SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.outcomeTokens, 0))`
+    };
+
+    const { params, filters } = getQueryParams(defaultParams, 'p', fieldMap, query.serialize());
+
+    params.userId = id;
+
+    const sqlQuery = {
+      qSelect: `
+        SELECT 
+          ${new PredictionSet({}).generateSelectFields('p')},
+          o.name AS outcomeName,
+          SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)) AS boughtAmount,
+          SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0)) AS soldAmount,
+          SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.outcomeTokens, 0)) AS outcomeTokens
+        `,
+      qFrom: `
+        FROM ${DbTables.PREDICTION_SET} p
+        LEFT JOIN ${DbTables.OUTCOME_SHARE_TRANSACTION} ost
+          ON ost.prediction_set_id = p.id
+          AND ost.user_id = @userId
+        LEFT JOIN ${DbTables.OUTCOME} o 
+          ON o.id = ost.outcome_id
+        WHERE p.status <> ${SqlModelStatus.DELETED}
+        AND ost.id IS NOT NULL
+        AND (@search IS NULL
+          OR p.question LIKE CONCAT('%', @search, '%')
+        )
+        `,
+      qGroup: `
+        GROUP BY p.id, ost.outcome_id
+      `,
+      qFilter: `
+        ORDER BY ${filters.orderStr}
+        LIMIT ${filters.limit} OFFSET ${filters.offset};
+      `
+    };
+    return await selectAndCountQuery(this.getContext().mysql, sqlQuery, params, 'p.id, ost.outcome_id');
   }
 
   /**
@@ -659,105 +763,6 @@ export class PredictionSet extends AdvancedSQLModel {
       res.items = res?.items?.map((x: any) => ({ ...x, outcomes: JSON.parse(x.outcomes) }));
     }
     return res;
-  }
-
-  public async getUserActivityList(id: number, query: UserActivityQueryFilter): Promise<any> {
-    const defaultParams = {
-      id: null
-    };
-
-    const fieldMap = {
-      id: 'p.id',
-      userAmount: 'ost.amount'
-    };
-
-    const { params, filters } = getQueryParams(defaultParams, 'p', fieldMap, query.serialize());
-
-    params.userId = id;
-
-    const sqlQuery = {
-      qSelect: `
-        SELECT 
-          ${new PredictionSet({}).generateSelectFields('p')},
-          o.name AS outcomeName,
-          ost.amount AS userAmount,
-          ost.type,
-          ost.outcomeTokens,
-          ost.txHash,
-          ost.createTime AS transactionTime
-        `,
-      qFrom: `
-        FROM ${DbTables.PREDICTION_SET} p
-        LEFT JOIN ${DbTables.OUTCOME_SHARE_TRANSACTION} ost
-          ON ost.prediction_set_id = p.id
-          AND ost.user_id = @userId
-        LEFT JOIN ${DbTables.OUTCOME} o 
-          ON o.id = ost.outcome_id
-        WHERE p.status <> ${SqlModelStatus.DELETED}
-        AND ost.id IS NOT NULL
-        AND (@type IS NULL OR ost.type = @type)
-        AND (@search IS NULL
-          OR p.question LIKE CONCAT('%', @search, '%')
-        )
-        `,
-      qGroup: `
-        GROUP BY p.id, ost.id
-      `,
-      qFilter: `
-        ORDER BY ${filters.orderStr}
-        LIMIT ${filters.limit} OFFSET ${filters.offset};
-      `
-    };
-    return await selectAndCountQuery(this.getContext().mysql, sqlQuery, params, 'p.id, ost.id');
-  }
-
-  public async getUserList(id: number, query: BaseQueryFilter): Promise<any> {
-    const defaultParams = {
-      id: null
-    };
-
-    const fieldMap = {
-      id: 'p.id',
-      boughtAmount: `SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0))`,
-      soldAmount: `SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0))`,
-      outcomeTokens: `SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.outcomeTokens, 0))`
-    };
-
-    const { params, filters } = getQueryParams(defaultParams, 'p', fieldMap, query.serialize());
-
-    params.userId = id;
-
-    const sqlQuery = {
-      qSelect: `
-        SELECT 
-          ${new PredictionSet({}).generateSelectFields('p')},
-          o.name AS outcomeName,
-          SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)) AS boughtAmount,
-          SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0)) AS soldAmount,
-          SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.outcomeTokens, 0)) AS outcomeTokens
-        `,
-      qFrom: `
-        FROM ${DbTables.PREDICTION_SET} p
-        LEFT JOIN ${DbTables.OUTCOME_SHARE_TRANSACTION} ost
-          ON ost.prediction_set_id = p.id
-          AND ost.user_id = @userId
-        LEFT JOIN ${DbTables.OUTCOME} o 
-          ON o.id = ost.outcome_id
-        WHERE p.status <> ${SqlModelStatus.DELETED}
-        AND ost.id IS NOT NULL
-        AND (@search IS NULL
-          OR p.question LIKE CONCAT('%', @search, '%')
-        )
-        `,
-      qGroup: `
-        GROUP BY p.id, ost.outcome_id
-      `,
-      qFilter: `
-        ORDER BY ${filters.orderStr}
-        LIMIT ${filters.limit} OFFSET ${filters.offset};
-      `
-    };
-    return await selectAndCountQuery(this.getContext().mysql, sqlQuery, params, 'p.id, ost.outcome_id');
   }
 
   public async getChanceHistory(query: PredictionSetChanceHistoryQueryFilter): Promise<any> {
