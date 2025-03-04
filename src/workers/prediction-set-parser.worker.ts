@@ -147,11 +147,17 @@ export class PredictionSetParserWorker extends BaseQueueWorker {
       for (const fundingEvent of fundingEvents) {
         const user = await new User({}, this.context).populateByWalletAddress(fundingEvent.wallet, conn); // TODO: Should we let parse it without user ID?
 
+        let collateralAmount = null;
+        if (fundingEvent.type === FundingTransactionType.ADDED) {
+          collateralAmount = Math.max(...fundingEvent.amounts.split(',').map(Number));
+        }
+
         await new PredictionSetFundingTransaction(
           {
             ...fundingEvent,
             user_id: user.id,
-            prediction_set_id: predictionSet.id
+            prediction_set_id: predictionSet.id,
+            collateralAmount
           },
           this.context
         ).insert(SerializeFor.INSERT_DB, conn);
