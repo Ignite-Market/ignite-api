@@ -327,7 +327,8 @@ export class PredictionSetService {
     const predictionSet = await new PredictionSet({}, context).populateById(id, null, false, {
       outcomes: true,
       chainData: true,
-      isWatched: true
+      isWatched: true,
+      volume: true
     });
 
     if (!predictionSet.exists() || !predictionSet.isEnabled()) {

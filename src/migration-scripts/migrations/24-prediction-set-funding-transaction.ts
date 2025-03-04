@@ -10,6 +10,7 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
     \`wallet\` VARCHAR(42) NULL,
     \`amounts\` VARCHAR(255) NULL,
     \`shares\` VARCHAR(255) NULL,
+    \`collateralAmount\` VARCHAR(255) NULL,
     \`collateralRemovedFromFeePool\` VARCHAR(255) NULL,
     \`type\` INT NULL,
     \`status\` INT NOT NULL DEFAULT '${SqlModelStatus.ACTIVE}',

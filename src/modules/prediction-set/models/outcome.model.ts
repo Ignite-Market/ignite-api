@@ -71,6 +71,14 @@ export class Outcome extends AdvancedSQLModel {
   })
   latestChance: OutcomeChance;
 
+  @prop({
+    parser: { resolver: integerParser() },
+    serializable: [SerializeFor.USER],
+    populatable: [PopulateFrom.DB],
+    defaultValue: () => null
+  })
+  volume: number;
+
   /**
    * Populated model by index and prediction set ID.
    * @param outcomeIndex Outcome index.

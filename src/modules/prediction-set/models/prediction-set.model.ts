@@ -5,7 +5,7 @@ import { presenceValidator } from '@rawmodel/validators';
 import { PoolConnection } from 'mysql2/promise';
 import { DbTables, ErrorCode, PopulateFrom, SerializeFor, SqlModelStatus, ValidatorErrorCode } from '../../../config/types';
 import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
-import { getQueryParams, selectAndCountQuery } from '../../../lib/database/sql-utils';
+import { getQueryParams, selectAndCountQuery, unionSelectAndCountQuery } from '../../../lib/database/sql-utils';
 import { enumInclusionValidator } from '../../../lib/validators';
 import { PredictionSetQueryFilter } from '../dtos/prediction-set-query-filter';
 import { DataSource } from './data-source.model';
@@ -19,6 +19,7 @@ import { BaseQueryFilter } from '../../../lib/base-models/base-query-filter.mode
 import { ActivityQueryFilter } from '../dtos/activity-query-filter';
 import { UserWatchlist } from './user-watchlist';
 import { HoldersQueryFilter } from '../dtos/holders-query-filter';
+import { FundingTransactionType } from './transactions/prediction-set-funding-transaction.model';
 
 /**
  * Prediction set resolution type.
@@ -332,6 +333,17 @@ export class PredictionSet extends AdvancedSQLModel {
   public isWatched: boolean;
 
   /**
+   * Prediction set's liquidity volume.
+   */
+  @prop({
+    parser: { resolver: integerParser() },
+    serializable: [SerializeFor.USER],
+    populatable: [PopulateFrom.USER],
+    defaultValue: () => false
+  })
+  public volume: number;
+
+  /**
    *
    * @param id
    * @param conn
@@ -343,7 +355,7 @@ export class PredictionSet extends AdvancedSQLModel {
     id: any,
     conn?: PoolConnection,
     forUpdate?: boolean,
-    populate?: { outcomes?: boolean; chainData?: boolean; isWatched?: boolean }
+    populate?: { outcomes?: boolean; chainData?: boolean; isWatched?: boolean; volume?: boolean }
   ): Promise<this> {
     const context = this.getContext();
     const model = await super.populateById(id, conn, forUpdate);
@@ -358,6 +370,10 @@ export class PredictionSet extends AdvancedSQLModel {
 
     if (populate?.isWatched) {
       this.isWatched = await this.getIsWatched(conn);
+    }
+
+    if (populate?.volume) {
+      this.volume = await this.getVolume(conn);
     }
 
     return model;
@@ -394,6 +410,32 @@ export class PredictionSet extends AdvancedSQLModel {
    * @param conn
    * @returns
    */
+  public async getVolume(conn?: PoolConnection): Promise<number> {
+    const volume = await this.db().paramExecute(
+      `
+      SELECT
+        SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)) 
+        - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0)) 
+        + (
+          SELECT IFNULL(SUM(psft.collateralAmount), 0)
+          FROM ${DbTables.PREDICTION_SET_FUNDING_TRANSACTION} psft
+          WHERE psft.prediction_set_id = @predictionSetId
+        ) AS volume
+      FROM ${DbTables.OUTCOME_SHARE_TRANSACTION} ost
+      WHERE ost.prediction_set_id = @predictionSetId
+      `,
+      { predictionSetId: this.id },
+      conn
+    );
+
+    return volume[0].volume;
+  }
+
+  /**
+   *
+   * @param conn
+   * @returns
+   */
   public async getOutcomes(conn?: PoolConnection): Promise<Outcome[]> {
     const rows = await this.db().paramExecute(
       `
@@ -409,7 +451,8 @@ export class PredictionSet extends AdvancedSQLModel {
             'chance', oc.chance,
             'supply', oc.supply,
             'totalSupply', oc.totalSupply
-        ) AS latestChance
+          ) AS latestChance,
+          SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0)) AS volume
         FROM ${DbTables.OUTCOME} o
         LEFT JOIN (
           SELECT oc.*
@@ -420,8 +463,11 @@ export class PredictionSet extends AdvancedSQLModel {
           ) oc
           WHERE oc.rn = 1
         ) oc ON oc.outcome_id = o.id
+        LEFT JOIN ${DbTables.OUTCOME_SHARE_TRANSACTION} ost
+          ON ost.outcome_id = o.id
         WHERE o.prediction_set_id = @predictionSetId
           AND o.status <> ${SqlModelStatus.DELETED}
+        GROUP BY o.id
         ORDER BY o.id;
       `,
       { predictionSetId: this.id },
@@ -518,7 +564,7 @@ export class PredictionSet extends AdvancedSQLModel {
     return this;
   }
 
-  public async getActivityList(query: ActivityQueryFilter): Promise<any> {
+  public async getActivityLista(query: ActivityQueryFilter): Promise<any> {
     const defaultParams = {
       id: null
     };
@@ -572,6 +618,91 @@ export class PredictionSet extends AdvancedSQLModel {
       `
     };
     return await selectAndCountQuery(this.getContext().mysql, sqlQuery, params, 'ost.id');
+  }
+
+  public async getActivityList(query: ActivityQueryFilter): Promise<any> {
+    const defaultParams = {
+      id: null
+    };
+
+    const fieldMap = {};
+
+    const { params, filters } = getQueryParams(defaultParams, '', fieldMap, query.serialize());
+
+    const qSelects = [
+      {
+        qSelect: `
+        SELECT 
+          ${new PredictionSet({}).generateSelectFields('p')},
+          u.id as userId,
+          u.username,
+          u.walletAddress as userWallet,
+          o.name AS outcomeName,
+          t.id as transactionId,
+          t.amount AS userAmount,
+          t.type,
+          t.outcomeTokens,
+          t.txHash,
+          t.createTime AS transactionTime
+        `,
+        qFrom: `
+        FROM ${DbTables.OUTCOME_SHARE_TRANSACTION} t
+        JOIN ${DbTables.PREDICTION_SET} p
+          ON t.prediction_set_id = p.id
+        JOIN ${DbTables.USER} u
+          ON u.id = t.user_id
+        JOIN ${DbTables.OUTCOME} o 
+          ON o.id = t.outcome_id
+        WHERE p.status <> ${SqlModelStatus.DELETED}
+        AND (@predictionId IS NULL OR t.prediction_set_id = @predictionId)
+        AND (@userId IS NULL OR t.user_id = @userId)
+        AND (@type IS NULL OR t.type = @type)
+        AND (@search IS NULL
+          OR p.question LIKE CONCAT('%', @search, '%')
+        )
+        `
+      },
+      {
+        qSelect: `
+        SELECT 
+          ${new PredictionSet({}).generateSelectFields('p')},
+          u.id as userId,
+          u.username,
+          u.walletAddress as userWallet,
+          NULL AS outcomeName,
+          t.id as transactionId,
+          t.collateralAmount AS userAmount,
+          t.type + 2 as type,
+          NULL AS outcomeTokens,
+          t.txHash,
+          t.createTime AS transactionTime
+        `,
+        qFrom: `
+        FROM ${DbTables.PREDICTION_SET_FUNDING_TRANSACTION} t
+        JOIN ${DbTables.PREDICTION_SET} p
+          ON t.prediction_set_id = p.id
+        JOIN ${DbTables.USER} u
+          ON u.id = t.user_id
+        WHERE p.status <> ${SqlModelStatus.DELETED}
+        AND (@predictionId IS NULL OR t.prediction_set_id = @predictionId)
+        AND (@userId IS NULL OR t.user_id = @userId)
+        AND (@type IS NULL OR t.type = @type - 2)
+        AND (@search IS NULL
+          OR p.question LIKE CONCAT('%', @search, '%')
+        )
+        `
+      }
+    ];
+
+    const sqlQuery = {
+      qSelects,
+      qFilter: `
+        ORDER BY ${filters.orderStr}
+        LIMIT ${filters.limit} OFFSET ${filters.offset};
+      `
+    };
+
+    return await unionSelectAndCountQuery(this.getContext().mysql, sqlQuery, params, 't.id');
   }
 
   public async getHoldersList(query: HoldersQueryFilter): Promise<any> {
