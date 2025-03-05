@@ -59,7 +59,7 @@ export class PredictionSetController {
 
   @Get('/:id/chance-history')
   @Validation({ dto: PredictionSetChanceHistoryQueryFilter, validateFor: ValidateFor.QUERY })
-  @UseGuards(ValidationGuard, AuthGuard)
+  @UseGuards(ValidationGuard)
   async getPredictionChanceHistory(
     @Param('id', ParseIntPipe) id: number,
     @Query() query: PredictionSetChanceHistoryQueryFilter,
