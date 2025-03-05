@@ -701,7 +701,7 @@ export class PredictionSet extends AdvancedSQLModel {
         LIMIT ${filters.limit} OFFSET ${filters.offset};
       `
     };
-    return await selectAndCountQuery(this.getContext().mysql, sqlQuery, params, 'ost.id');
+    return await selectAndCountQuery(this.getContext().mysql, sqlQuery, params, 'u.id');
   }
 
   public async getUserList(id: number, query: BaseQueryFilter): Promise<any> {
@@ -824,6 +824,7 @@ export class PredictionSet extends AdvancedSQLModel {
         AND (@tag IS NULL
           OR p.tags LIKE CONCAT('%', @tag, '%')
         )
+        AND (@watchlist IS NULL OR @watchlist = 0 OR uw.id IS NOT NULL)
         `,
       qGroup: `
         GROUP BY p.id
