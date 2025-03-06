@@ -82,6 +82,16 @@ export class PredictionSetFundingTransaction extends AdvancedSQLModel {
   public shares: string;
 
   /**
+   * Collateral token amount on funding added transaction.
+   */
+  @prop({
+    parser: { resolver: stringParser() },
+    populatable: [PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
+  })
+  public collateralAmount: string;
+
+  /**
    * Removed collateral from fee pool on funding removed transaction.
    */
   @prop({

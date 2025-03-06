@@ -29,7 +29,8 @@ export enum DbTables {
   COMMENT = 'comment',
   PREDICTION_SET_ATTESTATION = 'prediction_set_attestation',
   CONTRACT = 'contract',
-  OUTCOME_VOTING_TRANSACTION = 'outcome_voting_transaction'
+  OUTCOME_VOTING_TRANSACTION = 'outcome_voting_transaction',
+  USER_WATCHLIST = 'user_watchlist'
 }
 /**
  * Validation error codes - 422_00_000.
@@ -61,7 +62,8 @@ export enum ValidatorErrorCode {
   USER_EMAIL_NOT_VALID = 422_00_023,
   USER_EMAIL_NOT_PRESENT = 422_00_024,
   USER_EMAIL_ALREADY_TAKEN = 422_00_025,
-  PREDICTION_SET_CONSENSUS_THRESHOLD_NOT_PRESENT_OR_VALID = 422_00_026
+  PREDICTION_SET_CONSENSUS_THRESHOLD_NOT_PRESENT_OR_VALID = 422_00_026,
+  PREDICTION_SET_CHANCE_HISTORY_RANGE_NOT_VALID = 422_00_027
 }
 
 /**

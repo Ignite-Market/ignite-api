@@ -11,6 +11,10 @@ import { Outcome } from './models/outcome.model';
 import { PredictionSet, PredictionSetStatus, ResolutionType } from './models/prediction-set.model';
 import { env } from '../../config/env';
 import { PredictionSetQueryFilter } from './dtos/prediction-set-query-filter';
+import { PredictionSetChanceHistoryQueryFilter } from './dtos/prediciton-set-chance-history-query-filter';
+import { UserWatchlist } from './models/user-watchlist';
+import { ActivityQueryFilter } from './dtos/activity-query-filter';
+import { HoldersQueryFilter } from './dtos/holders-query-filter';
 
 @Injectable()
 export class PredictionSetService {
@@ -322,7 +326,9 @@ export class PredictionSetService {
   public async getPredictionById(id: number, context: Context) {
     const predictionSet = await new PredictionSet({}, context).populateById(id, null, false, {
       outcomes: true,
-      chainData: true
+      chainData: true,
+      isWatched: true,
+      volume: true
     });
 
     if (!predictionSet.exists() || !predictionSet.isEnabled()) {
@@ -336,6 +342,26 @@ export class PredictionSetService {
     }
 
     return predictionSet.serialize(SerializeFor.USER);
+  }
+
+  /**
+   * Get prediction set activity.
+   * @param id
+   * @param context
+   * @returns
+   */
+  public async getPredictionActivity(query: ActivityQueryFilter, context: Context) {
+    return await new PredictionSet({}, context).getActivityList(query);
+  }
+
+  /**
+   * Get prediction set holders.
+   * @param id
+   * @param context
+   * @returns
+   */
+  public async getPredictionHolders(query: HoldersQueryFilter, context: Context) {
+    return await new PredictionSet({}, context).getHoldersList(query);
   }
 
   /**
@@ -386,6 +412,48 @@ export class PredictionSetService {
     await predictionSet.update();
   }
 
+  public async getPredictionChanceHistory(predictionSetId: number, query: PredictionSetChanceHistoryQueryFilter, context: Context) {
+    const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId);
+
+    if (!predictionSet.exists() || !predictionSet.isEnabled()) {
+      throw new CodeException({
+        code: SystemErrorCode.SQL_SYSTEM_ERROR,
+        errorCodes: SystemErrorCode,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        sourceFunction: `${this.constructor.name}/getPredictionChanceHistory`,
+        context
+      });
+    }
+
+    return await predictionSet.getChanceHistory(query);
+  }
+
+  public async addUserWatchlist(predictionSetId: number, context: Context) {
+    const existingWatchlist = await new UserWatchlist({}, context).populateByUserAndPredictionSetId(context.user.id, predictionSetId);
+
+    if (existingWatchlist.exists()) {
+      return true;
+    }
+
+    const watchlist = new UserWatchlist({}, context).populate({
+      prediction_set_id: predictionSetId,
+      user_id: context.user.id
+    });
+
+    await watchlist.insert();
+
+    return true;
+  }
+
+  public async removeUserWatchlist(predictionSetId: number, context: Context) {
+    const existingWatchlist = await new UserWatchlist({}, context).populateByUserAndPredictionSetId(context.user.id, predictionSetId);
+
+    if (existingWatchlist.exists()) {
+      await existingWatchlist.delete();
+    }
+
+    return true;
+  }
   /**
    * Get prediction set ID.
    *

@@ -1,5 +1,5 @@
 import { prop } from '@rawmodel/core';
-import { stringParser } from '@rawmodel/parsers';
+import { booleanParser, stringParser } from '@rawmodel/parsers';
 import { PopulateFrom } from '../../../config/types';
 import { BaseQueryFilter } from '../../../lib/base-models/base-query-filter.model';
 
@@ -15,4 +15,10 @@ export class PredictionSetQueryFilter extends BaseQueryFilter {
     populatable: [PopulateFrom.USER]
   })
   public search: string;
+
+  @prop({
+    parser: { resolver: booleanParser() },
+    populatable: [PopulateFrom.USER]
+  })
+  public watchlist: boolean;
 }
