@@ -350,7 +350,12 @@ export const FPMM_FACTORY_ABI = [
     'constant': true,
     'inputs': [],
     'name': 'implementationMaster',
-    'outputs': [{ 'name': '', 'type': 'address' }],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'address'
+      }
+    ],
     'payable': false,
     'stateMutability': 'view',
     'type': 'function'
@@ -358,36 +363,128 @@ export const FPMM_FACTORY_ABI = [
   {
     'constant': false,
     'inputs': [
-      { 'name': 'conditionalTokens', 'type': 'address' },
-      { 'name': 'collateralToken', 'type': 'address' },
-      { 'name': 'conditionIds', 'type': 'bytes32[]' },
-      { 'name': 'fee', 'type': 'uint256' }
+      {
+        'name': 'consData',
+        'type': 'bytes'
+      }
     ],
-    'name': 'createFixedProductMarketMaker',
-    'outputs': [{ 'name': '', 'type': 'address' }],
-    'payable': false,
-    'stateMutability': 'nonpayable',
-    'type': 'function'
-  },
-  {
-    'constant': false,
-    'inputs': [{ 'name': 'consData', 'type': 'bytes' }],
     'name': 'cloneConstructor',
     'outputs': [],
     'payable': false,
     'stateMutability': 'nonpayable',
     'type': 'function'
   },
-  { 'inputs': [], 'payable': false, 'stateMutability': 'nonpayable', 'type': 'constructor' },
+  {
+    'constant': false,
+    'inputs': [
+      {
+        'name': 'conditionalTokens',
+        'type': 'address'
+      },
+      {
+        'name': 'collateralToken',
+        'type': 'address'
+      },
+      {
+        'name': 'conditionIds',
+        'type': 'bytes32[]'
+      },
+      {
+        'name': 'fee',
+        'type': 'uint256'
+      },
+      {
+        'name': 'treasuryPercent',
+        'type': 'uint256'
+      },
+      {
+        'name': 'treasury',
+        'type': 'address'
+      },
+      {
+        'name': 'fundingThreshold',
+        'type': 'uint256'
+      }
+    ],
+    'name': 'createFixedProductMarketMaker',
+    'outputs': [
+      {
+        'name': '',
+        'type': 'address'
+      }
+    ],
+    'payable': false,
+    'stateMutability': 'nonpayable',
+    'type': 'function'
+  },
+  {
+    'constant': true,
+    'inputs': [],
+    'name': 'fundingThreshold',
+    'outputs': [
+      {
+        'name': '',
+        'type': 'uint256'
+      }
+    ],
+    'payable': false,
+    'stateMutability': 'view',
+    'type': 'function'
+  },
+  {
+    'inputs': [],
+    'payable': false,
+    'stateMutability': 'nonpayable',
+    'type': 'constructor'
+  },
   {
     'anonymous': false,
     'inputs': [
-      { 'indexed': true, 'name': 'creator', 'type': 'address' },
-      { 'indexed': false, 'name': 'fixedProductMarketMaker', 'type': 'address' },
-      { 'indexed': true, 'name': 'conditionalTokens', 'type': 'address' },
-      { 'indexed': true, 'name': 'collateralToken', 'type': 'address' },
-      { 'indexed': false, 'name': 'conditionIds', 'type': 'bytes32[]' },
-      { 'indexed': false, 'name': 'fee', 'type': 'uint256' }
+      {
+        'indexed': true,
+        'name': 'creator',
+        'type': 'address'
+      },
+      {
+        'indexed': false,
+        'name': 'fixedProductMarketMaker',
+        'type': 'address'
+      },
+      {
+        'indexed': true,
+        'name': 'conditionalTokens',
+        'type': 'address'
+      },
+      {
+        'indexed': true,
+        'name': 'collateralToken',
+        'type': 'address'
+      },
+      {
+        'indexed': false,
+        'name': 'conditionIds',
+        'type': 'bytes32[]'
+      },
+      {
+        'indexed': false,
+        'name': 'fee',
+        'type': 'uint256'
+      },
+      {
+        'indexed': false,
+        'name': 'treasuryPercent',
+        'type': 'uint256'
+      },
+      {
+        'indexed': false,
+        'name': 'treasury',
+        'type': 'address'
+      },
+      {
+        'indexed': false,
+        'name': 'fundingThreshold',
+        'type': 'uint256'
+      }
     ],
     'name': 'FixedProductMarketMakerCreation',
     'type': 'event'
@@ -395,9 +492,21 @@ export const FPMM_FACTORY_ABI = [
   {
     'anonymous': false,
     'inputs': [
-      { 'indexed': true, 'name': 'funder', 'type': 'address' },
-      { 'indexed': false, 'name': 'amountsAdded', 'type': 'uint256[]' },
-      { 'indexed': false, 'name': 'sharesMinted', 'type': 'uint256' }
+      {
+        'indexed': true,
+        'name': 'funder',
+        'type': 'address'
+      },
+      {
+        'indexed': false,
+        'name': 'amountsAdded',
+        'type': 'uint256[]'
+      },
+      {
+        'indexed': false,
+        'name': 'sharesMinted',
+        'type': 'uint256'
+      }
     ],
     'name': 'FPMMFundingAdded',
     'type': 'event'
@@ -405,10 +514,26 @@ export const FPMM_FACTORY_ABI = [
   {
     'anonymous': false,
     'inputs': [
-      { 'indexed': true, 'name': 'funder', 'type': 'address' },
-      { 'indexed': false, 'name': 'amountsRemoved', 'type': 'uint256[]' },
-      { 'indexed': false, 'name': 'collateralRemovedFromFeePool', 'type': 'uint256' },
-      { 'indexed': false, 'name': 'sharesBurnt', 'type': 'uint256' }
+      {
+        'indexed': true,
+        'name': 'funder',
+        'type': 'address'
+      },
+      {
+        'indexed': false,
+        'name': 'amountsRemoved',
+        'type': 'uint256[]'
+      },
+      {
+        'indexed': false,
+        'name': 'collateralRemovedFromFeePool',
+        'type': 'uint256'
+      },
+      {
+        'indexed': false,
+        'name': 'sharesBurnt',
+        'type': 'uint256'
+      }
     ],
     'name': 'FPMMFundingRemoved',
     'type': 'event'
@@ -416,11 +541,31 @@ export const FPMM_FACTORY_ABI = [
   {
     'anonymous': false,
     'inputs': [
-      { 'indexed': true, 'name': 'buyer', 'type': 'address' },
-      { 'indexed': false, 'name': 'investmentAmount', 'type': 'uint256' },
-      { 'indexed': false, 'name': 'feeAmount', 'type': 'uint256' },
-      { 'indexed': true, 'name': 'outcomeIndex', 'type': 'uint256' },
-      { 'indexed': false, 'name': 'outcomeTokensBought', 'type': 'uint256' }
+      {
+        'indexed': true,
+        'name': 'buyer',
+        'type': 'address'
+      },
+      {
+        'indexed': false,
+        'name': 'investmentAmount',
+        'type': 'uint256'
+      },
+      {
+        'indexed': false,
+        'name': 'feeAmount',
+        'type': 'uint256'
+      },
+      {
+        'indexed': true,
+        'name': 'outcomeIndex',
+        'type': 'uint256'
+      },
+      {
+        'indexed': false,
+        'name': 'outcomeTokensBought',
+        'type': 'uint256'
+      }
     ],
     'name': 'FPMMBuy',
     'type': 'event'
@@ -428,11 +573,31 @@ export const FPMM_FACTORY_ABI = [
   {
     'anonymous': false,
     'inputs': [
-      { 'indexed': true, 'name': 'seller', 'type': 'address' },
-      { 'indexed': false, 'name': 'returnAmount', 'type': 'uint256' },
-      { 'indexed': false, 'name': 'feeAmount', 'type': 'uint256' },
-      { 'indexed': true, 'name': 'outcomeIndex', 'type': 'uint256' },
-      { 'indexed': false, 'name': 'outcomeTokensSold', 'type': 'uint256' }
+      {
+        'indexed': true,
+        'name': 'seller',
+        'type': 'address'
+      },
+      {
+        'indexed': false,
+        'name': 'returnAmount',
+        'type': 'uint256'
+      },
+      {
+        'indexed': false,
+        'name': 'feeAmount',
+        'type': 'uint256'
+      },
+      {
+        'indexed': true,
+        'name': 'outcomeIndex',
+        'type': 'uint256'
+      },
+      {
+        'indexed': false,
+        'name': 'outcomeTokensSold',
+        'type': 'uint256'
+      }
     ],
     'name': 'FPMMSell',
     'type': 'event'
@@ -440,8 +605,16 @@ export const FPMM_FACTORY_ABI = [
   {
     'anonymous': false,
     'inputs': [
-      { 'indexed': true, 'name': 'target', 'type': 'address' },
-      { 'indexed': false, 'name': 'clone', 'type': 'address' }
+      {
+        'indexed': true,
+        'name': 'target',
+        'type': 'address'
+      },
+      {
+        'indexed': false,
+        'name': 'clone',
+        'type': 'address'
+      }
     ],
     'name': 'CloneCreated',
     'type': 'event'
@@ -455,11 +628,22 @@ export const CONDITIONAL_TOKEN_ABI = [
   {
     'constant': true,
     'inputs': [
-      { 'name': 'owner', 'type': 'address' },
-      { 'name': 'id', 'type': 'uint256' }
+      {
+        'name': 'owner',
+        'type': 'address'
+      },
+      {
+        'name': 'id',
+        'type': 'uint256'
+      }
     ],
     'name': 'balanceOf',
-    'outputs': [{ 'name': '', 'type': 'uint256' }],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'uint256'
+      }
+    ],
     'payable': false,
     'stateMutability': 'view',
     'type': 'function'
@@ -467,10 +651,22 @@ export const CONDITIONAL_TOKEN_ABI = [
   {
     'constant': false,
     'inputs': [
-      { 'name': 'collateralToken', 'type': 'address' },
-      { 'name': 'parentCollectionId', 'type': 'bytes32' },
-      { 'name': 'conditionId', 'type': 'bytes32' },
-      { 'name': 'indexSets', 'type': 'uint256[]' }
+      {
+        'name': 'collateralToken',
+        'type': 'address'
+      },
+      {
+        'name': 'parentCollectionId',
+        'type': 'bytes32'
+      },
+      {
+        'name': 'conditionId',
+        'type': 'bytes32'
+      },
+      {
+        'name': 'indexSets',
+        'type': 'uint256[]'
+      }
     ],
     'name': 'redeemPositions',
     'outputs': [],
@@ -480,9 +676,19 @@ export const CONDITIONAL_TOKEN_ABI = [
   },
   {
     'constant': true,
-    'inputs': [{ 'name': 'interfaceId', 'type': 'bytes4' }],
+    'inputs': [
+      {
+        'name': 'interfaceId',
+        'type': 'bytes4'
+      }
+    ],
     'name': 'supportsInterface',
-    'outputs': [{ 'name': '', 'type': 'bool' }],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'bool'
+      }
+    ],
     'payable': false,
     'stateMutability': 'view',
     'type': 'function'
@@ -490,11 +696,22 @@ export const CONDITIONAL_TOKEN_ABI = [
   {
     'constant': true,
     'inputs': [
-      { 'name': '', 'type': 'bytes32' },
-      { 'name': '', 'type': 'uint256' }
+      {
+        'name': '',
+        'type': 'bytes32'
+      },
+      {
+        'name': '',
+        'type': 'uint256'
+      }
     ],
     'name': 'payoutNumerators',
-    'outputs': [{ 'name': '', 'type': 'uint256' }],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'uint256'
+      }
+    ],
     'payable': false,
     'stateMutability': 'view',
     'type': 'function'
@@ -502,11 +719,26 @@ export const CONDITIONAL_TOKEN_ABI = [
   {
     'constant': false,
     'inputs': [
-      { 'name': 'from', 'type': 'address' },
-      { 'name': 'to', 'type': 'address' },
-      { 'name': 'ids', 'type': 'uint256[]' },
-      { 'name': 'values', 'type': 'uint256[]' },
-      { 'name': 'data', 'type': 'bytes' }
+      {
+        'name': 'from',
+        'type': 'address'
+      },
+      {
+        'name': 'to',
+        'type': 'address'
+      },
+      {
+        'name': 'ids',
+        'type': 'uint256[]'
+      },
+      {
+        'name': 'values',
+        'type': 'uint256[]'
+      },
+      {
+        'name': 'data',
+        'type': 'bytes'
+      }
     ],
     'name': 'safeBatchTransferFrom',
     'outputs': [],
@@ -517,11 +749,22 @@ export const CONDITIONAL_TOKEN_ABI = [
   {
     'constant': true,
     'inputs': [
-      { 'name': 'collateralToken', 'type': 'address' },
-      { 'name': 'collectionId', 'type': 'bytes32' }
+      {
+        'name': 'collateralToken',
+        'type': 'address'
+      },
+      {
+        'name': 'collectionId',
+        'type': 'bytes32'
+      }
     ],
     'name': 'getPositionId',
-    'outputs': [{ 'name': '', 'type': 'uint256' }],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'uint256'
+      }
+    ],
     'payable': false,
     'stateMutability': 'pure',
     'type': 'function'
@@ -529,11 +772,22 @@ export const CONDITIONAL_TOKEN_ABI = [
   {
     'constant': true,
     'inputs': [
-      { 'name': 'owners', 'type': 'address[]' },
-      { 'name': 'ids', 'type': 'uint256[]' }
+      {
+        'name': 'owners',
+        'type': 'address[]'
+      },
+      {
+        'name': 'ids',
+        'type': 'uint256[]'
+      }
     ],
     'name': 'balanceOfBatch',
-    'outputs': [{ 'name': '', 'type': 'uint256[]' }],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'uint256[]'
+      }
+    ],
     'payable': false,
     'stateMutability': 'view',
     'type': 'function'
@@ -541,11 +795,26 @@ export const CONDITIONAL_TOKEN_ABI = [
   {
     'constant': false,
     'inputs': [
-      { 'name': 'collateralToken', 'type': 'address' },
-      { 'name': 'parentCollectionId', 'type': 'bytes32' },
-      { 'name': 'conditionId', 'type': 'bytes32' },
-      { 'name': 'partition', 'type': 'uint256[]' },
-      { 'name': 'amount', 'type': 'uint256' }
+      {
+        'name': 'collateralToken',
+        'type': 'address'
+      },
+      {
+        'name': 'parentCollectionId',
+        'type': 'bytes32'
+      },
+      {
+        'name': 'conditionId',
+        'type': 'bytes32'
+      },
+      {
+        'name': 'partition',
+        'type': 'uint256[]'
+      },
+      {
+        'name': 'amount',
+        'type': 'uint256'
+      }
     ],
     'name': 'splitPosition',
     'outputs': [],
@@ -556,12 +825,26 @@ export const CONDITIONAL_TOKEN_ABI = [
   {
     'constant': true,
     'inputs': [
-      { 'name': 'oracle', 'type': 'address' },
-      { 'name': 'questionId', 'type': 'bytes32' },
-      { 'name': 'outcomeSlotCount', 'type': 'uint256' }
+      {
+        'name': 'oracle',
+        'type': 'address'
+      },
+      {
+        'name': 'questionId',
+        'type': 'bytes32'
+      },
+      {
+        'name': 'outcomeSlotCount',
+        'type': 'uint256'
+      }
     ],
     'name': 'getConditionId',
-    'outputs': [{ 'name': '', 'type': 'bytes32' }],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'bytes32'
+      }
+    ],
     'payable': false,
     'stateMutability': 'pure',
     'type': 'function'
@@ -569,12 +852,26 @@ export const CONDITIONAL_TOKEN_ABI = [
   {
     'constant': true,
     'inputs': [
-      { 'name': 'parentCollectionId', 'type': 'bytes32' },
-      { 'name': 'conditionId', 'type': 'bytes32' },
-      { 'name': 'indexSet', 'type': 'uint256' }
+      {
+        'name': 'parentCollectionId',
+        'type': 'bytes32'
+      },
+      {
+        'name': 'conditionId',
+        'type': 'bytes32'
+      },
+      {
+        'name': 'indexSet',
+        'type': 'uint256'
+      }
     ],
     'name': 'getCollectionId',
-    'outputs': [{ 'name': '', 'type': 'bytes32' }],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'bytes32'
+      }
+    ],
     'payable': false,
     'stateMutability': 'view',
     'type': 'function'
@@ -582,11 +879,26 @@ export const CONDITIONAL_TOKEN_ABI = [
   {
     'constant': false,
     'inputs': [
-      { 'name': 'collateralToken', 'type': 'address' },
-      { 'name': 'parentCollectionId', 'type': 'bytes32' },
-      { 'name': 'conditionId', 'type': 'bytes32' },
-      { 'name': 'partition', 'type': 'uint256[]' },
-      { 'name': 'amount', 'type': 'uint256' }
+      {
+        'name': 'collateralToken',
+        'type': 'address'
+      },
+      {
+        'name': 'parentCollectionId',
+        'type': 'bytes32'
+      },
+      {
+        'name': 'conditionId',
+        'type': 'bytes32'
+      },
+      {
+        'name': 'partition',
+        'type': 'uint256[]'
+      },
+      {
+        'name': 'amount',
+        'type': 'uint256'
+      }
     ],
     'name': 'mergePositions',
     'outputs': [],
@@ -597,8 +909,14 @@ export const CONDITIONAL_TOKEN_ABI = [
   {
     'constant': false,
     'inputs': [
-      { 'name': 'operator', 'type': 'address' },
-      { 'name': 'approved', 'type': 'bool' }
+      {
+        'name': 'operator',
+        'type': 'address'
+      },
+      {
+        'name': 'approved',
+        'type': 'bool'
+      }
     ],
     'name': 'setApprovalForAll',
     'outputs': [],
@@ -609,8 +927,14 @@ export const CONDITIONAL_TOKEN_ABI = [
   {
     'constant': false,
     'inputs': [
-      { 'name': 'questionId', 'type': 'bytes32' },
-      { 'name': 'payouts', 'type': 'uint256[]' }
+      {
+        'name': 'questionId',
+        'type': 'bytes32'
+      },
+      {
+        'name': 'payouts',
+        'type': 'uint256[]'
+      }
     ],
     'name': 'reportPayouts',
     'outputs': [],
@@ -620,9 +944,19 @@ export const CONDITIONAL_TOKEN_ABI = [
   },
   {
     'constant': true,
-    'inputs': [{ 'name': 'conditionId', 'type': 'bytes32' }],
+    'inputs': [
+      {
+        'name': 'conditionId',
+        'type': 'bytes32'
+      }
+    ],
     'name': 'getOutcomeSlotCount',
-    'outputs': [{ 'name': '', 'type': 'uint256' }],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'uint256'
+      }
+    ],
     'payable': false,
     'stateMutability': 'view',
     'type': 'function'
@@ -630,9 +964,18 @@ export const CONDITIONAL_TOKEN_ABI = [
   {
     'constant': false,
     'inputs': [
-      { 'name': 'oracle', 'type': 'address' },
-      { 'name': 'questionId', 'type': 'bytes32' },
-      { 'name': 'outcomeSlotCount', 'type': 'uint256' }
+      {
+        'name': 'oracle',
+        'type': 'address'
+      },
+      {
+        'name': 'questionId',
+        'type': 'bytes32'
+      },
+      {
+        'name': 'outcomeSlotCount',
+        'type': 'uint256'
+      }
     ],
     'name': 'prepareCondition',
     'outputs': [],
@@ -642,9 +985,19 @@ export const CONDITIONAL_TOKEN_ABI = [
   },
   {
     'constant': true,
-    'inputs': [{ 'name': '', 'type': 'bytes32' }],
+    'inputs': [
+      {
+        'name': '',
+        'type': 'bytes32'
+      }
+    ],
     'name': 'payoutDenominator',
-    'outputs': [{ 'name': '', 'type': 'uint256' }],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'uint256'
+      }
+    ],
     'payable': false,
     'stateMutability': 'view',
     'type': 'function'
@@ -652,11 +1005,22 @@ export const CONDITIONAL_TOKEN_ABI = [
   {
     'constant': true,
     'inputs': [
-      { 'name': 'owner', 'type': 'address' },
-      { 'name': 'operator', 'type': 'address' }
+      {
+        'name': 'owner',
+        'type': 'address'
+      },
+      {
+        'name': 'operator',
+        'type': 'address'
+      }
     ],
     'name': 'isApprovedForAll',
-    'outputs': [{ 'name': '', 'type': 'bool' }],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'bool'
+      }
+    ],
     'payable': false,
     'stateMutability': 'view',
     'type': 'function'
@@ -664,11 +1028,26 @@ export const CONDITIONAL_TOKEN_ABI = [
   {
     'constant': false,
     'inputs': [
-      { 'name': 'from', 'type': 'address' },
-      { 'name': 'to', 'type': 'address' },
-      { 'name': 'id', 'type': 'uint256' },
-      { 'name': 'value', 'type': 'uint256' },
-      { 'name': 'data', 'type': 'bytes' }
+      {
+        'name': 'from',
+        'type': 'address'
+      },
+      {
+        'name': 'to',
+        'type': 'address'
+      },
+      {
+        'name': 'id',
+        'type': 'uint256'
+      },
+      {
+        'name': 'value',
+        'type': 'uint256'
+      },
+      {
+        'name': 'data',
+        'type': 'bytes'
+      }
     ],
     'name': 'safeTransferFrom',
     'outputs': [],
@@ -679,10 +1058,26 @@ export const CONDITIONAL_TOKEN_ABI = [
   {
     'anonymous': false,
     'inputs': [
-      { 'indexed': true, 'name': 'conditionId', 'type': 'bytes32' },
-      { 'indexed': true, 'name': 'oracle', 'type': 'address' },
-      { 'indexed': true, 'name': 'questionId', 'type': 'bytes32' },
-      { 'indexed': false, 'name': 'outcomeSlotCount', 'type': 'uint256' }
+      {
+        'indexed': true,
+        'name': 'conditionId',
+        'type': 'bytes32'
+      },
+      {
+        'indexed': true,
+        'name': 'oracle',
+        'type': 'address'
+      },
+      {
+        'indexed': true,
+        'name': 'questionId',
+        'type': 'bytes32'
+      },
+      {
+        'indexed': false,
+        'name': 'outcomeSlotCount',
+        'type': 'uint256'
+      }
     ],
     'name': 'ConditionPreparation',
     'type': 'event'
@@ -690,11 +1085,31 @@ export const CONDITIONAL_TOKEN_ABI = [
   {
     'anonymous': false,
     'inputs': [
-      { 'indexed': true, 'name': 'conditionId', 'type': 'bytes32' },
-      { 'indexed': true, 'name': 'oracle', 'type': 'address' },
-      { 'indexed': true, 'name': 'questionId', 'type': 'bytes32' },
-      { 'indexed': false, 'name': 'outcomeSlotCount', 'type': 'uint256' },
-      { 'indexed': false, 'name': 'payoutNumerators', 'type': 'uint256[]' }
+      {
+        'indexed': true,
+        'name': 'conditionId',
+        'type': 'bytes32'
+      },
+      {
+        'indexed': true,
+        'name': 'oracle',
+        'type': 'address'
+      },
+      {
+        'indexed': true,
+        'name': 'questionId',
+        'type': 'bytes32'
+      },
+      {
+        'indexed': false,
+        'name': 'outcomeSlotCount',
+        'type': 'uint256'
+      },
+      {
+        'indexed': false,
+        'name': 'payoutNumerators',
+        'type': 'uint256[]'
+      }
     ],
     'name': 'ConditionResolution',
     'type': 'event'
@@ -702,12 +1117,36 @@ export const CONDITIONAL_TOKEN_ABI = [
   {
     'anonymous': false,
     'inputs': [
-      { 'indexed': true, 'name': 'stakeholder', 'type': 'address' },
-      { 'indexed': false, 'name': 'collateralToken', 'type': 'address' },
-      { 'indexed': true, 'name': 'parentCollectionId', 'type': 'bytes32' },
-      { 'indexed': true, 'name': 'conditionId', 'type': 'bytes32' },
-      { 'indexed': false, 'name': 'partition', 'type': 'uint256[]' },
-      { 'indexed': false, 'name': 'amount', 'type': 'uint256' }
+      {
+        'indexed': true,
+        'name': 'stakeholder',
+        'type': 'address'
+      },
+      {
+        'indexed': false,
+        'name': 'collateralToken',
+        'type': 'address'
+      },
+      {
+        'indexed': true,
+        'name': 'parentCollectionId',
+        'type': 'bytes32'
+      },
+      {
+        'indexed': true,
+        'name': 'conditionId',
+        'type': 'bytes32'
+      },
+      {
+        'indexed': false,
+        'name': 'partition',
+        'type': 'uint256[]'
+      },
+      {
+        'indexed': false,
+        'name': 'amount',
+        'type': 'uint256'
+      }
     ],
     'name': 'PositionSplit',
     'type': 'event'
@@ -715,12 +1154,36 @@ export const CONDITIONAL_TOKEN_ABI = [
   {
     'anonymous': false,
     'inputs': [
-      { 'indexed': true, 'name': 'stakeholder', 'type': 'address' },
-      { 'indexed': false, 'name': 'collateralToken', 'type': 'address' },
-      { 'indexed': true, 'name': 'parentCollectionId', 'type': 'bytes32' },
-      { 'indexed': true, 'name': 'conditionId', 'type': 'bytes32' },
-      { 'indexed': false, 'name': 'partition', 'type': 'uint256[]' },
-      { 'indexed': false, 'name': 'amount', 'type': 'uint256' }
+      {
+        'indexed': true,
+        'name': 'stakeholder',
+        'type': 'address'
+      },
+      {
+        'indexed': false,
+        'name': 'collateralToken',
+        'type': 'address'
+      },
+      {
+        'indexed': true,
+        'name': 'parentCollectionId',
+        'type': 'bytes32'
+      },
+      {
+        'indexed': true,
+        'name': 'conditionId',
+        'type': 'bytes32'
+      },
+      {
+        'indexed': false,
+        'name': 'partition',
+        'type': 'uint256[]'
+      },
+      {
+        'indexed': false,
+        'name': 'amount',
+        'type': 'uint256'
+      }
     ],
     'name': 'PositionsMerge',
     'type': 'event'
@@ -728,12 +1191,36 @@ export const CONDITIONAL_TOKEN_ABI = [
   {
     'anonymous': false,
     'inputs': [
-      { 'indexed': true, 'name': 'redeemer', 'type': 'address' },
-      { 'indexed': true, 'name': 'collateralToken', 'type': 'address' },
-      { 'indexed': true, 'name': 'parentCollectionId', 'type': 'bytes32' },
-      { 'indexed': false, 'name': 'conditionId', 'type': 'bytes32' },
-      { 'indexed': false, 'name': 'indexSets', 'type': 'uint256[]' },
-      { 'indexed': false, 'name': 'payout', 'type': 'uint256' }
+      {
+        'indexed': true,
+        'name': 'redeemer',
+        'type': 'address'
+      },
+      {
+        'indexed': true,
+        'name': 'collateralToken',
+        'type': 'address'
+      },
+      {
+        'indexed': true,
+        'name': 'parentCollectionId',
+        'type': 'bytes32'
+      },
+      {
+        'indexed': false,
+        'name': 'conditionId',
+        'type': 'bytes32'
+      },
+      {
+        'indexed': false,
+        'name': 'indexSets',
+        'type': 'uint256[]'
+      },
+      {
+        'indexed': false,
+        'name': 'payout',
+        'type': 'uint256'
+      }
     ],
     'name': 'PayoutRedemption',
     'type': 'event'
@@ -741,11 +1228,31 @@ export const CONDITIONAL_TOKEN_ABI = [
   {
     'anonymous': false,
     'inputs': [
-      { 'indexed': true, 'name': 'operator', 'type': 'address' },
-      { 'indexed': true, 'name': 'from', 'type': 'address' },
-      { 'indexed': true, 'name': 'to', 'type': 'address' },
-      { 'indexed': false, 'name': 'id', 'type': 'uint256' },
-      { 'indexed': false, 'name': 'value', 'type': 'uint256' }
+      {
+        'indexed': true,
+        'name': 'operator',
+        'type': 'address'
+      },
+      {
+        'indexed': true,
+        'name': 'from',
+        'type': 'address'
+      },
+      {
+        'indexed': true,
+        'name': 'to',
+        'type': 'address'
+      },
+      {
+        'indexed': false,
+        'name': 'id',
+        'type': 'uint256'
+      },
+      {
+        'indexed': false,
+        'name': 'value',
+        'type': 'uint256'
+      }
     ],
     'name': 'TransferSingle',
     'type': 'event'
@@ -753,11 +1260,31 @@ export const CONDITIONAL_TOKEN_ABI = [
   {
     'anonymous': false,
     'inputs': [
-      { 'indexed': true, 'name': 'operator', 'type': 'address' },
-      { 'indexed': true, 'name': 'from', 'type': 'address' },
-      { 'indexed': true, 'name': 'to', 'type': 'address' },
-      { 'indexed': false, 'name': 'ids', 'type': 'uint256[]' },
-      { 'indexed': false, 'name': 'values', 'type': 'uint256[]' }
+      {
+        'indexed': true,
+        'name': 'operator',
+        'type': 'address'
+      },
+      {
+        'indexed': true,
+        'name': 'from',
+        'type': 'address'
+      },
+      {
+        'indexed': true,
+        'name': 'to',
+        'type': 'address'
+      },
+      {
+        'indexed': false,
+        'name': 'ids',
+        'type': 'uint256[]'
+      },
+      {
+        'indexed': false,
+        'name': 'values',
+        'type': 'uint256[]'
+      }
     ],
     'name': 'TransferBatch',
     'type': 'event'
@@ -765,9 +1292,21 @@ export const CONDITIONAL_TOKEN_ABI = [
   {
     'anonymous': false,
     'inputs': [
-      { 'indexed': true, 'name': 'owner', 'type': 'address' },
-      { 'indexed': true, 'name': 'operator', 'type': 'address' },
-      { 'indexed': false, 'name': 'approved', 'type': 'bool' }
+      {
+        'indexed': true,
+        'name': 'owner',
+        'type': 'address'
+      },
+      {
+        'indexed': true,
+        'name': 'operator',
+        'type': 'address'
+      },
+      {
+        'indexed': false,
+        'name': 'approved',
+        'type': 'bool'
+      }
     ],
     'name': 'ApprovalForAll',
     'type': 'event'
@@ -775,8 +1314,16 @@ export const CONDITIONAL_TOKEN_ABI = [
   {
     'anonymous': false,
     'inputs': [
-      { 'indexed': false, 'name': 'value', 'type': 'string' },
-      { 'indexed': true, 'name': 'id', 'type': 'uint256' }
+      {
+        'indexed': false,
+        'name': 'value',
+        'type': 'string'
+      },
+      {
+        'indexed': true,
+        'name': 'id',
+        'type': 'uint256'
+      }
     ],
     'name': 'URI',
     'type': 'event'
@@ -789,10 +1336,26 @@ export const CONDITIONAL_TOKEN_ABI = [
 export const ORACLE_ABI = [
   {
     'inputs': [
-      { 'internalType': 'address', 'name': '_admin', 'type': 'address' },
-      { 'internalType': 'address', 'name': '_conditionalTokens', 'type': 'address' },
-      { 'internalType': 'address', 'name': '_verification', 'type': 'address' },
-      { 'internalType': 'uint256', 'name': '_minVotes', 'type': 'uint256' }
+      {
+        'internalType': 'address',
+        'name': '_admin',
+        'type': 'address'
+      },
+      {
+        'internalType': 'address',
+        'name': '_conditionalTokens',
+        'type': 'address'
+      },
+      {
+        'internalType': 'address',
+        'name': '_verification',
+        'type': 'address'
+      },
+      {
+        'internalType': 'uint256',
+        'name': '_minVotes',
+        'type': 'uint256'
+      }
     ],
     'stateMutability': 'nonpayable',
     'type': 'constructor'
@@ -800,9 +1363,24 @@ export const ORACLE_ABI = [
   {
     'anonymous': false,
     'inputs': [
-      { 'indexed': true, 'internalType': 'bytes32', 'name': 'role', 'type': 'bytes32' },
-      { 'indexed': true, 'internalType': 'bytes32', 'name': 'previousAdminRole', 'type': 'bytes32' },
-      { 'indexed': true, 'internalType': 'bytes32', 'name': 'newAdminRole', 'type': 'bytes32' }
+      {
+        'indexed': true,
+        'internalType': 'bytes32',
+        'name': 'role',
+        'type': 'bytes32'
+      },
+      {
+        'indexed': true,
+        'internalType': 'bytes32',
+        'name': 'previousAdminRole',
+        'type': 'bytes32'
+      },
+      {
+        'indexed': true,
+        'internalType': 'bytes32',
+        'name': 'newAdminRole',
+        'type': 'bytes32'
+      }
     ],
     'name': 'RoleAdminChanged',
     'type': 'event'
@@ -810,9 +1388,24 @@ export const ORACLE_ABI = [
   {
     'anonymous': false,
     'inputs': [
-      { 'indexed': true, 'internalType': 'bytes32', 'name': 'role', 'type': 'bytes32' },
-      { 'indexed': true, 'internalType': 'address', 'name': 'account', 'type': 'address' },
-      { 'indexed': true, 'internalType': 'address', 'name': 'sender', 'type': 'address' }
+      {
+        'indexed': true,
+        'internalType': 'bytes32',
+        'name': 'role',
+        'type': 'bytes32'
+      },
+      {
+        'indexed': true,
+        'internalType': 'address',
+        'name': 'account',
+        'type': 'address'
+      },
+      {
+        'indexed': true,
+        'internalType': 'address',
+        'name': 'sender',
+        'type': 'address'
+      }
     ],
     'name': 'RoleGranted',
     'type': 'event'
@@ -820,9 +1413,24 @@ export const ORACLE_ABI = [
   {
     'anonymous': false,
     'inputs': [
-      { 'indexed': true, 'internalType': 'bytes32', 'name': 'role', 'type': 'bytes32' },
-      { 'indexed': true, 'internalType': 'address', 'name': 'account', 'type': 'address' },
-      { 'indexed': true, 'internalType': 'address', 'name': 'sender', 'type': 'address' }
+      {
+        'indexed': true,
+        'internalType': 'bytes32',
+        'name': 'role',
+        'type': 'bytes32'
+      },
+      {
+        'indexed': true,
+        'internalType': 'address',
+        'name': 'account',
+        'type': 'address'
+      },
+      {
+        'indexed': true,
+        'internalType': 'address',
+        'name': 'sender',
+        'type': 'address'
+      }
     ],
     'name': 'RoleRevoked',
     'type': 'event'
@@ -830,9 +1438,24 @@ export const ORACLE_ABI = [
   {
     'anonymous': false,
     'inputs': [
-      { 'indexed': true, 'internalType': 'address', 'name': 'voter', 'type': 'address' },
-      { 'indexed': true, 'internalType': 'bytes32', 'name': 'questionId', 'type': 'bytes32' },
-      { 'indexed': false, 'internalType': 'uint256', 'name': 'outcomeIdx', 'type': 'uint256' }
+      {
+        'indexed': true,
+        'internalType': 'address',
+        'name': 'voter',
+        'type': 'address'
+      },
+      {
+        'indexed': true,
+        'internalType': 'bytes32',
+        'name': 'questionId',
+        'type': 'bytes32'
+      },
+      {
+        'indexed': false,
+        'internalType': 'uint256',
+        'name': 'outcomeIdx',
+        'type': 'uint256'
+      }
     ],
     'name': 'VoteSubmitted',
     'type': 'event'
@@ -840,48 +1463,108 @@ export const ORACLE_ABI = [
   {
     'inputs': [],
     'name': 'DEFAULT_ADMIN_ROLE',
-    'outputs': [{ 'internalType': 'bytes32', 'name': '', 'type': 'bytes32' }],
+    'outputs': [
+      {
+        'internalType': 'bytes32',
+        'name': '',
+        'type': 'bytes32'
+      }
+    ],
     'stateMutability': 'view',
     'type': 'function'
   },
   {
     'inputs': [],
     'name': 'VOTER_ROLE',
-    'outputs': [{ 'internalType': 'bytes32', 'name': '', 'type': 'bytes32' }],
+    'outputs': [
+      {
+        'internalType': 'bytes32',
+        'name': '',
+        'type': 'bytes32'
+      }
+    ],
     'stateMutability': 'view',
     'type': 'function'
   },
   {
     'inputs': [],
     'name': 'conditionalTokens',
-    'outputs': [{ 'internalType': 'contract IConditionalTokens', 'name': '', 'type': 'address' }],
+    'outputs': [
+      {
+        'internalType': 'contract IConditionalTokens',
+        'name': '',
+        'type': 'address'
+      }
+    ],
     'stateMutability': 'view',
     'type': 'function'
   },
   {
     'inputs': [
-      { 'internalType': 'bytes32', 'name': 'questionId', 'type': 'bytes32' },
+      {
+        'internalType': 'bytes32',
+        'name': 'questionId',
+        'type': 'bytes32'
+      },
       {
         'components': [
-          { 'internalType': 'bytes32[]', 'name': 'merkleProof', 'type': 'bytes32[]' },
+          {
+            'internalType': 'bytes32[]',
+            'name': 'merkleProof',
+            'type': 'bytes32[]'
+          },
           {
             'components': [
-              { 'internalType': 'bytes32', 'name': 'attestationType', 'type': 'bytes32' },
-              { 'internalType': 'bytes32', 'name': 'sourceId', 'type': 'bytes32' },
-              { 'internalType': 'uint64', 'name': 'votingRound', 'type': 'uint64' },
-              { 'internalType': 'uint64', 'name': 'lowestUsedTimestamp', 'type': 'uint64' },
+              {
+                'internalType': 'bytes32',
+                'name': 'attestationType',
+                'type': 'bytes32'
+              },
+              {
+                'internalType': 'bytes32',
+                'name': 'sourceId',
+                'type': 'bytes32'
+              },
+              {
+                'internalType': 'uint64',
+                'name': 'votingRound',
+                'type': 'uint64'
+              },
+              {
+                'internalType': 'uint64',
+                'name': 'lowestUsedTimestamp',
+                'type': 'uint64'
+              },
               {
                 'components': [
-                  { 'internalType': 'string', 'name': 'url', 'type': 'string' },
-                  { 'internalType': 'string', 'name': 'postprocessJq', 'type': 'string' },
-                  { 'internalType': 'string', 'name': 'abi_signature', 'type': 'string' }
+                  {
+                    'internalType': 'string',
+                    'name': 'url',
+                    'type': 'string'
+                  },
+                  {
+                    'internalType': 'string',
+                    'name': 'postprocessJq',
+                    'type': 'string'
+                  },
+                  {
+                    'internalType': 'string',
+                    'name': 'abi_signature',
+                    'type': 'string'
+                  }
                 ],
                 'internalType': 'struct IJsonApi.RequestBody',
                 'name': 'requestBody',
                 'type': 'tuple'
               },
               {
-                'components': [{ 'internalType': 'bytes', 'name': 'abi_encoded_data', 'type': 'bytes' }],
+                'components': [
+                  {
+                    'internalType': 'bytes',
+                    'name': 'abi_encoded_data',
+                    'type': 'bytes'
+                  }
+                ],
                 'internalType': 'struct IJsonApi.ResponseBody',
                 'name': 'responseBody',
                 'type': 'tuple'
@@ -895,6 +1578,11 @@ export const ORACLE_ABI = [
         'internalType': 'struct IJsonApi.Proof[]',
         'name': 'proofs',
         'type': 'tuple[]'
+      },
+      {
+        'internalType': 'bool',
+        'name': 'finalize',
+        'type': 'bool'
       }
     ],
     'name': 'finalizeQuestion',
@@ -903,16 +1591,36 @@ export const ORACLE_ABI = [
     'type': 'function'
   },
   {
-    'inputs': [{ 'internalType': 'bytes32', 'name': 'role', 'type': 'bytes32' }],
+    'inputs': [
+      {
+        'internalType': 'bytes32',
+        'name': 'role',
+        'type': 'bytes32'
+      }
+    ],
     'name': 'getRoleAdmin',
-    'outputs': [{ 'internalType': 'bytes32', 'name': '', 'type': 'bytes32' }],
+    'outputs': [
+      {
+        'internalType': 'bytes32',
+        'name': '',
+        'type': 'bytes32'
+      }
+    ],
     'stateMutability': 'view',
     'type': 'function'
   },
   {
     'inputs': [
-      { 'internalType': 'bytes32', 'name': 'role', 'type': 'bytes32' },
-      { 'internalType': 'address', 'name': 'account', 'type': 'address' }
+      {
+        'internalType': 'bytes32',
+        'name': 'role',
+        'type': 'bytes32'
+      },
+      {
+        'internalType': 'address',
+        'name': 'account',
+        'type': 'address'
+      }
     ],
     'name': 'grantRole',
     'outputs': [],
@@ -921,33 +1629,89 @@ export const ORACLE_ABI = [
   },
   {
     'inputs': [
-      { 'internalType': 'bytes32', 'name': 'role', 'type': 'bytes32' },
-      { 'internalType': 'address', 'name': 'account', 'type': 'address' }
+      {
+        'internalType': 'bytes32',
+        'name': 'role',
+        'type': 'bytes32'
+      },
+      {
+        'internalType': 'address',
+        'name': 'account',
+        'type': 'address'
+      }
     ],
     'name': 'hasRole',
-    'outputs': [{ 'internalType': 'bool', 'name': '', 'type': 'bool' }],
+    'outputs': [
+      {
+        'internalType': 'bool',
+        'name': '',
+        'type': 'bool'
+      }
+    ],
     'stateMutability': 'view',
     'type': 'function'
   },
   {
     'inputs': [
-      { 'internalType': 'bytes32', 'name': '', 'type': 'bytes32' },
-      { 'internalType': 'address', 'name': '', 'type': 'address' }
+      {
+        'internalType': 'bytes32',
+        'name': '',
+        'type': 'bytes32'
+      },
+      {
+        'internalType': 'address',
+        'name': '',
+        'type': 'address'
+      }
     ],
     'name': 'hasVoted',
-    'outputs': [{ 'internalType': 'bool', 'name': '', 'type': 'bool' }],
+    'outputs': [
+      {
+        'internalType': 'bool',
+        'name': '',
+        'type': 'bool'
+      }
+    ],
     'stateMutability': 'view',
     'type': 'function'
   },
   {
     'inputs': [
-      { 'internalType': 'bytes32', 'name': 'questionId', 'type': 'bytes32' },
-      { 'internalType': 'uint256', 'name': 'outcomeSlotCount', 'type': 'uint256' },
-      { 'internalType': 'string[]', 'name': 'urlAr', 'type': 'string[]' },
-      { 'internalType': 'string[]', 'name': 'postprocessJqAr', 'type': 'string[]' },
-      { 'internalType': 'uint256', 'name': 'consensusPercent', 'type': 'uint256' },
-      { 'internalType': 'uint256', 'name': 'resolutionTime', 'type': 'uint256' },
-      { 'internalType': 'bool', 'name': 'automatic', 'type': 'bool' }
+      {
+        'internalType': 'bytes32',
+        'name': 'questionId',
+        'type': 'bytes32'
+      },
+      {
+        'internalType': 'uint256',
+        'name': 'outcomeSlotCount',
+        'type': 'uint256'
+      },
+      {
+        'internalType': 'string[]',
+        'name': 'urlAr',
+        'type': 'string[]'
+      },
+      {
+        'internalType': 'string[]',
+        'name': 'postprocessJqAr',
+        'type': 'string[]'
+      },
+      {
+        'internalType': 'uint256',
+        'name': 'consensusPercent',
+        'type': 'uint256'
+      },
+      {
+        'internalType': 'uint256',
+        'name': 'resolutionTime',
+        'type': 'uint256'
+      },
+      {
+        'internalType': 'bool',
+        'name': 'automatic',
+        'type': 'bool'
+      }
     ],
     'name': 'initializeQuestion',
     'outputs': [],
@@ -955,55 +1719,154 @@ export const ORACLE_ABI = [
     'type': 'function'
   },
   {
-    'inputs': [{ 'internalType': 'bytes32', 'name': '', 'type': 'bytes32' }],
+    'inputs': [
+      {
+        'internalType': 'bytes32',
+        'name': '',
+        'type': 'bytes32'
+      }
+    ],
+    'name': 'jqProcessed',
+    'outputs': [
+      {
+        'internalType': 'bool',
+        'name': '',
+        'type': 'bool'
+      }
+    ],
+    'stateMutability': 'view',
+    'type': 'function'
+  },
+  {
+    'inputs': [
+      {
+        'internalType': 'bytes32',
+        'name': '',
+        'type': 'bytes32'
+      }
+    ],
     'name': 'jqToQuestionId',
-    'outputs': [{ 'internalType': 'bytes32', 'name': '', 'type': 'bytes32' }],
+    'outputs': [
+      {
+        'internalType': 'bytes32',
+        'name': '',
+        'type': 'bytes32'
+      }
+    ],
     'stateMutability': 'view',
     'type': 'function'
   },
   {
     'inputs': [],
     'name': 'minVotes',
-    'outputs': [{ 'internalType': 'uint256', 'name': '', 'type': 'uint256' }],
+    'outputs': [
+      {
+        'internalType': 'uint256',
+        'name': '',
+        'type': 'uint256'
+      }
+    ],
     'stateMutability': 'view',
     'type': 'function'
   },
   {
     'inputs': [],
     'name': 'noOfVoters',
-    'outputs': [{ 'internalType': 'uint256', 'name': '', 'type': 'uint256' }],
+    'outputs': [
+      {
+        'internalType': 'uint256',
+        'name': '',
+        'type': 'uint256'
+      }
+    ],
     'stateMutability': 'view',
     'type': 'function'
   },
   {
-    'inputs': [{ 'internalType': 'bytes32', 'name': '', 'type': 'bytes32' }],
+    'inputs': [
+      {
+        'internalType': 'bytes32',
+        'name': '',
+        'type': 'bytes32'
+      }
+    ],
     'name': 'question',
     'outputs': [
-      { 'internalType': 'enum IgniteOracle.Status', 'name': 'status', 'type': 'uint8' },
-      { 'internalType': 'bool', 'name': 'automatic', 'type': 'bool' },
-      { 'internalType': 'uint256', 'name': 'outcomeSlotCount', 'type': 'uint256' },
-      { 'internalType': 'uint256', 'name': 'apiSources', 'type': 'uint256' },
-      { 'internalType': 'uint256', 'name': 'consensusPercent', 'type': 'uint256' },
-      { 'internalType': 'uint256', 'name': 'resolutionTime', 'type': 'uint256' },
-      { 'internalType': 'uint256', 'name': 'winnerIdx', 'type': 'uint256' }
+      {
+        'internalType': 'enum IgniteOracle.Status',
+        'name': 'status',
+        'type': 'uint8'
+      },
+      {
+        'internalType': 'bool',
+        'name': 'automatic',
+        'type': 'bool'
+      },
+      {
+        'internalType': 'uint256',
+        'name': 'outcomeSlotCount',
+        'type': 'uint256'
+      },
+      {
+        'internalType': 'uint256',
+        'name': 'apiSources',
+        'type': 'uint256'
+      },
+      {
+        'internalType': 'uint256',
+        'name': 'consensusPercent',
+        'type': 'uint256'
+      },
+      {
+        'internalType': 'uint256',
+        'name': 'resolutionTime',
+        'type': 'uint256'
+      },
+      {
+        'internalType': 'uint256',
+        'name': 'winnerIdx',
+        'type': 'uint256'
+      }
     ],
     'stateMutability': 'view',
     'type': 'function'
   },
   {
     'inputs': [
-      { 'internalType': 'bytes32', 'name': '', 'type': 'bytes32' },
-      { 'internalType': 'uint256', 'name': '', 'type': 'uint256' }
+      {
+        'internalType': 'bytes32',
+        'name': '',
+        'type': 'bytes32'
+      },
+      {
+        'internalType': 'uint256',
+        'name': '',
+        'type': 'uint256'
+      }
     ],
     'name': 'questionOutcomeVotes',
-    'outputs': [{ 'internalType': 'uint256', 'name': '', 'type': 'uint256' }],
+    'outputs': [
+      {
+        'internalType': 'uint256',
+        'name': '',
+        'type': 'uint256'
+      }
+    ],
     'stateMutability': 'view',
     'type': 'function'
   },
   {
     'inputs': [
-      { 'internalType': 'bytes32', 'name': 'role', 'type': 'bytes32' },
-      { 'internalType': 'address', 'name': 'account', 'type': 'address' }
+      {
+        'internalType': 'bytes32',
+        'name': 'role',
+        'type': 'bytes32'
+      },
+      {
+        'internalType': 'address',
+        'name': 'account',
+        'type': 'address'
+      }
     ],
     'name': 'renounceRole',
     'outputs': [],
@@ -1012,8 +1875,16 @@ export const ORACLE_ABI = [
   },
   {
     'inputs': [
-      { 'internalType': 'bytes32', 'name': 'role', 'type': 'bytes32' },
-      { 'internalType': 'address', 'name': 'account', 'type': 'address' }
+      {
+        'internalType': 'bytes32',
+        'name': 'role',
+        'type': 'bytes32'
+      },
+      {
+        'internalType': 'address',
+        'name': 'account',
+        'type': 'address'
+      }
     ],
     'name': 'revokeRole',
     'outputs': [],
@@ -1021,23 +1892,49 @@ export const ORACLE_ABI = [
     'type': 'function'
   },
   {
-    'inputs': [{ 'internalType': 'bytes4', 'name': 'interfaceId', 'type': 'bytes4' }],
+    'inputs': [
+      {
+        'internalType': 'bytes4',
+        'name': 'interfaceId',
+        'type': 'bytes4'
+      }
+    ],
     'name': 'supportsInterface',
-    'outputs': [{ 'internalType': 'bool', 'name': '', 'type': 'bool' }],
+    'outputs': [
+      {
+        'internalType': 'bool',
+        'name': '',
+        'type': 'bool'
+      }
+    ],
     'stateMutability': 'view',
     'type': 'function'
   },
   {
     'inputs': [],
     'name': 'verification',
-    'outputs': [{ 'internalType': 'contract IJsonApiVerification', 'name': '', 'type': 'address' }],
+    'outputs': [
+      {
+        'internalType': 'contract IJsonApiVerification',
+        'name': '',
+        'type': 'address'
+      }
+    ],
     'stateMutability': 'view',
     'type': 'function'
   },
   {
     'inputs': [
-      { 'internalType': 'bytes32', 'name': 'questionId', 'type': 'bytes32' },
-      { 'internalType': 'uint256', 'name': 'outcomeIdx', 'type': 'uint256' }
+      {
+        'internalType': 'bytes32',
+        'name': 'questionId',
+        'type': 'bytes32'
+      },
+      {
+        'internalType': 'uint256',
+        'name': 'outcomeIdx',
+        'type': 'uint256'
+      }
     ],
     'name': 'vote',
     'outputs': [],
@@ -1054,25 +1951,63 @@ export const JSON_VERIFIER_ABI = [
     'inputs': [
       {
         'components': [
-          { 'internalType': 'bytes32[]', 'name': 'merkleProof', 'type': 'bytes32[]' },
+          {
+            'internalType': 'bytes32[]',
+            'name': 'merkleProof',
+            'type': 'bytes32[]'
+          },
           {
             'components': [
-              { 'internalType': 'bytes32', 'name': 'attestationType', 'type': 'bytes32' },
-              { 'internalType': 'bytes32', 'name': 'sourceId', 'type': 'bytes32' },
-              { 'internalType': 'uint64', 'name': 'votingRound', 'type': 'uint64' },
-              { 'internalType': 'uint64', 'name': 'lowestUsedTimestamp', 'type': 'uint64' },
+              {
+                'internalType': 'bytes32',
+                'name': 'attestationType',
+                'type': 'bytes32'
+              },
+              {
+                'internalType': 'bytes32',
+                'name': 'sourceId',
+                'type': 'bytes32'
+              },
+              {
+                'internalType': 'uint64',
+                'name': 'votingRound',
+                'type': 'uint64'
+              },
+              {
+                'internalType': 'uint64',
+                'name': 'lowestUsedTimestamp',
+                'type': 'uint64'
+              },
               {
                 'components': [
-                  { 'internalType': 'string', 'name': 'url', 'type': 'string' },
-                  { 'internalType': 'string', 'name': 'postprocessJq', 'type': 'string' },
-                  { 'internalType': 'string', 'name': 'abi_signature', 'type': 'string' }
+                  {
+                    'internalType': 'string',
+                    'name': 'url',
+                    'type': 'string'
+                  },
+                  {
+                    'internalType': 'string',
+                    'name': 'postprocessJq',
+                    'type': 'string'
+                  },
+                  {
+                    'internalType': 'string',
+                    'name': 'abi_signature',
+                    'type': 'string'
+                  }
                 ],
                 'internalType': 'struct IJsonApi.RequestBody',
                 'name': 'requestBody',
                 'type': 'tuple'
               },
               {
-                'components': [{ 'internalType': 'bytes', 'name': 'abi_encoded_data', 'type': 'bytes' }],
+                'components': [
+                  {
+                    'internalType': 'bytes',
+                    'name': 'abi_encoded_data',
+                    'type': 'bytes'
+                  }
+                ],
                 'internalType': 'struct IJsonApi.ResponseBody',
                 'name': 'responseBody',
                 'type': 'tuple'
@@ -1089,8 +2024,403 @@ export const JSON_VERIFIER_ABI = [
       }
     ],
     'name': 'verifyJsonApi',
-    'outputs': [{ 'internalType': 'bool', 'name': '_proved', 'type': 'bool' }],
+    'outputs': [
+      {
+        'internalType': 'bool',
+        'name': '_proved',
+        'type': 'bool'
+      }
+    ],
     'stateMutability': 'view',
     'type': 'function'
+  }
+];
+
+/**
+ * Collateral token ABI.
+ */
+export const COLLATERAL_TOKEN_ABI = [
+  {
+    constant: true,
+    inputs: [],
+    name: 'name',
+    outputs: [
+      {
+        name: '',
+        type: 'string'
+      }
+    ],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [
+      {
+        name: 'spender',
+        type: 'address'
+      },
+      {
+        name: 'value',
+        type: 'uint256'
+      }
+    ],
+    name: 'approve',
+    outputs: [
+      {
+        name: '',
+        type: 'bool'
+      }
+    ],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: 'totalSupply',
+    outputs: [
+      {
+        name: '',
+        type: 'uint256'
+      }
+    ],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [
+      {
+        name: 'sender',
+        type: 'address'
+      },
+      {
+        name: 'recipient',
+        type: 'address'
+      },
+      {
+        name: 'amount',
+        type: 'uint256'
+      }
+    ],
+    name: 'transferFrom',
+    outputs: [
+      {
+        name: '',
+        type: 'bool'
+      }
+    ],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: 'decimals',
+    outputs: [
+      {
+        name: '',
+        type: 'uint8'
+      }
+    ],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [
+      {
+        name: 'spender',
+        type: 'address'
+      },
+      {
+        name: 'addedValue',
+        type: 'uint256'
+      }
+    ],
+    name: 'increaseAllowance',
+    outputs: [
+      {
+        name: '',
+        type: 'bool'
+      }
+    ],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [
+      {
+        name: 'account',
+        type: 'address'
+      },
+      {
+        name: 'amount',
+        type: 'uint256'
+      }
+    ],
+    name: 'mint',
+    outputs: [
+      {
+        name: '',
+        type: 'bool'
+      }
+    ],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    constant: true,
+    inputs: [
+      {
+        name: 'account',
+        type: 'address'
+      }
+    ],
+    name: 'balanceOf',
+    outputs: [
+      {
+        name: '',
+        type: 'uint256'
+      }
+    ],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: 'symbol',
+    outputs: [
+      {
+        name: '',
+        type: 'string'
+      }
+    ],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [
+      {
+        name: 'account',
+        type: 'address'
+      }
+    ],
+    name: 'addMinter',
+    outputs: [],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [],
+    name: 'renounceMinter',
+    outputs: [],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [
+      {
+        name: 'spender',
+        type: 'address'
+      },
+      {
+        name: 'subtractedValue',
+        type: 'uint256'
+      }
+    ],
+    name: 'decreaseAllowance',
+    outputs: [
+      {
+        name: '',
+        type: 'bool'
+      }
+    ],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [
+      {
+        name: 'account',
+        type: 'address'
+      },
+      {
+        name: 'amount',
+        type: 'uint256'
+      }
+    ],
+    name: 'faucetMint',
+    outputs: [],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [
+      {
+        name: 'recipient',
+        type: 'address'
+      },
+      {
+        name: 'amount',
+        type: 'uint256'
+      }
+    ],
+    name: 'transfer',
+    outputs: [
+      {
+        name: '',
+        type: 'bool'
+      }
+    ],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    constant: true,
+    inputs: [
+      {
+        name: 'account',
+        type: 'address'
+      }
+    ],
+    name: 'isMinter',
+    outputs: [
+      {
+        name: '',
+        type: 'bool'
+      }
+    ],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [],
+    name: 'deposit',
+    outputs: [],
+    payable: true,
+    stateMutability: 'payable',
+    type: 'function'
+  },
+  {
+    constant: true,
+    inputs: [
+      {
+        name: 'owner',
+        type: 'address'
+      },
+      {
+        name: 'spender',
+        type: 'address'
+      }
+    ],
+    name: 'allowance',
+    outputs: [
+      {
+        name: '',
+        type: 'uint256'
+      }
+    ],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    inputs: [],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'constructor'
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        name: 'account',
+        type: 'address'
+      }
+    ],
+    name: 'MinterAdded',
+    type: 'event'
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        name: 'account',
+        type: 'address'
+      }
+    ],
+    name: 'MinterRemoved',
+    type: 'event'
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        name: 'from',
+        type: 'address'
+      },
+      {
+        indexed: true,
+        name: 'to',
+        type: 'address'
+      },
+      {
+        indexed: false,
+        name: 'value',
+        type: 'uint256'
+      }
+    ],
+    name: 'Transfer',
+    type: 'event'
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        name: 'owner',
+        type: 'address'
+      },
+      {
+        indexed: true,
+        name: 'spender',
+        type: 'address'
+      },
+      {
+        indexed: false,
+        name: 'value',
+        type: 'uint256'
+      }
+    ],
+    name: 'Approval',
+    type: 'event'
   }
 ];
