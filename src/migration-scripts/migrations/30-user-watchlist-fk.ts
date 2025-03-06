@@ -23,7 +23,7 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
 
 export async function downgrade(queryFn: (query: string, values?: any[]) => Promise<any[]>): Promise<void> {
   await queryFn(`
-    ALTER TABLE \`${DbTables.PREDICTION_SET_FUNDING_TRANSACTION}\` 
+    ALTER TABLE \`${DbTables.USER_WATCHLIST}\` 
       DROP INDEX \`${FK_USER_WATCHLIST_UNIQUE_IDX}\`,
       DROP CONSTRAINT \`${FK_USER_WATCHLIST_PREDICTION_SET_ID}\`,
       DROP CONSTRAINT \`${FK_USER_WATCHLIST_USER_ID}\`
