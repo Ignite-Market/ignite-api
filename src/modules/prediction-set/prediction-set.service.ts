@@ -15,6 +15,7 @@ import { PredictionSetChanceHistoryQueryFilter } from './dtos/prediciton-set-cha
 import { UserWatchlist } from './models/user-watchlist';
 import { ActivityQueryFilter } from './dtos/activity-query-filter';
 import { HoldersQueryFilter } from './dtos/holders-query-filter';
+import { Banner } from './models/banner';
 
 @Injectable()
 export class PredictionSetService {
@@ -454,6 +455,11 @@ export class PredictionSetService {
 
     return true;
   }
+
+  public async getBanners(context: Context) {
+    return await new Banner({}, context).getActive();
+  }
+
   /**
    * Get prediction set ID.
    *
