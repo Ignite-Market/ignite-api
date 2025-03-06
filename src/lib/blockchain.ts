@@ -108,7 +108,10 @@ export async function addPredictionSet(predictionSet: PredictionSet, context: Co
       env.CONDITIONAL_TOKEN_CONTRACT,
       env.COLLATERAL_TOKEN_CONTRACT,
       [conditionId],
-      100 // TODO: Change fee.
+      ethers.parseEther(env.MARKET_FEE_PERCENT),
+      env.MARKET_TREASURY_PERCENT,
+      env.MARKET_TREASURY_ADDRESS,
+      ethers.parseUnits(env.MARKET_COLLATERAL_FUNDING_THRESHOLD, env.COLLATERAL_TOKEN_DECIMALS)
     );
     const txReceipt = await createTx.wait();
     receiptBlock = txReceipt.blockNumber;
