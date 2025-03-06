@@ -61,6 +61,7 @@ export interface IEnv {
   ORACLE_CONTRACT: string;
   JSON_VERIFIER_CONTRACT: string;
   COLLATERAL_TOKEN_CONTRACT: string;
+  COLLATERAL_TOKEN_DECIMALS: number;
   CONDITIONAL_TOKEN_CONTRACT: string;
   FPMM_FACTORY_CONTRACT: string;
   SIGNER_PRIVATE_KEY: string;
@@ -154,6 +155,7 @@ export let env: IEnv = {
    * Fixed product market maker & conditional token contracts.
    */
   COLLATERAL_TOKEN_CONTRACT: process.env['COLLATERAL_TOKEN_CONTRACT'],
+  COLLATERAL_TOKEN_DECIMALS: parseInt(process.env['COLLATERAL_TOKEN_DECIMALS']) || 6,
   CONDITIONAL_TOKEN_CONTRACT: process.env['CONDITIONAL_TOKEN_CONTRACT'],
   FPMM_FACTORY_CONTRACT: process.env['FPMM_FACTORY_CONTRACT'],
   ORACLE_CONTRACT: process.env['ORACLE_CONTRACT'],

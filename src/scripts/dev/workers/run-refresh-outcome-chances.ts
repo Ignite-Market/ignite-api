@@ -5,7 +5,7 @@ import { RefreshOutcomeChancesWorker } from '../../../workers/refresh-outcome-ch
 import { WorkerName } from '../../../workers/worker-executor';
 import { createContext } from '../context';
 
-const PREDICTION_SET_ID = 3;
+const PREDICTION_SET_ID = 20;
 
 (async () => {
   const start = new Date();
