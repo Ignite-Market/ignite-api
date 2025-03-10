@@ -164,9 +164,12 @@ export class PredictionSetParserWorker extends BaseQueueWorker {
       }
 
       if (fundingEvents.length) {
-        // TODO: Check if prediction set is funded on the contract and update status -> for now mark as funded when any funding is added.
-        predictionSet.setStatus = PredictionSetStatus.ACTIVE;
-        await predictionSet.update(SerializeFor.UPDATE_DB, conn);
+        // Activate trading when the contract is funded.
+        const canTrade = await fpmmContract.canTrade();
+        if (canTrade && predictionSet.setStatus !== PredictionSetStatus.ACTIVE) {
+          predictionSet.setStatus = PredictionSetStatus.ACTIVE;
+          await predictionSet.update(SerializeFor.UPDATE_DB, conn);
+        }
       }
 
       /**
