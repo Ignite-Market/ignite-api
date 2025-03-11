@@ -1,5 +1,5 @@
 import { DbTables, SqlModelStatus } from '../config/types';
-import { getAttestationProof } from '../lib/flare/attestation';
+import { getAttestationProof, isRoundFinalized } from '../lib/flare/attestation';
 import { WorkerLogStatus } from '../lib/worker/logger';
 import { BaseSingleThreadWorker, SingleThreadWorkerAlertType } from '../lib/worker/serverless-workers/base-single-thread-worker';
 import { Job } from '../modules/job/job.model';
@@ -78,8 +78,11 @@ export class RequestAttestationProofWorker extends BaseSingleThreadWorker {
       const attestations: PredictionSetAttestation[] = JSON.parse(data.attestations).map((d: any) => new PredictionSetAttestation(d, this.context));
       for (const attestation of attestations) {
         try {
-          attestation.proof = await getAttestationProof(attestation.roundId, attestation.abiEncodedRequest);
-          await attestation.update();
+          const isFinalized = await isRoundFinalized(attestation.roundId);
+          if (isFinalized) {
+            attestation.proof = await getAttestationProof(attestation.roundId, attestation.abiEncodedRequest);
+            await attestation.update();
+          }
         } catch (error) {
           await this.writeLogToDb(
             WorkerLogStatus.ERROR,
