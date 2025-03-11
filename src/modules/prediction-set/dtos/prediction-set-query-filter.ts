@@ -14,6 +14,12 @@ export class PredictionSetQueryFilter extends BaseQueryFilter {
     parser: { resolver: stringParser() },
     populatable: [PopulateFrom.USER]
   })
+  public category: string;
+
+  @prop({
+    parser: { resolver: stringParser() },
+    populatable: [PopulateFrom.USER]
+  })
   public search: string;
 
   @prop({

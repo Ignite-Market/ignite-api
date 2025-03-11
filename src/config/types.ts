@@ -31,7 +31,8 @@ export enum DbTables {
   CONTRACT = 'contract',
   OUTCOME_VOTING_TRANSACTION = 'outcome_voting_transaction',
   USER_WATCHLIST = 'user_watchlist',
-  BANNER = 'banner'
+  BANNER = 'banner',
+  PREDICTION_SET_CATEGORY = 'prediction_set_category'
 }
 /**
  * Validation error codes - 422_00_000.

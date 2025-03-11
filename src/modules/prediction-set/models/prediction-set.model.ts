@@ -816,6 +816,8 @@ export class PredictionSet extends AdvancedSQLModel {
         LEFT JOIN ${DbTables.USER_WATCHLIST} uw 
           ON uw.prediction_set_id = p.id
           AND uw.user_id = @userId
+        LEFT JOIN ${DbTables.PREDICTION_SET_CATEGORY} pc
+          ON pc.prediction_set_id = p.id
         WHERE p.setStatus NOT IN(${PredictionSetStatus.ERROR}, ${PredictionSetStatus.INITIALIZED}, ${PredictionSetStatus.PENDING})
         AND p.status <> ${SqlModelStatus.DELETED}
         AND (@search IS NULL
@@ -825,6 +827,9 @@ export class PredictionSet extends AdvancedSQLModel {
           OR p.tags LIKE CONCAT('%', @tag, '%')
         )
         AND (@watchlist IS NULL OR @watchlist = 0 OR uw.id IS NOT NULL)
+        AND (@category IS NULL
+          OR pc.category LIKE CONCAT('%', @category, '%')
+        )
         `,
       qGroup: `
         GROUP BY p.id
