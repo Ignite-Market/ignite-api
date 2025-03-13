@@ -818,8 +818,10 @@ export class PredictionSet extends AdvancedSQLModel {
           AND uw.user_id = @userId
         LEFT JOIN ${DbTables.PREDICTION_SET_CATEGORY} pc
           ON pc.prediction_set_id = p.id
-        WHERE p.setStatus NOT IN(${PredictionSetStatus.ERROR}, ${PredictionSetStatus.INITIALIZED}, ${PredictionSetStatus.PENDING})
-        AND p.status <> ${SqlModelStatus.DELETED}
+        WHERE p.status <> ${SqlModelStatus.DELETED}
+        AND (@status IS NULL AND p.setStatus NOT IN(${PredictionSetStatus.ERROR}, ${PredictionSetStatus.INITIALIZED}, ${PredictionSetStatus.PENDING})
+          OR FIND_IN_SET(p.setStatus, @status)
+        )
         AND (@search IS NULL
           OR p.question LIKE CONCAT('%', @search, '%')
         )
