@@ -19,9 +19,10 @@ export interface EncodedAttestationRequest {
  * Flare contract names.
  */
 export enum ContractName {
+  FDC_REQUEST_FEE_CONFIGURATIONS = 'FdcRequestFeeConfigurations',
+  JSON_API_VERIFICATION = 'JsonApiVerification',
   FLARE_SYSTEM_MANAGER = 'FlareSystemsManager',
   FDC_HUB = 'FdcHub',
-  FDC_REQUEST_FEE_CONFIGURATIONS = 'FdcRequestFeeConfigurations',
   RELAY = 'Relay'
 }
 

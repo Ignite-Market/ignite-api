@@ -1,13 +1,14 @@
 import { randomUUID } from 'crypto';
 import { DbTables, SqlModelStatus } from '../config/types';
-import { finalizePredictionSetResults, PredictionSetBcStatus, verifyPredictionSetResults } from '../lib/blockchain';
+import { finalizePredictionSetResults, PredictionSetBcStatus } from '../lib/blockchain';
+import { verifyProof } from '../lib/flare/attestation';
+import { sendSlackWebhook } from '../lib/slack-webhook';
 import { WorkerLogStatus } from '../lib/worker/logger';
 import { BaseSingleThreadWorker, SingleThreadWorkerAlertType } from '../lib/worker/serverless-workers/base-single-thread-worker';
 import { Job } from '../modules/job/job.model';
 import { Outcome } from '../modules/prediction-set/models/outcome.model';
 import { PredictionSetAttestation } from '../modules/prediction-set/models/prediction-set-attestation.model';
 import { PredictionSet, PredictionSetStatus, ResolutionType } from '../modules/prediction-set/models/prediction-set.model';
-import { sendSlackWebhook } from '../lib/slack-webhook';
 
 /**
  * Finalize automatic resolution prediction set worker.
@@ -84,7 +85,7 @@ export class FinalizeAutomaticPredictionSetWorker extends BaseSingleThreadWorker
       const validationResults = [];
       for (const attestation of attestations) {
         try {
-          const validationResult = await verifyPredictionSetResults(attestation.proof);
+          const validationResult = await verifyProof(attestation.proof);
           if (!validationResult) {
             await this.writeLogToDb(WorkerLogStatus.INFO, `Prediction set results not verified: `, {
               predictionSetId: predictionSet.id,
@@ -112,7 +113,7 @@ export class FinalizeAutomaticPredictionSetWorker extends BaseSingleThreadWorker
       if (isVerified) {
         let finalizationResults = null;
         try {
-          const proofs = attestations.map((a) => a.proof);
+          const proofs = attestations.map((a) => a.proof.proof);
 
           finalizationResults = await finalizePredictionSetResults(chainData.questionId, proofs);
         } catch (error) {

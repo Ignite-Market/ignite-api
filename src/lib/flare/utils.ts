@@ -33,3 +33,26 @@ export async function getABI(address: string) {
 
   return JSON.parse(response.result);
 }
+
+/**
+ * Ethers ABI coder results are read only so we need to correctly deep clone them.
+ * @param result ABI coder results.
+ * @returns Deep copy.
+ */
+export function deepCloneAbiCoderResult(result: any): any {
+  if (Array.isArray(result)) {
+    return result.map(deepCloneAbiCoderResult);
+  } else if (result && typeof result === 'object') {
+    const obj: any = {};
+
+    for (const key in result) {
+      // Only include named keys (not numeric indices) to avoid duplicate values
+      if (isNaN(Number(key))) {
+        obj[key] = deepCloneAbiCoderResult(result[key]);
+      }
+    }
+    return obj;
+  } else {
+    return result;
+  }
+}

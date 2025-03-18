@@ -1,9 +1,14 @@
 import { ethers } from 'ethers';
 import { env } from '../../config/env';
+import { AttestationProof } from '../../modules/prediction-set/models/prediction-set-attestation.model';
 import { CONTRACT_REGISTRY_ABI } from './abis';
 import { ContractName, EncodedAttestationRequest, ProtocolIds } from './types';
-import { getABI, toUtf8HexString } from './utils';
+import { deepCloneAbiCoderResult, getABI, toUtf8HexString } from './utils';
 
+/**
+ * Inits provider and base Flare contracts.
+ * @returns Provider, signer and contract registry contract.
+ */
 export function init() {
   const provider = new ethers.JsonRpcProvider(env.RPC_URL);
   const signer = new ethers.Wallet(env.SIGNER_PRIVATE_KEY, provider);
@@ -19,9 +24,21 @@ export function init() {
  * @param signer Signer.
  * @returns Contract.
  */
-export async function getContract(name: ContractName, registry: ethers.Contract, signer) {
-  const address = await registry.getContractAddressByName(name);
+export async function getContract(
+  name: ContractName,
+  registry: ethers.Contract,
+  signer: ethers.Wallet | ethers.JsonRpcProvider
+): Promise<ethers.Contract> {
+  let address = '';
+
+  // Returns hardcoded unofficial deployment instances of Flare core contracts. TODO: Change when Flare deploys official contract.
+  if (name === ContractName.JSON_API_VERIFICATION) {
+    address = env.JSON_VERIFIER_CONTRACT;
+  } else {
+    address = await registry.getContractAddressByName(name);
+  }
   const abi = await getABI(address);
+
   return new ethers.Contract(address, abi, signer);
 }
 
@@ -124,6 +141,30 @@ export async function getAttestationProof(roundId: number, abiEncodedRequest: st
     })
   });
 
-  console.log(proofAndData);
   return await proofAndData.json();
+}
+
+/**
+ * Verifies attestation proof.
+ *
+ * @param attestationProof Results proof data.
+ * @returns Boolean.
+ */
+export async function verifyProof(attestationProof: AttestationProof): Promise<boolean> {
+  const { signer, contractRegistry } = init();
+
+  const verifier = await getContract(ContractName.JSON_API_VERIFICATION, contractRegistry, signer);
+  const address = await verifier.getAddress();
+  const abi = await getABI(address);
+
+  const responseType = abi[0].inputs[0].components[1];
+  const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+  const decodedResponse = abiCoder.decode([responseType], attestationProof.response_hex)[0];
+
+  const data = {
+    merkleProof: attestationProof.proof,
+    data: deepCloneAbiCoderResult(decodedResponse)
+  };
+
+  return await verifier.verifyJsonApi(data);
 }

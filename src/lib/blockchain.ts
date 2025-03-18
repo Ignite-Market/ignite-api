@@ -5,7 +5,7 @@ import { SystemErrorCode } from '../config/types';
 import { Context } from '../context';
 import { PredictionSetChainData } from '../modules/prediction-set/models/prediction-set-chain-data.model';
 import { PredictionSet, ResolutionType } from '../modules/prediction-set/models/prediction-set.model';
-import { CONDITIONAL_TOKEN_ABI, FPMM_ABI, FPMM_FACTORY_ABI, JSON_VERIFIER_ABI, ORACLE_ABI } from './abis';
+import { CONDITIONAL_TOKEN_ABI, FPMM_ABI, FPMM_FACTORY_ABI, ORACLE_ABI } from './abis';
 import { CodeException } from './exceptions/exceptions';
 
 /**
@@ -20,6 +20,7 @@ export enum PredictionSetBcStatus {
 
 /**
  * Sets up contracts.
+ *
  * @returns provider - JSON RPC provider.
  * @returns signer - Signer.
  * @returns fpmmfContract - FixedProductMarketMakerFactory contract - used for creation of prediction markets - every new prediction market is its own FixedProductMarketMaker contract.
@@ -33,7 +34,6 @@ export function setup(fpmmAddress: string = null) {
   const fpmmfContract = new ethers.Contract(env.FPMM_FACTORY_CONTRACT, FPMM_FACTORY_ABI, signer);
   const conditionalTokenContract = new ethers.Contract(env.CONDITIONAL_TOKEN_CONTRACT, CONDITIONAL_TOKEN_ABI, signer);
   const fpmmContract = fpmmAddress ? new ethers.Contract(fpmmAddress, FPMM_ABI, signer) : null;
-  const verifierContract = new ethers.Contract(env.JSON_VERIFIER_CONTRACT, JSON_VERIFIER_ABI, signer);
 
   return {
     provider,
@@ -41,13 +41,13 @@ export function setup(fpmmAddress: string = null) {
     oracleContract,
     fpmmfContract,
     conditionalTokenContract,
-    fpmmContract,
-    verifierContract
+    fpmmContract
   };
 }
 
 /**
  * Creates new prediction set on blockchain.
+ *
  * @param predictionSet Prediction set data.
  * @param context Application context.
  */
@@ -143,10 +143,14 @@ export async function addPredictionSet(predictionSet: PredictionSet, context: Co
 
 /**
  * Finalizes prediction set results.
+ *
  * @param questionId Question ID.
  * @param proofs Results proof data.
  */
-export async function finalizePredictionSetResults(questionId: string, proofs: any[]): Promise<{ status: PredictionSetBcStatus; winnerIdx: number }> {
+export async function finalizePredictionSetResults(
+  questionId: string,
+  proofs: string[][]
+): Promise<{ status: PredictionSetBcStatus; winnerIdx: number }> {
   const { oracleContract } = setup();
 
   try {
@@ -172,29 +176,8 @@ export async function finalizePredictionSetResults(questionId: string, proofs: a
 }
 
 /**
- * Verifies prediction set results.
- * @param proof Results proof data.
- * @returns Boolean.
- */
-export async function verifyPredictionSetResults(proof: any): Promise<boolean> {
-  const { verifierContract } = setup();
-
-  try {
-    return await verifierContract.verifyJsonApi(proof);
-  } catch (error) {
-    throw new CodeException({
-      code: SystemErrorCode.BLOCKCHAIN_SYSTEM_ERROR,
-      errorCodes: SystemErrorCode,
-      status: HttpStatus.INTERNAL_SERVER_ERROR,
-      sourceFunction: `${this.constructor.name}/verifyPredictionSetResults`,
-      errorMessage: 'Error while verifying prediction set results.',
-      details: error
-    });
-  }
-}
-
-/**
  * Formats given number to bytes 32 string.
+ *
  * @param num Number.
  * @returns Bytes 32 string.
  */
