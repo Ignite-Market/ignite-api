@@ -1,7 +1,8 @@
 import { prop } from '@rawmodel/core';
-import { booleanParser, stringParser } from '@rawmodel/parsers';
+import { booleanParser, integerParser, stringParser } from '@rawmodel/parsers';
 import { PopulateFrom } from '../../../config/types';
 import { BaseQueryFilter } from '../../../lib/base-models/base-query-filter.model';
+import { PredictionSetStatus } from '../models/prediction-set.model';
 
 export class PredictionSetQueryFilter extends BaseQueryFilter {
   @prop({
@@ -27,4 +28,10 @@ export class PredictionSetQueryFilter extends BaseQueryFilter {
     populatable: [PopulateFrom.USER]
   })
   public watchlist: boolean;
+
+  @prop({
+    parser: { resolver: integerParser() },
+    populatable: [PopulateFrom.USER]
+  })
+  public status: PredictionSetStatus;
 }
