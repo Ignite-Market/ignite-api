@@ -6,13 +6,13 @@ import { WorkerLogStatus, writeWorkerLog } from '../lib/worker/logger';
 import { ServiceDefinition, ServiceDefinitionType, WorkerDefinition } from '../lib/worker/serverless-workers';
 import { QueueWorkerType } from '../lib/worker/serverless-workers/base-queue-worker';
 import { CreatePredictionSetWorker } from './create-prediction-set.worker';
-import { FinalizeAutomaticPredictionSetWorker } from './finalize-automatic-prediction-sets.worker';
+import { FinalizeAutomaticPredictionSetWorker } from './flare/finalize-automatic-prediction-sets.worker';
 import { FinalizeManualPredictionSetWorker } from './finalize-manual-prediction-sets.worker';
 import { PredictionSetParserWorker } from './prediction-set-parser.worker';
 import { PredictionSetsFactoryParserWorker } from './prediction-sets-factory-parser.worker';
 import { RefreshOutcomeChancesWorker } from './refresh-outcome-chances.worker';
-import { RequestAttestationProofWorker } from './request-attestation-proof.worker';
-import { RequestAttestationWorker } from './request-attestation.worker';
+import { RequestAttestationProofWorker } from './flare/request-attestation-proof.worker';
+import { RequestAttestationWorker } from './flare/request-attestation.worker';
 import { Scheduler } from './scheduler';
 import { VotingParserWorker } from './voting-parser.worker';
 

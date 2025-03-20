@@ -49,13 +49,11 @@ describe('User e2e tests', () => {
       ).insert();
     });
 
-    it('Should create new user if and log him in with wallet', async () => {
+    it('Should create new user and log him in with wallet', async () => {
       // Get signing message.
       const messageRes = await request(stage.http).get('/users/wallet-message').expect(HttpStatus.OK);
       const message = messageRes.body.data.message;
       const timestamp = messageRes.body.data.timestamp;
-
-      console.log(messageRes.body);
 
       expect(message).not.toBeNull();
       expect(timestamp).toBeLessThanOrEqual(new Date().getTime());

@@ -1,8 +1,8 @@
 import { prop } from '@rawmodel/core';
 import { integerParser } from '@rawmodel/parsers';
+import { PoolConnection } from 'mysql2/promise';
 import { DbTables, PopulateFrom, SerializeFor, SqlModelStatus } from '../../../config/types';
 import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
-import { PoolConnection } from 'mysql2/promise';
 
 /**
  * User prediction set watchlist model.
@@ -33,6 +33,14 @@ export class UserWatchlist extends AdvancedSQLModel {
   })
   public prediction_set_id: number;
 
+  /**
+   * Populates by user ID and prediction set ID.
+   *
+   * @param userId User ID.
+   * @param predictionSetId Prediction set ID.
+   * @param conn Pool connection.
+   * @returns User's watchlist.
+   */
   public async populateByUserAndPredictionSetId(userId: number, predictionSetId: number, conn?: PoolConnection): Promise<UserWatchlist> {
     if (!predictionSetId || !userId) {
       return this.reset();

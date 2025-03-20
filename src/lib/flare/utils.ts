@@ -1,3 +1,4 @@
+import { keccak256, solidityPacked } from 'ethers';
 import { env } from '../../config/env';
 
 /**
@@ -35,6 +36,36 @@ export async function getABI(address: string) {
 }
 
 /**
+ * Converts attestations proofs to named objects.
+ *
+ * @param rawProofs Raw proofs array.
+ * @returns Named object proof array.
+ */
+export function convertProofsToNamedObjects(rawProofs: any[][]): any[] {
+  return rawProofs.map((proof: any) => {
+    const [attestationType, sourceId, votingRound, lowestUsedTimestamp, requestBodyArray, responseBodyArray] = proof.data;
+
+    return {
+      merkleProof: proof.merkleProof,
+      data: {
+        attestationType,
+        sourceId,
+        votingRound: BigInt(votingRound),
+        lowestUsedTimestamp: BigInt(lowestUsedTimestamp),
+        requestBody: {
+          url: requestBodyArray[0],
+          postprocessJq: requestBodyArray[1],
+          abi_signature: requestBodyArray[2]
+        },
+        responseBody: {
+          abi_encoded_data: responseBodyArray[0]
+        }
+      }
+    };
+  });
+}
+
+/**
  * Ethers ABI coder results are read only so we need to correctly deep clone them.
  * @param result ABI coder results.
  * @returns Deep copy.
@@ -55,4 +86,17 @@ export function deepCloneAbiCoderResult(result: any): any {
   } else {
     return result;
   }
+}
+
+/**
+ * Creates JQ key.
+ * @param url API URL.
+ * @param jq API jq.
+ * @returns JQ key
+ */
+export function crateJQ(url: string, jq: string) {
+  const packed = solidityPacked(['string', 'string'], [url, jq]);
+  const jqKey = keccak256(packed);
+
+  return jqKey;
 }

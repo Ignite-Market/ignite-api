@@ -128,7 +128,7 @@ export async function isRoundFinalized(roundId: number): Promise<boolean> {
  * @param abiEncodedRequest ABI encoded request.
  * @returns Attestation proof.
  */
-export async function getAttestationProof(roundId: number, abiEncodedRequest: string) {
+export async function getAttestationProof(roundId: number, abiEncodedRequest: string): Promise<AttestationProof> {
   const proofAndData = await fetch(`${env.FLARE_DATA_AVAILABILITY_URL}api/v1/fdc/proof-by-request-round-raw`, {
     method: 'POST',
     headers: {
@@ -150,7 +150,7 @@ export async function getAttestationProof(roundId: number, abiEncodedRequest: st
  * @param attestationProof Results proof data.
  * @returns Boolean.
  */
-export async function verifyProof(attestationProof: AttestationProof): Promise<boolean> {
+export async function verifyProof(attestationProof: AttestationProof): Promise<{ verified: boolean; proofData: any }> {
   const { signer, contractRegistry } = init();
 
   const verifier = await getContract(ContractName.JSON_API_VERIFICATION, contractRegistry, signer);
@@ -161,10 +161,12 @@ export async function verifyProof(attestationProof: AttestationProof): Promise<b
   const abiCoder = ethers.AbiCoder.defaultAbiCoder();
   const decodedResponse = abiCoder.decode([responseType], attestationProof.response_hex)[0];
 
-  const data = {
+  const proofData = {
     merkleProof: attestationProof.proof,
     data: deepCloneAbiCoderResult(decodedResponse)
   };
 
-  return await verifier.verifyJsonApi(data);
+  const verified = await verifier.verifyJsonApi(proofData);
+
+  return { verified, proofData };
 }

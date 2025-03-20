@@ -81,7 +81,7 @@ export async function addPredictionSet(predictionSet: PredictionSet, context: Co
       code: SystemErrorCode.BLOCKCHAIN_SYSTEM_ERROR,
       errorCodes: SystemErrorCode,
       status: HttpStatus.INTERNAL_SERVER_ERROR,
-      sourceFunction: `${this.constructor.name}/addPredictionSet`,
+      sourceFunction: `addPredictionSet`,
       errorMessage: 'Error while preparing condition.',
       details: error,
       context
@@ -96,7 +96,7 @@ export async function addPredictionSet(predictionSet: PredictionSet, context: Co
       code: SystemErrorCode.BLOCKCHAIN_SYSTEM_ERROR,
       errorCodes: SystemErrorCode,
       status: HttpStatus.INTERNAL_SERVER_ERROR,
-      sourceFunction: `${this.constructor.name}/addPredictionSet`,
+      sourceFunction: `addPredictionSet`,
       errorMessage: 'No condition ID found.',
       context
     });
@@ -122,7 +122,7 @@ export async function addPredictionSet(predictionSet: PredictionSet, context: Co
       code: SystemErrorCode.BLOCKCHAIN_SYSTEM_ERROR,
       errorCodes: SystemErrorCode,
       status: HttpStatus.INTERNAL_SERVER_ERROR,
-      sourceFunction: `${this.constructor.name}/addPredictionSet`,
+      sourceFunction: `addPredictionSet`,
       errorMessage: 'Error while creating fixed product market maker contract.',
       details: error,
       context
@@ -149,19 +149,19 @@ export async function addPredictionSet(predictionSet: PredictionSet, context: Co
  */
 export async function finalizePredictionSetResults(
   questionId: string,
-  proofs: string[][]
+  proofs: any[][]
 ): Promise<{ status: PredictionSetBcStatus; winnerIdx: number }> {
   const { oracleContract } = setup();
 
   try {
-    const finalizeTx = await oracleContract.finalizeQuestion(questionId, proofs);
+    const finalizeTx = await oracleContract.finalizeQuestion(questionId, proofs, true);
     await finalizeTx.wait();
   } catch (error) {
     throw new CodeException({
       code: SystemErrorCode.BLOCKCHAIN_SYSTEM_ERROR,
       errorCodes: SystemErrorCode,
       status: HttpStatus.INTERNAL_SERVER_ERROR,
-      sourceFunction: `${this.constructor.name}/finalizePredictionSetResults`,
+      sourceFunction: `finalizePredictionSetResults`,
       errorMessage: 'Error while finalizing prediction set results.',
       details: error
     });
@@ -170,7 +170,7 @@ export async function finalizePredictionSetResults(
   const question = await oracleContract.question(questionId);
 
   const status = Number(question.status);
-  const winnerIdx = question.winnerIdx;
+  const winnerIdx = Number(question.winnerIdx);
 
   return { status, winnerIdx };
 }

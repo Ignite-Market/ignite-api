@@ -86,6 +86,8 @@ export interface IEnv {
   MARKET_TREASURY_PERCENT: number;
   MARKET_TREASURY_ADDRESS: string;
   MARKET_COLLATERAL_FUNDING_THRESHOLD: string;
+
+  MOCK_RESULTS_API_ENDPOINT: string;
 }
 
 dotenv.config();
@@ -188,7 +190,9 @@ export let env: IEnv = {
   MARKET_FEE_PERCENT: process.env['MARKET_FEE_PERCENT'] || '0.03', // Fee factor in ETH (18 decimals) - 0.03 -> 3%
   MARKET_TREASURY_PERCENT: parseInt(process.env['MARKET_TREASURY_PERCENT']) || 100, // 100 -> 1% (6 decimals)
   MARKET_TREASURY_ADDRESS: process.env['MARKET_TREASURY_ADDRESS'],
-  MARKET_COLLATERAL_FUNDING_THRESHOLD: process.env['MARKET_COLLATERAL_FUNDING_THRESHOLD'] || '200' // Market funding threshold in collateral tokens -> 200 -> 200 * 10 * COLLATERAL_TOKEN_DECIMALS
+  MARKET_COLLATERAL_FUNDING_THRESHOLD: process.env['MARKET_COLLATERAL_FUNDING_THRESHOLD'] || '200', // Market funding threshold in collateral tokens -> 200 -> 200 * 10 * COLLATERAL_TOKEN_DECIMALS
+
+  MOCK_RESULTS_API_ENDPOINT: process.env['MOCK_RESULTS_API_ENDPOINT']
 };
 
 /**

@@ -19,7 +19,10 @@
     "hexlify",
     "leaderboard",
     "psds",
+    "psft",
     "slsw",
-    "SUBDATE"
+    "SUBDATE",
+    "UNIXTIME",
+    "Watchlist"
   ]
 }

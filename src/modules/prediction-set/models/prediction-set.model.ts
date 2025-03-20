@@ -2,24 +2,24 @@ import { prop } from '@rawmodel/core';
 import { booleanParser, dateParser, integerParser, stringParser } from '@rawmodel/parsers';
 import { isPresent } from '@rawmodel/utils';
 import { presenceValidator } from '@rawmodel/validators';
+import { groupBy } from 'lodash';
 import { PoolConnection } from 'mysql2/promise';
 import { DbTables, ErrorCode, PopulateFrom, SerializeFor, SqlModelStatus, ValidatorErrorCode } from '../../../config/types';
 import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
+import { BaseQueryFilter } from '../../../lib/base-models/base-query-filter.model';
 import { getQueryParams, selectAndCountQuery, unionSelectAndCountQuery } from '../../../lib/database/sql-utils';
+import { dateToSqlString } from '../../../lib/utils';
 import { enumInclusionValidator } from '../../../lib/validators';
+import { ActivityQueryFilter } from '../dtos/activity-query-filter';
+import { HoldersQueryFilter } from '../dtos/holders-query-filter';
+import { PredictionSetChanceHistoryQueryFilter } from '../dtos/prediciton-set-chance-history-query-filter';
 import { PredictionSetQueryFilter } from '../dtos/prediction-set-query-filter';
 import { DataSource } from './data-source.model';
 import { Outcome } from './outcome.model';
+import { PredictionSetAttestation } from './prediction-set-attestation.model';
 import { PredictionSetChainData } from './prediction-set-chain-data.model';
-import { PredictionSetChanceHistoryQueryFilter } from '../dtos/prediciton-set-chance-history-query-filter';
-import { dateToSqlString } from '../../../lib/utils';
-import { groupBy } from 'lodash';
 import { ShareTransactionType } from './transactions/outcome-share-transaction.model';
-import { BaseQueryFilter } from '../../../lib/base-models/base-query-filter.model';
-import { ActivityQueryFilter } from '../dtos/activity-query-filter';
 import { UserWatchlist } from './user-watchlist';
-import { HoldersQueryFilter } from '../dtos/holders-query-filter';
-import { FundingTransactionType } from './transactions/prediction-set-funding-transaction.model';
 
 /**
  * Prediction set resolution type.
@@ -322,7 +322,7 @@ export class PredictionSet extends AdvancedSQLModel {
   public chainData: PredictionSetChainData;
 
   /**
-   * Prediction set's chain data virtual property definition.
+   * Tells if prediction set is on user's watchlist.
    */
   @prop({
     parser: { resolver: booleanParser() },
@@ -344,12 +344,12 @@ export class PredictionSet extends AdvancedSQLModel {
   public volume: number;
 
   /**
-   *
-   * @param id
-   * @param conn
-   * @param forUpdate
-   * @param populate
-   * @returns
+   * Populate prediction set by ID.
+   * @param id Prediction set ID.
+   * @param conn Pool connection.
+   * @param forUpdate Populate for update.
+   * @param populate Populate fields.
+   * @returns Prediction set.
    */
   public async populateById(
     id: any,
@@ -380,9 +380,10 @@ export class PredictionSet extends AdvancedSQLModel {
   }
 
   /**
+   * Gets prediction set chain data.
    *
-   * @param conn
-   * @returns
+   * @param conn Pool connection.
+   * @returns Prediction set chain data.
    */
   public async getPredictionSetChainData(conn?: PoolConnection, forUpdate?: boolean): Promise<PredictionSetChainData> {
     const context = this.getContext();
@@ -391,9 +392,10 @@ export class PredictionSet extends AdvancedSQLModel {
   }
 
   /**
+   * Tells if prediction set is on user's watchlist.
    *
-   * @param conn
-   * @returns
+   * @param conn Pool connection.
+   * @returns Boolean.
    */
   public async getIsWatched(conn?: PoolConnection): Promise<boolean> {
     const context = this.getContext();
@@ -406,23 +408,24 @@ export class PredictionSet extends AdvancedSQLModel {
   }
 
   /**
+   * Gets prediction sets volume.
    *
-   * @param conn
-   * @returns
+   * @param conn Pool connection.
+   * @returns Volume.
    */
   public async getVolume(conn?: PoolConnection): Promise<number> {
     const volume = await this.db().paramExecute(
       `
-      SELECT
-        SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)) 
-        - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0)) 
-        + (
-          SELECT IFNULL(SUM(psft.collateralAmount), 0)
-          FROM ${DbTables.PREDICTION_SET_FUNDING_TRANSACTION} psft
-          WHERE psft.prediction_set_id = @predictionSetId
-        ) AS volume
-      FROM ${DbTables.OUTCOME_SHARE_TRANSACTION} ost
-      WHERE ost.prediction_set_id = @predictionSetId
+        SELECT
+          SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)) 
+          - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0)) 
+          + (
+            SELECT IFNULL(SUM(psft.collateralAmount), 0)
+            FROM ${DbTables.PREDICTION_SET_FUNDING_TRANSACTION} psft
+            WHERE psft.prediction_set_id = @predictionSetId
+          ) AS volume
+        FROM ${DbTables.OUTCOME_SHARE_TRANSACTION} ost
+        WHERE ost.prediction_set_id = @predictionSetId
       `,
       { predictionSetId: this.id },
       conn
@@ -432,9 +435,10 @@ export class PredictionSet extends AdvancedSQLModel {
   }
 
   /**
+   * Gets prediction set outcomes.
    *
-   * @param conn
-   * @returns
+   * @param conn Pool connection.
+   * @returns Outcomes.
    */
   public async getOutcomes(conn?: PoolConnection): Promise<Outcome[]> {
     const rows = await this.db().paramExecute(
@@ -479,9 +483,10 @@ export class PredictionSet extends AdvancedSQLModel {
   }
 
   /**
+   * Gets prediction sets data sources.
    *
-   * @param conn
-   * @returns
+   * @param conn Pool connection.
+   * @returns Array of data sources.
    */
   public async getDataSources(conn?: PoolConnection): Promise<DataSource[]> {
     const rows = await this.db().paramExecute(
@@ -500,6 +505,29 @@ export class PredictionSet extends AdvancedSQLModel {
 
     const context = this.getContext();
     return rows.length ? rows.map((r) => new DataSource(r, context)) : [];
+  }
+
+  /**
+   * Returns prediction set attestations.
+   *
+   * @param conn Pool connection.
+   * @returns Array of attestations.
+   */
+  public async getAttestations(conn?: PoolConnection): Promise<PredictionSetAttestation[]> {
+    const rows = await this.db().paramExecute(
+      `
+        SELECT *
+        FROM ${DbTables.PREDICTION_SET_ATTESTATION} psa
+        WHERE psa.prediction_set_id = @predictionSetId
+          AND psa.status <> ${SqlModelStatus.DELETED}
+        ORDER BY psa.id;
+      `,
+      { predictionSetId: this.id },
+      conn
+    );
+
+    const context = this.getContext();
+    return rows.length ? rows.map((r) => new PredictionSetAttestation(r, context)) : [];
   }
 
   /**
@@ -564,6 +592,11 @@ export class PredictionSet extends AdvancedSQLModel {
     return this;
   }
 
+  /**
+   *
+   * @param query
+   * @returns
+   */
   public async getActivityList(query: ActivityQueryFilter): Promise<any> {
     const defaultParams = {
       id: null
@@ -649,6 +682,11 @@ export class PredictionSet extends AdvancedSQLModel {
     return await unionSelectAndCountQuery(this.getContext().mysql, sqlQuery, params, 't.id');
   }
 
+  /**
+   *
+   * @param query
+   * @returns
+   */
   public async getHoldersList(query: HoldersQueryFilter): Promise<any> {
     const defaultParams = {
       id: null
@@ -704,6 +742,12 @@ export class PredictionSet extends AdvancedSQLModel {
     return await selectAndCountQuery(this.getContext().mysql, sqlQuery, params, 'u.id');
   }
 
+  /**
+   *
+   * @param id
+   * @param query
+   * @returns
+   */
   public async getUserList(id: number, query: BaseQueryFilter): Promise<any> {
     const defaultParams = {
       id: null
@@ -848,6 +892,11 @@ export class PredictionSet extends AdvancedSQLModel {
     return res;
   }
 
+  /**
+   *
+   * @param query
+   * @returns
+   */
   public async getChanceHistory(query: PredictionSetChanceHistoryQueryFilter): Promise<any> {
     let rangeCondition = '';
     let endTime = dateToSqlString(new Date());
