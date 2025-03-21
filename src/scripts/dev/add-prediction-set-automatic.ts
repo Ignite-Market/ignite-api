@@ -59,23 +59,6 @@ const processPredictionSet = async () => {
             abi: {
               'type': 'uint256'
             }
-            // TODO: Should abi be on the response body or just the end value.
-            // abi: {
-            //   'components': [
-            //     {
-            //       'internalType': 'uint256',
-            //       'name': 'result',
-            //       'type': 'uint256'
-            //     },
-            //     {
-            //       'internalType': 'uint256',
-            //       'name': 'apiId',
-            //       'type': 'uint256'
-            //     }
-            //   ],
-            //   'name': 'response',
-            //   'type': 'tuple'
-            // }
           },
           context
         ).insert();

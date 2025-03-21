@@ -343,6 +343,14 @@ export class PredictionSet extends AdvancedSQLModel {
   })
   public volume: number;
 
+  @prop({
+    serializable: [SerializeFor.USER],
+    populatable: [PopulateFrom.USER],
+    defaultValue: () => [],
+    emptyValue: () => []
+  })
+  public positions: any[];
+
   /**
    * Populate prediction set by ID.
    * @param id Prediction set ID.
@@ -376,6 +384,8 @@ export class PredictionSet extends AdvancedSQLModel {
       this.volume = await this.getVolume(conn);
     }
 
+    this.positions = await this.getOpenPositions(conn);
+
     return model;
   }
 
@@ -392,7 +402,7 @@ export class PredictionSet extends AdvancedSQLModel {
   }
 
   /**
-   * Tells if prediction set is on user's watchlist.
+   * Tells if this prediction set is on current user's watchlist.
    *
    * @param conn Pool connection.
    * @returns Boolean.
@@ -405,6 +415,44 @@ export class PredictionSet extends AdvancedSQLModel {
     }
 
     return (await new UserWatchlist({}, context).populateByUserAndPredictionSetId(context.user.id, this.id, conn)).exists();
+  }
+
+  /**
+   * Gets current user's open positions for this prediction set.
+   *
+   * @param conn Pool connection.
+   * @returns Volume.
+   */
+  public async getOpenPositions(conn?: PoolConnection): Promise<any[]> {
+    const context = this.getContext();
+
+    if (!context.user) {
+      return [];
+    }
+
+    const positions = await this.db().paramExecute(
+      `
+        SELECT
+          o.name AS outcomeName,
+          SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0)) AS collateralAmount,
+          SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.outcomeTokens, 0)) AS sharesAmount,
+          SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)) / NULLIF(SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)), 0) AS avgBuyPrice
+        FROM ${DbTables.OUTCOME_SHARE_TRANSACTION} ost
+        LEFT JOIN ${DbTables.OUTCOME} o
+          ON o.id = ost.outcome_id
+        WHERE ost.prediction_set_id = @predictionSetId
+          AND ost.user_id = @userId
+        GROUP BY o.id
+        ORDER BY o.id
+      `,
+      {
+        predictionSetId: this.id,
+        userId: context.user.id
+      },
+      conn
+    );
+
+    return positions;
   }
 
   /**

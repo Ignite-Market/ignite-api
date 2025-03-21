@@ -65,25 +65,54 @@ export class RefreshOutcomeChancesWorker extends BaseQueueWorker {
       }
       const totalSupply = balances.reduce((total: bigint, reserve: bigint) => total + reserve, BigInt(0));
 
-      for (const [index, outcome] of predictionSet.outcomes.entries()) {
-        const outcomeBalance = balances[index];
-
-        // Get price per share if we invest 1 collateral token.
+      // Calculate marginal prices.
+      const marginalPrices: number[] = [];
+      for (const outcome of predictionSet.outcomes) {
         const amount = BigInt(Math.round(1 * 10 ** env.COLLATERAL_TOKEN_DECIMALS));
         const shares = await fpmmContract.calcBuyAmount(amount, outcome.outcomeIndex);
         const pricePerShare = Number(amount) / Number(shares);
+        marginalPrices.push(pricePerShare);
+      }
+
+      // Normalize prices to sum to 1.
+      const priceTotal = marginalPrices.reduce((acc, p) => acc + p, 0);
+      const normalizedChances = marginalPrices.map((p) => p / priceTotal);
+
+      for (const [index, outcome] of predictionSet.outcomes.entries()) {
+        const outcomeBalance = balances[index];
+        const normalizedChance = normalizedChances[index];
 
         await new OutcomeChance(
           {
             outcome_id: outcome.id,
             prediction_set_id: predictionSet.id,
-            chance: pricePerShare,
+            chance: normalizedChance,
             supply: outcomeBalance.toString(),
             totalSupply: totalSupply.toString()
           },
           this.context
         ).insert();
       }
+
+      // for (const [index, outcome] of predictionSet.outcomes.entries()) {
+      //   const outcomeBalance = balances[index];
+
+      //   // Get price per share if we invest 1 collateral token.
+      //   const amount = BigInt(Math.round(1 * 10 ** env.COLLATERAL_TOKEN_DECIMALS));
+      //   const shares = await fpmmContract.calcBuyAmount(amount, outcome.outcomeIndex);
+      //   const pricePerShare = Number(amount) / Number(shares);
+
+      //   await new OutcomeChance(
+      //     {
+      //       outcome_id: outcome.id,
+      //       prediction_set_id: predictionSet.id,
+      //       chance: pricePerShare,
+      //       supply: outcomeBalance.toString(),
+      //       totalSupply: totalSupply.toString()
+      //     },
+      //     this.context
+      //   ).insert();
+      // }
     } catch (error) {
       await this.writeLogToDb(
         WorkerLogStatus.ERROR,
