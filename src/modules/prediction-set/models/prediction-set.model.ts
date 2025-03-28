@@ -433,7 +433,9 @@ export class PredictionSet extends AdvancedSQLModel {
     const positions = await this.db().paramExecute(
       `
         SELECT
+          o.id AS outcomeId,
           o.name AS outcomeName,
+          o.outcomeIndex AS outcomeIndex,
           SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0)) AS collateralAmount,
           SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.outcomeTokens, 0)) AS sharesAmount,
           SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)) / NULLIF(SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)), 0) AS avgBuyPrice
@@ -465,8 +467,8 @@ export class PredictionSet extends AdvancedSQLModel {
     const volume = await this.db().paramExecute(
       `
         SELECT
-          SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)) 
-          - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0)) 
+          IFNULL(SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)), 0)
+          - IFNULL(SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0)), 0)
           + (
             SELECT IFNULL(SUM(psft.collateralAmount), 0)
             FROM ${DbTables.PREDICTION_SET_FUNDING_TRANSACTION} psft
