@@ -931,7 +931,16 @@ export class PredictionSet extends AdvancedSQLModel {
         GROUP BY p.id
       `,
       qFilter: `
-        ORDER BY ${filters.orderStr}
+        ORDER BY 
+          CASE 
+            WHEN p.setStatus = ${PredictionSetStatus.ACTIVE} AND p.endTime > NOW() THEN 1
+            WHEN p.setStatus = ${PredictionSetStatus.FUNDING} THEN 2
+            WHEN p.setStatus = ${PredictionSetStatus.ACTIVE} AND p.endTime <= NOW() THEN 3
+            WHEN p.setStatus = ${PredictionSetStatus.VOTING} THEN 4
+            WHEN p.setStatus = ${PredictionSetStatus.FINALIZED} THEN 5
+            ELSE 6
+          END,
+          ${filters.orderStr}
         LIMIT ${filters.limit} OFFSET ${filters.offset};
       `
     };

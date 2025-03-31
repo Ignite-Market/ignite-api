@@ -8,8 +8,8 @@ import { RequestAttestationWorker } from '../../workers/flare/request-attestatio
 import { RequestAttestationProofWorker } from '../../workers/flare/request-attestation-proof.worker';
 import { FinalizeManualPredictionSetWorker } from '../../workers/finalize-manual-prediction-sets.worker';
 
-const WORKER_NAME = WorkerName.FINALIZE_AUTOMATIC_PREDICTION_SET;
-const WorkerClass = FinalizeAutomaticPredictionSetWorker;
+const WORKER_NAME = WorkerName.REQUEST_ATTESTATION;
+const WorkerClass = RequestAttestationWorker;
 
 (async () => {
   const start = new Date();

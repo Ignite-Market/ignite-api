@@ -1,26 +1,26 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
+import { env } from '../../config/env';
 import { BadRequestErrorCode, PopulateFrom, ResourceNotFoundErrorCode, SerializeFor, SqlModelStatus, SystemErrorCode } from '../../config/types';
 import { Context } from '../../context';
 import { sendToWorkerQueue } from '../../lib/aws/aws-sqs';
-import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
 import { CodeException } from '../../lib/exceptions/exceptions';
 import { WorkerName } from '../../workers/worker-executor';
+import { ActivityQueryFilter } from './dtos/activity-query-filter';
+import { HoldersQueryFilter } from './dtos/holders-query-filter';
+import { PredictionSetChanceHistoryQueryFilter } from './dtos/prediciton-set-chance-history-query-filter';
+import { PredictionSetQueryFilter } from './dtos/prediction-set-query-filter';
 import { PredictionSetDto } from './dtos/prediction-set.dto';
+import { Banner } from './models/banner';
 import { DataSource } from './models/data-source.model';
 import { Outcome } from './models/outcome.model';
 import { PredictionSet, PredictionSetStatus, ResolutionType } from './models/prediction-set.model';
-import { env } from '../../config/env';
-import { PredictionSetQueryFilter } from './dtos/prediction-set-query-filter';
-import { PredictionSetChanceHistoryQueryFilter } from './dtos/prediciton-set-chance-history-query-filter';
 import { UserWatchlist } from './models/user-watchlist';
-import { ActivityQueryFilter } from './dtos/activity-query-filter';
-import { HoldersQueryFilter } from './dtos/holders-query-filter';
-import { Banner } from './models/banner';
 
 @Injectable()
 export class PredictionSetService {
   /**
    * Process prediction set.
+   *
    * @param predictionSetId Prediction set ID.
    * @param context Application context.
    * @returns Prediction set.
@@ -74,6 +74,7 @@ export class PredictionSetService {
 
   /**
    * Create prediction set.
+   *
    * @param predictionSet Prediction set.
    * @param dataSourceIds Data source IDs.
    * @param context Application context.
@@ -189,6 +190,7 @@ export class PredictionSetService {
 
   /**
    * Update prediction set.
+   *
    * @param predictionSetId Prediction set ID.
    * @param predictionSetData Prediction set data.
    * @param context Application context.
@@ -310,6 +312,7 @@ export class PredictionSetService {
 
   /**
    * Returns listing of prediction.
+   *
    * @param query Filtering query.
    * @param context Application context.
    * @returns Prediction group.
@@ -319,10 +322,11 @@ export class PredictionSetService {
   }
 
   /**
+   * Get prediction set by ID.
    *
-   * @param id
-   * @param context
-   * @returns
+   * @param id Prediction set ID.
+   * @param context Application context.
+   * @returns Prediction set.
    */
   public async getPredictionById(id: number, context: Context) {
     const predictionSet = await new PredictionSet({}, context).populateById(id, null, false, {

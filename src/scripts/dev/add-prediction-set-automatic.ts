@@ -7,6 +7,7 @@ import { PredictionSetService } from '../../modules/prediction-set/prediction-se
 import { createContext } from './context';
 
 const tenMinutes = 10 * 60 * 1000;
+const fifteenMinutes = 10 * 60 * 1000;
 const twoHours = 2 * 60 * 60 * 1000;
 const fourHours = 4 * 60 * 60 * 1000;
 const sixHours = 6 * 60 * 60 * 1000;
@@ -19,8 +20,8 @@ const data = {
   outcomeResolutionDef: `This market will resolve to "Yes" if any Binance 1 minute candle for BTCUSDT between 30 Dec '24 11:00 and 31 Jan '25 23:59 in the ET timezone has a final “high” price that is higher than any previous Binance 1 minute candle's "high" price on any prior date. Otherwise, this market will resolve to "No". The resolution source for this market is Binance, specifically the BTCUSDT "high" prices currently available at https://www.binance.com/en/trade/BTC_USDT with “1m” and “Candles” selected on the top bar. Please note that this market is about the price according to Binance BTCUSDT, not according to other sources or spot markets.`,
   outcomePriceDef: 'The full outcome price always resolves to 100%.',
   startTime: new Date(Number(new Date())),
-  endTime: new Date(Number(new Date()) + tenMinutes / 2),
-  resolutionTime: new Date(Number(new Date()) + 3 * tenMinutes),
+  endTime: new Date(Number(new Date()) + fifteenMinutes),
+  resolutionTime: new Date(Number(new Date()) + fifteenMinutes * 2),
   resolutionType: ResolutionType.AUTOMATIC,
   consensusThreshold: 60,
   tags: 'github',
