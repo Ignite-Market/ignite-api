@@ -16,6 +16,24 @@ export class Outcome extends AdvancedSQLModel {
   public tableName = DbTables.OUTCOME;
 
   /**
+   * Outcome name.
+   */
+  @prop({
+    parser: {
+      resolver: stringParser()
+    },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER],
+    validators: [
+      {
+        resolver: presenceValidator(),
+        code: ValidatorErrorCode.OUTCOME_NAME_NOT_PRESENT
+      }
+    ]
+  })
+  name: string;
+
+  /**
    * Prediction set ID.
    */
   @prop({
@@ -46,23 +64,20 @@ export class Outcome extends AdvancedSQLModel {
   public positionId: string;
 
   /**
-   * Outcome name.
+   * Img URL.
    */
   @prop({
     parser: {
       resolver: stringParser()
     },
     serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
-    populatable: [PopulateFrom.DB, PopulateFrom.USER],
-    validators: [
-      {
-        resolver: presenceValidator(),
-        code: ValidatorErrorCode.OUTCOME_NAME_NOT_PRESENT
-      }
-    ]
+    populatable: [PopulateFrom.DB, PopulateFrom.USER]
   })
-  name: string;
+  imgUrl: string;
 
+  /**
+   * Latest outcome chance.
+   */
   @prop({
     parser: { resolver: OutcomeChance },
     serializable: [SerializeFor.USER],
@@ -71,6 +86,9 @@ export class Outcome extends AdvancedSQLModel {
   })
   latestChance: OutcomeChance;
 
+  /**
+   * Outcome volume.
+   */
   @prop({
     parser: { resolver: integerParser() },
     serializable: [SerializeFor.USER],

@@ -19,6 +19,7 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
     \`consensusThreshold\` INT NULL,
     \`setStatus\` INT NOT NULL DEFAULT '${PredictionSetStatus.INITIALIZED}',
     \`tags\` TEXT NULL,
+    \`imgUrl\` VARCHAR(500) NOT NULL DEFAULT 'https://images.ignitemarket.xyz/logo.png',
     \`status\` INT NOT NULL DEFAULT '${SqlModelStatus.ACTIVE}',
     \`createTime\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     \`createUser\` INT NULL,

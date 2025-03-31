@@ -300,6 +300,18 @@ export class PredictionSet extends AdvancedSQLModel {
   tags: string;
 
   /**
+   * Img URL.
+   */
+  @prop({
+    parser: {
+      resolver: stringParser()
+    },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER]
+  })
+  imgUrl: string;
+
+  /**
    * Prediction set's outcomes virtual property definition.
    */
   @prop({
@@ -883,7 +895,8 @@ export class PredictionSet extends AdvancedSQLModel {
                   'positionId', o.positionId,
                   'chance', oc.chance,
                   'supply', oc.supply,
-                  'totalSupply', oc.totalSupply
+                  'totalSupply', oc.totalSupply,
+                  'imgUrl', o.imgUrl
                 )
                 ORDER BY o.id
               ),

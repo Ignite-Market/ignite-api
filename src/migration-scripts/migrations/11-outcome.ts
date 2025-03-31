@@ -8,6 +8,7 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
     \`name\` VARCHAR(255) NULL,
     \`outcomeIndex\` INT NOT NULL,
     \`positionId\` VARCHAR(255) NULL,
+    \`imgUrl\` VARCHAR(500) NOT NULL DEFAULT 'https://images.ignitemarket.xyz/logo.png',
     \`status\` INT NOT NULL DEFAULT '${SqlModelStatus.ACTIVE}',
     \`createTime\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     \`createUser\` INT NULL,
