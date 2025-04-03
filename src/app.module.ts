@@ -6,9 +6,10 @@ import { CommentModule } from './modules/comment/comment.module';
 import { MySQLModule } from './modules/database/mysql.module';
 import { PredictionSetModule } from './modules/prediction-set/prediction-set.module';
 import { UserModule } from './modules/user/user.module';
+import { ProposalModule } from './modules/prediction-set-proposal/proposal.module';
 
 @Module({
-  imports: [MySQLModule, UserModule, PredictionSetModule, CommentModule, BaseModule],
+  imports: [MySQLModule, UserModule, PredictionSetModule, CommentModule, BaseModule, ProposalModule],
   controllers: [],
   providers: []
 })
@@ -23,11 +24,11 @@ export class AppModule {
         { path: '/favicon.ico', method: RequestMethod.GET },
         // Auth routes:
         { path: 'users/wallet-message', method: RequestMethod.GET },
-        { path: 'users/wallet-login', method: RequestMethod.POST },
+        { path: 'users/wallet-login', method: RequestMethod.POST }
         // Public listings:
         // { path: 'prediction-sets', method: RequestMethod.GET },
         // { path: 'prediction-sets/:id', method: RequestMethod.GET },
-        { path: 'comments/prediction-sets/:id', method: RequestMethod.GET }
+        // { path: 'comments/prediction-sets/:id', method: RequestMethod.GET }
       )
       .forRoutes({ path: '*', method: RequestMethod.ALL });
   }

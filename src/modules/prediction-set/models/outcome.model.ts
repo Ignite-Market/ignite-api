@@ -71,7 +71,9 @@ export class Outcome extends AdvancedSQLModel {
       resolver: stringParser()
     },
     serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
-    populatable: [PopulateFrom.DB, PopulateFrom.USER]
+    populatable: [PopulateFrom.DB, PopulateFrom.USER],
+    defaultValue: () => 'https://images.ignitemarket.xyz/logo.png',
+    emptyValue: () => 'https://images.ignitemarket.xyz/logo.png'
   })
   imgUrl: string;
 

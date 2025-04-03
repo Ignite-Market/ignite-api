@@ -24,13 +24,16 @@ const data = {
   tags: 'github',
   predictionOutcomes: [
     {
-      name: 'Yes'
+      name: 'Yes',
+      imgUrl: 'https://images.ignitemarket.xyz/outcomes/yes.svg'
     },
     {
-      name: 'No'
+      name: 'No',
+      imgUrl: 'https://images.ignitemarket.xyz/outcomes/no.svg'
     },
     {
-      name: 'Maybe'
+      name: 'Maybe',
+      imgUrl: 'https://images.ignitemarket.xyz/outcomes/maybe.svg'
     }
   ]
 };

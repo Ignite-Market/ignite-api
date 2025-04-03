@@ -14,10 +14,11 @@ const sixHours = 6 * 60 * 60 * 1000;
 const oneWeek = 7 * 24 * 60 * 60 * 1000;
 
 const data = {
-  question: 'Bitcoin all time high by March 31?',
-  description: 'Bitcoin all time high prediction.',
-  generalResolutionDef: 'This market will resolve to "Yes" if Bitcoin reaches the all time high between December 30 and January 31.',
-  outcomeResolutionDef: `This market will resolve to "Yes" if any Binance 1 minute candle for BTCUSDT between 30 Dec '24 11:00 and 31 Jan '25 23:59 in the ET timezone has a final “high” price that is higher than any previous Binance 1 minute candle's "high" price on any prior date. Otherwise, this market will resolve to "No". The resolution source for this market is Binance, specifically the BTCUSDT "high" prices currently available at https://www.binance.com/en/trade/BTC_USDT with “1m” and “Candles” selected on the top bar. Please note that this market is about the price according to Binance BTCUSDT, not according to other sources or spot markets.`,
+  question: 'NBA: Lakers vs. Rockets',
+  description: 'Who will win the game between the Lakers and Rockets?',
+  generalResolutionDef: 'This market will resolve to the winning team based on the final score at the end of the game.',
+  outcomeResolutionDef:
+    "This market will resolve based on the official final score of the game as reported by the NBA. If the Lakers have a higher score, the market resolves to 'Lakers'. If the Rockets have a higher score, the market resolves to 'Rockets'. If the game ends in a tie and goes to overtime, the final score after overtime will determine the resolution. The official resolution source will be NBA.com or ESPN.",
   outcomePriceDef: 'The full outcome price always resolves to 100%.',
   startTime: new Date(Number(new Date())),
   endTime: new Date(Number(new Date()) + fifteenMinutes),
@@ -25,15 +26,15 @@ const data = {
   resolutionType: ResolutionType.AUTOMATIC,
   consensusThreshold: 60,
   tags: 'github',
+  imgUrl: 'https://images.ignitemarket.xyz/prediction-sets/nba.svg',
   predictionOutcomes: [
     {
-      name: 'Yes'
+      name: 'Lakers',
+      imgUrl: 'https://images.ignitemarket.xyz/outcomes/lakers.svg'
     },
     {
-      name: 'No'
-    },
-    {
-      name: 'Maybe'
+      name: 'Rockets',
+      imgUrl: 'https://images.ignitemarket.xyz/outcomes/rockets.svg'
     }
   ]
 };

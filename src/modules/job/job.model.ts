@@ -226,9 +226,6 @@ export class Job extends AdvancedSQLModel {
   }
 
   public async updateWorkerDefinition(workerDef: WorkerDefinition) {
-    console.log('workerDefworkerDefworkerDefworkerDefworkerDefworkerDefworkerDefworkerDefworkerDef');
-    console.log(workerDef);
-
     await this.populateById(workerDef.id);
     this.populate(workerDef);
     await this.update(SerializeFor.INSERT_DB);

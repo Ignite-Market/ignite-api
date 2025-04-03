@@ -201,9 +201,9 @@ export class PredictionSetService {
     const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId, conn);
     if (!predictionSet.exists() || !predictionSet.isEnabled()) {
       throw new CodeException({
-        code: SystemErrorCode.SQL_SYSTEM_ERROR,
-        errorCodes: SystemErrorCode,
-        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        code: ResourceNotFoundErrorCode.PREDICTION_SET_DOES_NOT_EXISTS,
+        errorCodes: ResourceNotFoundErrorCode,
+        status: HttpStatus.NOT_FOUND,
         sourceFunction: `${this.constructor.name}/updatePredictionSet`,
         context
       });
@@ -338,9 +338,9 @@ export class PredictionSetService {
 
     if (!predictionSet.exists() || !predictionSet.isEnabled()) {
       throw new CodeException({
-        code: SystemErrorCode.SQL_SYSTEM_ERROR,
-        errorCodes: SystemErrorCode,
-        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        code: ResourceNotFoundErrorCode.PREDICTION_SET_DOES_NOT_EXISTS,
+        errorCodes: ResourceNotFoundErrorCode,
+        status: HttpStatus.NOT_FOUND,
         sourceFunction: `${this.constructor.name}/getPredictionById`,
         context
       });
@@ -417,14 +417,20 @@ export class PredictionSetService {
     await predictionSet.update();
   }
 
+  /**
+   *
+   * @param predictionSetId
+   * @param query
+   * @param context
+   * @returns
+   */
   public async getPredictionChanceHistory(predictionSetId: number, query: PredictionSetChanceHistoryQueryFilter, context: Context) {
     const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId);
-
     if (!predictionSet.exists() || !predictionSet.isEnabled()) {
       throw new CodeException({
-        code: SystemErrorCode.SQL_SYSTEM_ERROR,
-        errorCodes: SystemErrorCode,
-        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        code: ResourceNotFoundErrorCode.PREDICTION_SET_DOES_NOT_EXISTS,
+        errorCodes: ResourceNotFoundErrorCode,
+        status: HttpStatus.NOT_FOUND,
         sourceFunction: `${this.constructor.name}/getPredictionChanceHistory`,
         context
       });
@@ -433,9 +439,14 @@ export class PredictionSetService {
     return await predictionSet.getChanceHistory(query);
   }
 
+  /**
+   *
+   * @param predictionSetId
+   * @param context
+   * @returns
+   */
   public async addUserWatchlist(predictionSetId: number, context: Context) {
     const existingWatchlist = await new UserWatchlist({}, context).populateByUserAndPredictionSetId(context.user.id, predictionSetId);
-
     if (existingWatchlist.exists()) {
       return true;
     }
@@ -450,6 +461,12 @@ export class PredictionSetService {
     return true;
   }
 
+  /**
+   *
+   * @param predictionSetId
+   * @param context
+   * @returns
+   */
   public async removeUserWatchlist(predictionSetId: number, context: Context) {
     const existingWatchlist = await new UserWatchlist({}, context).populateByUserAndPredictionSetId(context.user.id, predictionSetId);
 
@@ -460,6 +477,11 @@ export class PredictionSetService {
     return true;
   }
 
+  /**
+   *
+   * @param context
+   * @returns
+   */
   public async getBanners(context: Context) {
     return await new Banner({}, context).getActive();
   }
