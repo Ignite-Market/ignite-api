@@ -5,6 +5,7 @@ import { CodeException, ModelValidationException } from '../../lib/exceptions/ex
 import { Proposal } from './models/proposal.model';
 import { ProposalRound, ProposalRoundStatus } from './models/proposal-round.model';
 import { ProposalVote } from './models/proposal-vote.model';
+import { ProposalsQueryFilter } from './dtos/proposals-query-filter';
 
 @Injectable()
 export class ProposalService {
@@ -27,6 +28,7 @@ export class ProposalService {
     }
 
     proposal.round_id = proposalRound.id;
+    proposal.user_id = context.user.id;
     try {
       await proposal.insert(SerializeFor.INSERT_DB);
     } catch (error) {
@@ -82,6 +84,33 @@ export class ProposalService {
         sourceFunction: `${this.constructor.name}/voteOnProposal`,
         context
       });
+    }
+
+    // Check if the user has already voted on this proposal.
+    const existingVote = await new ProposalVote({}, context).getByUserIdAndProposalId(context.user.id, proposal.id);
+    if (existingVote.exists()) {
+      try {
+        // If the user has already voted on this proposal, delete the vote.
+        if (existingVote.voteType === vote.voteType) {
+          await existingVote.delete();
+          return existingVote.serialize(SerializeFor.USER);
+        }
+
+        // If the user changed their vote, update the vote.
+        existingVote.voteType = vote.voteType;
+        await existingVote.update();
+
+        return existingVote.serialize(SerializeFor.USER);
+      } catch (error) {
+        throw new CodeException({
+          code: SystemErrorCode.SQL_SYSTEM_ERROR,
+          errorCodes: SystemErrorCode,
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          sourceFunction: `${this.constructor.name}/voteOnProposal`,
+          details: error,
+          context
+        });
+      }
     }
 
     vote.proposal_id = proposal.id;
@@ -155,7 +184,7 @@ export class ProposalService {
    * @param context Application context.
    * @returns Prediction group.
    */
-  public async getPredictionsSetProposals(query: any, context: Context) {
+  public async getProposals(query: ProposalsQueryFilter, context: Context) {
     return await new Proposal({}, context).getList(query);
   }
 
@@ -190,5 +219,27 @@ export class ProposalService {
     }
 
     return proposal.serialize(SerializeFor.USER);
+  }
+
+  /**
+   * Get prediction set proposal round by ID.
+   *
+   * @param id Prediction set proposal round ID.
+   * @param context Application context.
+   * @returns prediction set proposal.
+   */
+  public async getProposalRoundById(id: number, context: Context) {
+    const round = await new ProposalRound({}, context).populateById(id);
+    if (!round.exists() || !round.isEnabled()) {
+      throw new CodeException({
+        code: ResourceNotFoundErrorCode.PREDICTION_SET_PROPOSAL_ROUND_DOES_NOT_EXISTS,
+        errorCodes: ResourceNotFoundErrorCode,
+        status: HttpStatus.NOT_FOUND,
+        sourceFunction: `${this.constructor.name}/getProposalRoundById`,
+        context
+      });
+    }
+
+    return round.serialize(SerializeFor.USER);
   }
 }

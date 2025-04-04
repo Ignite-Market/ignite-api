@@ -1,15 +1,16 @@
 import { prop } from '@rawmodel/core';
 import { integerParser } from '@rawmodel/parsers';
-import { DbTables, PopulateFrom, SerializeFor, ValidatorErrorCode } from '../../../config/types';
+import { DbTables, PopulateFrom, SerializeFor, SqlModelStatus, ValidatorErrorCode } from '../../../config/types';
 import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
 import { enumInclusionValidator } from '../../../lib/validators';
+import { PoolConnection } from 'mysql2/promise';
 
 /**
  * Proposal vote type.
  */
 export enum ProposalVoteType {
   UPVOTE = 1,
-  DOWNVOTE = 2
+  DOWNVOTE = -1
 }
 
 /**
@@ -60,4 +61,30 @@ export class ProposalVote extends AdvancedSQLModel {
     defaultValue: () => ProposalVoteType.UPVOTE
   })
   public voteType: number;
+
+  /**
+   * Get vote by user and proposal and type.
+   * @param userId - User ID.
+   * @param proposalId - Proposal ID.
+   * @returns Vote.
+   */
+  public async getByUserIdAndProposalId(userId: number, proposalId: number, conn?: PoolConnection, forUpdate = false) {
+    const data = await this.getContext().mysql.paramExecute(
+      `
+          SELECT *
+          FROM \`${this.tableName}\`
+          WHERE status <> ${SqlModelStatus.DELETED}
+            AND user_id = @userId
+            AND proposal_id = @proposalId
+          ${conn && forUpdate ? 'FOR UPDATE' : ''};
+          `,
+      {
+        userId,
+        proposalId
+      },
+      conn
+    );
+
+    return data?.length ? this.populate(data[0], PopulateFrom.DB) : this.reset();
+  }
 }

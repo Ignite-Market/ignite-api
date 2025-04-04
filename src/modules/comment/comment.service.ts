@@ -110,7 +110,6 @@ export class CommentService {
     }
 
     comment.content = data.content;
-
     try {
       await comment.validate();
     } catch (error) {

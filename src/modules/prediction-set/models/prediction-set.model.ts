@@ -887,23 +887,23 @@ export class PredictionSet extends AdvancedSQLModel {
           ${new PredictionSet({}).generateSelectFields('p')},
           CONCAT(
             '[',
-            COALESCE(
-              GROUP_CONCAT(
-                DISTINCT
-                JSON_OBJECT(
-                  'id', o.id,
-                  'name', o.name,
-                  'outcomeIndex', o.outcomeIndex,
-                  'positionId', o.positionId,
-                  'chance', oc.chance,
-                  'supply', oc.supply,
-                  'totalSupply', oc.totalSupply,
-                  'imgUrl', o.imgUrl
-                )
-                ORDER BY o.id
+              COALESCE(
+                GROUP_CONCAT(
+                  DISTINCT
+                  JSON_OBJECT(
+                    'id', o.id,
+                    'name', o.name,
+                    'outcomeIndex', o.outcomeIndex,
+                    'positionId', o.positionId,
+                    'chance', oc.chance,
+                    'supply', oc.supply,
+                    'totalSupply', oc.totalSupply,
+                    'imgUrl', o.imgUrl
+                  )
+                  ORDER BY o.id
+                ),
+                ''
               ),
-              ''
-            ),
             ']'
           ) AS outcomes,
         IF(uw.id IS NOT NULL, 1, 0) AS isWatched

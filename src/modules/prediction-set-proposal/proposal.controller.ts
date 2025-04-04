@@ -10,6 +10,7 @@ import { Proposal } from './models/proposal.model';
 import { ProposalService } from './proposal.service';
 import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
 import { ProposalVote } from './models/proposal-vote.model';
+import { ProposalsQueryFilter } from './dtos/proposals-query-filter';
 
 @Controller('proposals')
 export class ProposalController {
@@ -23,10 +24,10 @@ export class ProposalController {
   }
 
   @Get('')
-  @Validation({ dto: BaseQueryFilter, validateFor: ValidateFor.QUERY })
+  @Validation({ dto: ProposalsQueryFilter, validateFor: ValidateFor.QUERY })
   @UseGuards(ValidationGuard)
   async getProposals(@Query() query: any, @Ctx() context: Context) {
-    return await this.proposalsService.getPredictionsSetProposals(query, context);
+    return await this.proposalsService.getProposals(query, context);
   }
 
   @Get('/rounds')
@@ -34,6 +35,11 @@ export class ProposalController {
   @UseGuards(ValidationGuard)
   async getProposalRounds(@Query() query: any, @Ctx() context: Context) {
     return await this.proposalsService.getProposalRounds(query, context);
+  }
+
+  @Get('/rounds/:id')
+  async getProposalRoundById(@Param('id', ParseIntPipe) id: number, @Ctx() context: Context) {
+    return await this.proposalsService.getProposalRoundById(id, context);
   }
 
   @Get('/:id')

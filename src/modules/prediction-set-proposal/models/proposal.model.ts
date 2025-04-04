@@ -4,7 +4,7 @@ import { presenceValidator } from '@rawmodel/validators';
 import { DbTables, PopulateFrom, SerializeFor, SqlModelStatus, ValidatorErrorCode } from '../../../config/types';
 import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
 import { getQueryParams, selectAndCountQuery } from '../../../lib/database/sql-utils';
-import { BaseQueryFilter } from '../../../lib/base-models/base-query-filter.model';
+import { ProposalsQueryFilter } from '../dtos/proposals-query-filter';
 
 /**
  * Prediction set proposal model.
@@ -16,7 +16,7 @@ export class Proposal extends AdvancedSQLModel {
   public tableName = DbTables.PROPOSAL;
 
   /**
-   * Round ID - Proposal round  ID.
+   * Round ID.
    */
   @prop({
     parser: { resolver: integerParser() },
@@ -24,6 +24,16 @@ export class Proposal extends AdvancedSQLModel {
     serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
   })
   public round_id: number;
+
+  /**
+   * User ID.
+   */
+  @prop({
+    parser: { resolver: integerParser() },
+    populatable: [PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
+  })
+  public user_id: number;
 
   /**
    * Question - Proposal question.
@@ -85,7 +95,7 @@ export class Proposal extends AdvancedSQLModel {
    * @param query Filtering query.
    * @returns List of proposals.
    */
-  async getList(query: BaseQueryFilter): Promise<any> {
+  async getList(query: ProposalsQueryFilter): Promise<any> {
     const defaultParams = {
       id: null
     };
@@ -98,11 +108,45 @@ export class Proposal extends AdvancedSQLModel {
     const { params, filters } = getQueryParams(defaultParams, 'p', fieldMap, query.serialize());
     const sqlQuery = {
       qSelect: `
-        SELECT p.*
+        SELECT
+          ${this.generateSelectFields('p')},
+          COALESCE(SUM(pv.voteType), 0) AS totalVotes,
+          u.username,
+          u.walletAddress AS userWallet,
+          CONCAT(
+          '[',
+            IF(
+              COUNT(pv.id) = 0,
+              '',
+              GROUP_CONCAT(
+                DISTINCT JSON_OBJECT(
+                  'id', pv.id,
+                  'user_id', pv.user_id,
+                  'proposal_id', pv.proposal_id,
+                  'voteType', pv.voteType
+                )
+                ORDER BY pv.id
+              )
+            ),
+          ']'
+        ) AS votes
         `,
       qFrom: `
         FROM ${DbTables.PROPOSAL} p
+        LEFT JOIN ${DbTables.PROPOSAL_VOTE} pv
+          ON pv.proposal_id = p.id
+        INNER JOIN ${DbTables.USER} u
+          ON p.user_id = u.id
         WHERE p.status <> ${SqlModelStatus.DELETED}
+          AND (@search IS NULL
+            OR p.question LIKE CONCAT('%', @search, '%')
+          )
+          AND (@roundId IS NULL
+            OR p.round_id = @roundId
+          )
+          AND (@proposalId IS NULL
+            OR p.id = @proposalId
+          )
         `,
       qGroup: `
         GROUP BY p.id
@@ -113,6 +157,11 @@ export class Proposal extends AdvancedSQLModel {
       `
     };
 
-    return await selectAndCountQuery(this.getContext().mysql, sqlQuery, params, 'p.id');
+    const res = await selectAndCountQuery(this.getContext().mysql, sqlQuery, params, 'p.id');
+    if (res.items.length) {
+      res.items = res.items.map((i: any) => ({ ...i, votes: JSON.parse(i.votes) }));
+    }
+
+    return res;
   }
 }

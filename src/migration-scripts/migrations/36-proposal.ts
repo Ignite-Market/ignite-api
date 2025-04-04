@@ -5,6 +5,7 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
   CREATE TABLE IF NOT EXISTS \`${DbTables.PROPOSAL}\` (
     \`id\` INT NOT NULL AUTO_INCREMENT,
     \`round_id\` INT NOT NULL,
+    \`user_id\` INT NOT NULL,
     \`question\` VARCHAR(255),
     \`generalResolutionDef\` TEXT,
     \`outcomeResolutionDef\` TEXT,
