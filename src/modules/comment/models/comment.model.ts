@@ -4,7 +4,16 @@ import { presenceValidator } from '@rawmodel/validators';
 import { DbTables, PopulateFrom, SerializeFor, SqlModelStatus, ValidatorErrorCode } from '../../../config/types';
 import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
 import { getQueryParams, selectAndCountQuery } from '../../../lib/database/sql-utils';
-import { BaseQueryFilter } from '../../../lib/base-models/base-query-filter.model';
+import { enumInclusionValidator } from '../../../lib/validators';
+import { CommentsQueryFilter } from '../dtos/comments-query-filter';
+
+/**
+ * Comment entity types.
+ */
+export enum CommentEntityTypes {
+  PREDICTION_SET = 1,
+  PROPOSAL = 2
+}
 
 /**
  * Default content of the deleted content.
@@ -21,7 +30,7 @@ export class Comment extends AdvancedSQLModel {
   public tableName = DbTables.COMMENT;
 
   /**
-   * Prediction set ID.
+   * Entity ID (e.g. prediction set ID, proposal ID, etc.)
    */
   @prop({
     parser: { resolver: integerParser() },
@@ -30,11 +39,31 @@ export class Comment extends AdvancedSQLModel {
     validators: [
       {
         resolver: presenceValidator(),
-        code: ValidatorErrorCode.COMMENT_PREDICTION_SET_ID_NOT_PRESENT
+        code: ValidatorErrorCode.COMMENT_ENTITY_ID_NOT_PRESENT
       }
     ]
   })
-  public prediction_set_id: number;
+  public entity_id: number;
+
+  /**
+   * Entity type (e.g. prediction set, proposal, etc.)
+   */
+  @prop({
+    parser: { resolver: integerParser() },
+    populatable: [PopulateFrom.DB, PopulateFrom.USER],
+    serializable: [SerializeFor.USER, SerializeFor.INSERT_DB, SerializeFor.SELECT_DB],
+    validators: [
+      {
+        resolver: presenceValidator(),
+        code: ValidatorErrorCode.COMMENT_ENTITY_TYPE_NOT_PRESENT
+      },
+      {
+        resolver: enumInclusionValidator(CommentEntityTypes),
+        code: ValidatorErrorCode.COMMENT_ENTITY_TYPE_NOT_VALID
+      }
+    ]
+  })
+  public entityType: number;
 
   /**
    * User ID.
@@ -89,9 +118,9 @@ export class Comment extends AdvancedSQLModel {
   public content: string;
 
   /**
-   * Gets all comments for a prediction set with one level of replies.
+   * Gets all comments for an entity with one level of replies.
    */
-  async getList(predictionSetId: number, query: BaseQueryFilter): Promise<any> {
+  async getList(query: CommentsQueryFilter): Promise<any> {
     const defaultParams = {
       id: null
     };
@@ -101,7 +130,7 @@ export class Comment extends AdvancedSQLModel {
       id: 'c.id'
     };
 
-    const { params, filters } = getQueryParams(defaultParams, 'p', fieldMap, { predictionSetId, ...query.serialize() });
+    const { params, filters } = getQueryParams(defaultParams, 'p', fieldMap, query.serialize());
 
     const sqlQuery = {
       qSelect: `
@@ -148,7 +177,8 @@ export class Comment extends AdvancedSQLModel {
           ON ru.id = r.user_id
         LEFT JOIN ${DbTables.USER} replyTaggedUser
           ON replyTaggedUser.id = r.reply_user_id
-        WHERE c.prediction_set_id = @predictionSetId
+        WHERE c.entity_id = @entityId
+          AND c.entityType = @entityType
           AND c.parent_comment_id IS NULL
         `,
       qGroup: `

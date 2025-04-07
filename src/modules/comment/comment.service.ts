@@ -1,9 +1,4 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { Comment, DELETED_COMMENT_CONTENT } from './models/comment.model';
-import { Context } from '../../context';
-import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
-import { CommentCreateDto } from './dtos/comment-create.dto';
-import { CommentUpdateDto } from './dtos/comment-update.dto';
 import {
   AuthorizationErrorCode,
   DefaultUserRole,
@@ -12,9 +7,15 @@ import {
   SqlModelStatus,
   ValidatorErrorCode
 } from '../../config/types';
+import { Context } from '../../context';
 import { CodeException, ValidationException } from '../../lib/exceptions/exceptions';
+import { Proposal } from '../prediction-set-proposal/models/proposal.model';
 import { PredictionSet } from '../prediction-set/models/prediction-set.model';
 import { User } from '../user/models/user.model';
+import { CommentCreateDto } from './dtos/comment-create.dto';
+import { CommentUpdateDto } from './dtos/comment-update.dto';
+import { CommentsQueryFilter } from './dtos/comments-query-filter';
+import { Comment, CommentEntityTypes, DELETED_COMMENT_CONTENT } from './models/comment.model';
 
 @Injectable()
 export class CommentService {
@@ -40,15 +41,32 @@ export class CommentService {
       }
     }
 
-    const predictionSet = await new PredictionSet({}, context).populateById(comment.prediction_set_id);
-    if (!predictionSet.exists() || !predictionSet.isEnabled()) {
-      throw new CodeException({
-        code: ResourceNotFoundErrorCode.PREDICTION_SET_DOES_NOT_EXISTS,
-        errorCodes: ResourceNotFoundErrorCode,
-        status: HttpStatus.NOT_FOUND,
-        sourceFunction: `${this.constructor.name}/createComment`,
-        context
-      });
+    switch (comment.entityType) {
+      case CommentEntityTypes.PREDICTION_SET:
+        const predictionSet = await new PredictionSet({}, context).populateById(comment.entity_id);
+        if (!predictionSet.exists() || !predictionSet.isEnabled()) {
+          throw new CodeException({
+            code: ResourceNotFoundErrorCode.PREDICTION_SET_DOES_NOT_EXISTS,
+            errorCodes: ResourceNotFoundErrorCode,
+            status: HttpStatus.NOT_FOUND,
+            sourceFunction: `${this.constructor.name}/createComment`,
+            context
+          });
+        }
+        break;
+
+      case CommentEntityTypes.PROPOSAL:
+        const proposal = await new Proposal({}, context).populateById(comment.entity_id);
+        if (!proposal.exists() || !proposal.isEnabled()) {
+          throw new CodeException({
+            code: ResourceNotFoundErrorCode.PREDICTION_SET_PROPOSAL_DOES_NOT_EXISTS,
+            errorCodes: ResourceNotFoundErrorCode,
+            status: HttpStatus.NOT_FOUND,
+            sourceFunction: `${this.constructor.name}/createComment`,
+            context
+          });
+        }
+        break;
     }
 
     try {
@@ -77,10 +95,10 @@ export class CommentService {
   }
 
   /**
-   * Gets all comments for a prediction set.
+   * Gets all comments for an entity.
    */
-  async getCommentsByPredictionSetId(predictionSetId: number, query: BaseQueryFilter, context: Context): Promise<Comment[]> {
-    return await new Comment({}, context).getList(predictionSetId, query);
+  async getComments(query: CommentsQueryFilter, context: Context): Promise<Comment[]> {
+    return await new Comment({}, context).getList(query);
   }
 
   /**

@@ -3,9 +3,7 @@ import { DbTables } from '../../config/types';
 export async function upgrade(queryFn: (query: string, values?: any[]) => Promise<any[]>): Promise<void> {
   await queryFn(`
     ALTER TABLE \`${DbTables.COMMENT}\`
-    ADD CONSTRAINT \`fk_comment__prediction_set\` 
-      FOREIGN KEY (\`prediction_set_id\`) 
-      REFERENCES \`${DbTables.PREDICTION_SET}\` (\`id\`),
+    ADD INDEX \`idx_comment_entity\` (\`entity_type\`, \`entity_id\`);
     ADD CONSTRAINT \`fk_comment__parent_comment\` 
       FOREIGN KEY (\`parent_comment_id\`) 
       REFERENCES \`${DbTables.COMMENT}\` (\`id\`)
@@ -23,9 +21,9 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
 
 export async function downgrade(queryFn: (query: string, values?: any[]) => Promise<any[]>): Promise<void> {
   await queryFn(`
-    ALTER TABLE \`${DbTables.COMMENT}\`
-    DROP FOREIGN KEY \`fk_comment__prediction_set\`,
-    DROP FOREIGN KEY \`fk_comment__prediction_set\`,
+    ALTER TABLE \`${DbTables.COMMENT}\
+    DROP INDEX \`idx_comment_entity\`,
+    DROP FOREIGN KEY \`fk_comment__parent_comment\`,
     DROP FOREIGN KEY \`reply_user_id\`,
     DROP FOREIGN KEY \`fk_comment__user\`;
   `);
