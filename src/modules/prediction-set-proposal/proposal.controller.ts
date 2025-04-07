@@ -1,16 +1,15 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { DefaultUserRole, SerializeFor, ValidateFor } from '../../config/types';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { SerializeFor, ValidateFor } from '../../config/types';
 import { Context } from '../../context';
 import { Ctx } from '../../decorators/context.decorator';
-import { Roles } from '../../decorators/role.decorator';
 import { Validation } from '../../decorators/validation.decorator';
 import { AuthGuard } from '../../guards/auth.guard';
 import { ValidationGuard } from '../../guards/validation.guard';
+import { ProposalsQueryFilter } from './dtos/proposals-query-filter';
+import { ProposalRoundsQueryFilter } from './dtos/proposals-query-filter copy';
+import { ProposalVote } from './models/proposal-vote.model';
 import { Proposal } from './models/proposal.model';
 import { ProposalService } from './proposal.service';
-import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
-import { ProposalVote } from './models/proposal-vote.model';
-import { ProposalsQueryFilter } from './dtos/proposals-query-filter';
 
 @Controller('proposals')
 export class ProposalController {
@@ -31,9 +30,9 @@ export class ProposalController {
   }
 
   @Get('/rounds')
-  @Validation({ dto: BaseQueryFilter, validateFor: ValidateFor.QUERY })
+  @Validation({ dto: ProposalRoundsQueryFilter, validateFor: ValidateFor.QUERY })
   @UseGuards(ValidationGuard)
-  async getProposalRounds(@Query() query: any, @Ctx() context: Context) {
+  async getProposalRounds(@Query() query: ProposalRoundsQueryFilter, @Ctx() context: Context) {
     return await this.proposalsService.getProposalRounds(query, context);
   }
 

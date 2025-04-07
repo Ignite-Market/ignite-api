@@ -7,6 +7,7 @@ import { enumInclusionValidator } from '../../../lib/validators';
 import { BaseQueryFilter } from '../../../lib/base-models/base-query-filter.model';
 import { getQueryParams, selectAndCountQuery } from '../../../lib/database/sql-utils';
 import { PoolConnection } from 'mysql2/promise';
+import { ProposalRoundsQueryFilter } from '../dtos/proposals-query-filter copy';
 
 /**
  * Proposal round status.
@@ -92,6 +93,15 @@ export class ProposalRound extends AdvancedSQLModel {
   public roundStatus: ProposalRoundStatus;
 
   /**
+   * Proposal round winner ID.
+   */
+  @prop({
+    parser: { resolver: integerParser() },
+    populatable: [PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB]
+  })
+  public winner_id: number;
+  /**
    * Get active proposal round.
    *
    * @param conn Pool connection.
@@ -121,7 +131,7 @@ export class ProposalRound extends AdvancedSQLModel {
    * @param query
    * @returns
    */
-  async getList(query: BaseQueryFilter): Promise<any> {
+  async getList(query: ProposalRoundsQueryFilter): Promise<any> {
     const defaultParams = {
       id: null
     };
@@ -135,12 +145,28 @@ export class ProposalRound extends AdvancedSQLModel {
 
     const sqlQuery = {
       qSelect: `
-        SELECT pr.*
+        SELECT 
+          pr.*,
+          JSON_OBJECT(
+            'id', p.id,
+            'createTime', p.createTime,
+            'question', p.question,
+            'user_id', u.id,
+            'username', u.username,
+            'userWallet', u.walletAddress
+          ) AS winner
         `,
       qFrom: `
         FROM ${DbTables.PROPOSAL_ROUND} pr
+        LEFT JOIN ${DbTables.PROPOSAL} p
+          ON p.id = pr.winner_id
+        LEFT JOIN ${DbTables.USER} u
+          ON u.id = p.user_id
         WHERE pr.status <> ${SqlModelStatus.DELETED}
           AND pr.roundStatus <> ${ProposalRoundStatus.INITIALIZED}
+          AND (@roundId IS NULL
+            OR pr.id = @roundId
+          )
         `,
       qGroup: `
         GROUP BY pr.id

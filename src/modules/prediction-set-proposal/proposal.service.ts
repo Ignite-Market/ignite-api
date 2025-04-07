@@ -6,6 +6,7 @@ import { Proposal } from './models/proposal.model';
 import { ProposalRound, ProposalRoundStatus } from './models/proposal-round.model';
 import { ProposalVote } from './models/proposal-vote.model';
 import { ProposalsQueryFilter } from './dtos/proposals-query-filter';
+import { ProposalRoundsQueryFilter } from './dtos/proposals-query-filter copy';
 
 @Injectable()
 export class ProposalService {
@@ -195,7 +196,7 @@ export class ProposalService {
    * @param context Application context.
    * @returns Prediction set proposal rounds.
    */
-  public async getProposalRounds(query: any, context: Context) {
+  public async getProposalRounds(query: ProposalRoundsQueryFilter, context: Context) {
     return await new ProposalRound({}, context).getList(query);
   }
 

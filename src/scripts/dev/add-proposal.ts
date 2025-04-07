@@ -1,9 +1,8 @@
-import { ProposalRound, ProposalRoundStatus } from '../../modules/prediction-set-proposal/models/proposal-round.model';
 import { Proposal } from '../../modules/prediction-set-proposal/models/proposal.model';
 import { createContext } from './context';
 
 const data = {
-  round_id: 3,
+  round_id: 2,
   user_id: 1,
   question: 'Bitcoin all time high by March 31?',
   generalResolutionDef: ` Solana has been working on improving its transaction throughput, and they claim they can handle
@@ -19,7 +18,9 @@ const processPredictionSet = async () => {
   const context = await createContext();
 
   try {
-    await new Proposal(data, context).insert();
+    for (let i = 0; i < 100; i++) {
+      await new Proposal(data, context).insert();
+    }
   } catch (error) {
     console.log(error);
   }

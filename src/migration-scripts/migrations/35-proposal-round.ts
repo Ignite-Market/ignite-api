@@ -9,6 +9,7 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
     \`startTime\` DATETIME NOT NULL,
     \`endTime\` DATETIME NOT NULL,
     \`roundStatus\` INT NOT NULL DEFAULT '${ProposalRoundStatus.INITIALIZED}',
+    \`winner_id\` INT NULL,
     \`status\` INT NOT NULL DEFAULT '${SqlModelStatus.ACTIVE}',
     \`createTime\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     \`createUser\` INT NULL,

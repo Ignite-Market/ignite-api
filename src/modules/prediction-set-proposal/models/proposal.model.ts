@@ -102,7 +102,8 @@ export class Proposal extends AdvancedSQLModel {
 
     // Map URL query with SQL fields.
     const fieldMap = {
-      id: 'p.id'
+      id: 'p.id',
+      totalVotes: 'COALESCE(SUM(pv.voteType), 0)'
     };
 
     const { params, filters } = getQueryParams(defaultParams, 'p', fieldMap, query.serialize());
