@@ -1,10 +1,11 @@
 import { prop } from '@rawmodel/core';
 import { integerParser, stringParser } from '@rawmodel/parsers';
-import { presenceValidator } from '@rawmodel/validators';
+import { arrayLengthValidator, presenceValidator } from '@rawmodel/validators';
 import { DbTables, PopulateFrom, SerializeFor, SqlModelStatus, ValidatorErrorCode } from '../../../config/types';
 import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
 import { getQueryParams, selectAndCountQuery } from '../../../lib/database/sql-utils';
 import { ProposalsQueryFilter } from '../dtos/proposals-query-filter';
+import { CONSTANT_ARRAY_DEFAULT_DELIMITER, ConstantArray } from '../../../decorators/constant-array.decorator';
 
 /**
  * Prediction set proposal model.
@@ -72,22 +73,27 @@ export class Proposal extends AdvancedSQLModel {
   public generalResolutionDef: string;
 
   /**
-   * Outcome resolution definition - Proposal outcome resolution definition.
+   * Outcomes definition - Proposal outcomes definition.
    */
+  @ConstantArray()
   @prop({
-    parser: {
-      resolver: stringParser()
-    },
+    parser: { resolver: stringParser(), array: true },
     serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
     populatable: [PopulateFrom.DB, PopulateFrom.USER],
+    setter(v) {
+      if (Array.isArray(v) && v.length === 1) {
+        return v[0].split(CONSTANT_ARRAY_DEFAULT_DELIMITER);
+      }
+      return v;
+    },
     validators: [
       {
-        resolver: presenceValidator(),
+        resolver: arrayLengthValidator({ minOrEqual: 2 }),
         code: ValidatorErrorCode.PROPOSAL_OUTCOME_RESOLUTION_NOT_PRESENT
       }
     ]
   })
-  public outcomeResolutionDef: string;
+  public outcomes: string[];
 
   /**
    * Get list of proposals.
@@ -160,7 +166,11 @@ export class Proposal extends AdvancedSQLModel {
 
     const res = await selectAndCountQuery(this.getContext().mysql, sqlQuery, params, 'p.id');
     if (res.items.length) {
-      res.items = res.items.map((i: any) => ({ ...i, votes: JSON.parse(i.votes) }));
+      res.items = res.items.map((i: any) => ({
+        ...i,
+        votes: JSON.parse(i.votes),
+        outcomes: i.outcomes.split(CONSTANT_ARRAY_DEFAULT_DELIMITER)
+      }));
     }
 
     return res;

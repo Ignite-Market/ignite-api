@@ -19,7 +19,7 @@ export class ProposalController {
   @Validation({ dto: Proposal })
   @UseGuards(ValidationGuard, AuthGuard)
   async createProposal(@Body() proposal: Proposal, @Ctx() context: Context) {
-    return (await this.proposalsService.createProposal(proposal, context)).serialize(SerializeFor.USER);
+    return await this.proposalsService.createProposal(proposal, context);
   }
 
   @Get('')

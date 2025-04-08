@@ -1,8 +1,10 @@
 import { prop } from '@rawmodel/core';
-import { PopulateFrom, SerializeFor } from '../../config/types';
+import { isUndefined } from '@rawmodel/utils';
 import { PoolConnection } from 'mysql2/promise';
-import { BaseDBModel } from './base-db.model';
+import { PopulateFrom, SerializeFor } from '../../config/types';
+import { CONSTANT_ARRAY_OPTIONS_KEY, IConstantArrayOptions } from '../../decorators/constant-array.decorator';
 import { MySql } from '../database/mysql';
+import { BaseDBModel } from './base-db.model';
 
 /**
  * Common model related objects.
@@ -13,6 +15,31 @@ export { prop };
  * Base SQL model.
  */
 export abstract class BaseSQLModel extends BaseDBModel {
+  /**
+   * Serialize function overwrite - Converts this class into serialized data object.
+   *
+   * @param strategy Serialization strategy name.
+   */
+  public serialize(strategy?: string): { [key: string]: any } {
+    const dbMutationStrategies: string[] = [SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB];
+    const data = {};
+
+    Object.keys(this.__props).forEach((key) => {
+      let value = this.__props[key].serialize(strategy);
+      if (!isUndefined(value)) {
+        // Constant array saving. TODO: use on populate also.
+        const constantArrayOptions: IConstantArrayOptions = Reflect.getMetadata(CONSTANT_ARRAY_OPTIONS_KEY, this, key);
+        if (Array.isArray(value) && constantArrayOptions && dbMutationStrategies.includes(strategy)) {
+          value = value.join(constantArrayOptions.delimiter) || null;
+        }
+
+        data[key] = value;
+      }
+    });
+
+    return data;
+  }
+
   /**
    *
    * @param strategy
