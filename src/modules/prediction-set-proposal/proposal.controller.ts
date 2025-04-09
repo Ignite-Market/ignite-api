@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { SerializeFor, ValidateFor } from '../../config/types';
 import { Context } from '../../context';
 import { Ctx } from '../../decorators/context.decorator';
@@ -60,9 +60,9 @@ export class ProposalController {
     return await this.proposalsService.voteOnProposal(proposalId, proposalVote, context);
   }
 
-  // @Delete('/:id')
-  // @UseGuards(AuthGuard)
-  // async deletePredictionSet(@Param('id', ParseIntPipe) id: number, @Ctx() context: Context) {
-  //   return await this.proposalsService.deletePredictionSet(id, context);
-  // }
+  @Delete('/:id')
+  @UseGuards(AuthGuard)
+  async deleteProposal(@Param('id', ParseIntPipe) id: number, @Ctx() context: Context) {
+    return await this.proposalsService.deleteProposal(id, context);
+  }
 }

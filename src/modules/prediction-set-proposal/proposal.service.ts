@@ -1,5 +1,13 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { BadRequestErrorCode, PopulateFrom, ResourceNotFoundErrorCode, SerializeFor, SystemErrorCode, ValidatorErrorCode } from '../../config/types';
+import {
+  AuthorizationErrorCode,
+  BadRequestErrorCode,
+  PopulateFrom,
+  ResourceNotFoundErrorCode,
+  SerializeFor,
+  SystemErrorCode,
+  ValidatorErrorCode
+} from '../../config/types';
 import { Context } from '../../context';
 import { CodeException, ModelValidationException } from '../../lib/exceptions/exceptions';
 import { Proposal } from './models/proposal.model';
@@ -87,6 +95,17 @@ export class ProposalService {
       });
     }
 
+    // User's cannot vote on their own proposals.
+    if (context.user.id === proposal.user_id) {
+      throw new CodeException({
+        code: BadRequestErrorCode.PROPOSAL_AUTHOR_CANNOT_VOTE,
+        errorCodes: BadRequestErrorCode,
+        status: HttpStatus.BAD_REQUEST,
+        sourceFunction: `${this.constructor.name}/voteOnProposal`,
+        context
+      });
+    }
+
     // Check if the user has already voted on this proposal.
     const existingVote = await new ProposalVote({}, context).getByUserIdAndProposalId(context.user.id, proposal.id);
     if (existingVote.exists()) {
@@ -146,6 +165,17 @@ export class ProposalService {
         code: ResourceNotFoundErrorCode.PREDICTION_SET_PROPOSAL_DOES_NOT_EXISTS,
         errorCodes: ResourceNotFoundErrorCode,
         status: HttpStatus.NOT_FOUND,
+        sourceFunction: `${this.constructor.name}/updateProposal`,
+        context
+      });
+    }
+
+    // User can only edit his own proposal.
+    if (proposal.user_id !== context.user.id) {
+      throw new CodeException({
+        code: AuthorizationErrorCode.OWNERSHIP_MISMATCH,
+        errorCodes: AuthorizationErrorCode,
+        status: HttpStatus.FORBIDDEN,
         sourceFunction: `${this.constructor.name}/updateProposal`,
         context
       });
@@ -215,6 +245,52 @@ export class ProposalService {
         errorCodes: ResourceNotFoundErrorCode,
         status: HttpStatus.NOT_FOUND,
         sourceFunction: `${this.constructor.name}/getProposalById`,
+        context
+      });
+    }
+
+    return proposal.serialize(SerializeFor.USER);
+  }
+
+  /**
+   * Deletes prediction set proposal by ID.
+   *
+   * @param id prediction set proposal ID.
+   * @param context Application context.
+   * @returns Deleted proposal.
+   */
+  public async deleteProposal(id: number, context: Context) {
+    const proposal = await new Proposal({}, context).populateById(id);
+    if (!proposal.exists() || !proposal.isEnabled()) {
+      throw new CodeException({
+        code: ResourceNotFoundErrorCode.PREDICTION_SET_PROPOSAL_DOES_NOT_EXISTS,
+        errorCodes: ResourceNotFoundErrorCode,
+        status: HttpStatus.NOT_FOUND,
+        sourceFunction: `${this.constructor.name}/deleteProposal`,
+        context
+      });
+    }
+
+    // User can only delete his own proposal.
+    if (proposal.user_id !== context.user.id) {
+      throw new CodeException({
+        code: AuthorizationErrorCode.OWNERSHIP_MISMATCH,
+        errorCodes: AuthorizationErrorCode,
+        status: HttpStatus.FORBIDDEN,
+        sourceFunction: `${this.constructor.name}/deleteProposal`,
+        context
+      });
+    }
+
+    try {
+      await proposal.markDeleted();
+    } catch (error) {
+      throw new CodeException({
+        code: SystemErrorCode.SQL_SYSTEM_ERROR,
+        errorCodes: SystemErrorCode,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        sourceFunction: `${this.constructor.name}/deleteProposal`,
+        details: error,
         context
       });
     }
