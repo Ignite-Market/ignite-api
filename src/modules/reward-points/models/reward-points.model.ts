@@ -124,7 +124,6 @@ export class RewardPoints extends AdvancedSQLModel {
     };
 
     const { params, filters } = getQueryParams(defaultParams, 'rp', fieldMap, query.serialize());
-
     const sqlQuery = {
       qSelect: `
         SELECT 
@@ -138,7 +137,7 @@ export class RewardPoints extends AdvancedSQLModel {
         GROUP BY rp.id
       `,
       qFilter: `
-        ORDER BY ${filters.orderStr}
+        ORDER BY ${filters.orderStr || 'rp.value ASC'}
         LIMIT ${filters.limit} OFFSET ${filters.offset};
       `
     };

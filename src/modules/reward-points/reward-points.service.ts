@@ -62,4 +62,14 @@ export class RewardPointsService {
 
     return transaction;
   }
+
+  /**
+   * Get user reward points.
+   * @param userId User ID.
+   * @param context Context.
+   * @returns User reward points.
+   */
+  public static async getUserRewardPoints(userId: number, context: Context): Promise<number> {
+    return await new RewardPointsTransaction({}, context).getUserPoints(userId);
+  }
 }

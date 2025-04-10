@@ -5,11 +5,12 @@ import { BaseModule } from './modules/base/base.module';
 import { CommentModule } from './modules/comment/comment.module';
 import { MySQLModule } from './modules/database/mysql.module';
 import { PredictionSetModule } from './modules/prediction-set/prediction-set.module';
-import { UserModule } from './modules/user/user.module';
 import { ProposalModule } from './modules/proposal/proposal.module';
+import { RewardPointsModule } from './modules/reward-points/reward-points.module';
+import { UserModule } from './modules/user/user.module';
 
 @Module({
-  imports: [MySQLModule, UserModule, PredictionSetModule, CommentModule, BaseModule, ProposalModule],
+  imports: [MySQLModule, UserModule, PredictionSetModule, CommentModule, BaseModule, ProposalModule, RewardPointsModule],
   controllers: [],
   providers: []
 })

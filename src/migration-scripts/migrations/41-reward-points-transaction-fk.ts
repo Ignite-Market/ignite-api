@@ -14,12 +14,12 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
         FOREIGN KEY (\`user_id\`)
         REFERENCES \`${DbTables.USER}\` (\`id\`)
         ON DELETE NO ACTION
-        ON DELETE NO ACTION,
+        ON UPDATE NO ACTION,
       ADD CONSTRAINT \`${FK_REWARD_POINTS_TRANSACTION_REWARD_POINTS_ID}\`
         FOREIGN KEY (\`reward_points_id\`)
         REFERENCES \`${DbTables.REWARD_POINTS}\` (\`id\`)
         ON DELETE NO ACTION
-        ON DELETE NO ACTION;
+        ON UPDATE NO ACTION
   `);
 }
 

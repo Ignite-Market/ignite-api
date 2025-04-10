@@ -6,15 +6,23 @@ import { Validation } from '../../decorators/validation.decorator';
 import { ValidationGuard } from '../../guards/validation.guard';
 import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
 import { RewardPointsService } from './reward-points.service';
+import { AuthGuard } from '../../guards/auth.guard';
 
 @Controller('reward-points')
 export class RewardPointsController {
   constructor(private readonly rewardPointsService: RewardPointsService) {}
 
-  @Get('')
+  @Get()
   @Validation({ dto: BaseQueryFilter, validateFor: ValidateFor.QUERY })
   @UseGuards(ValidationGuard)
-  async getProposals(@Query() query: any, @Ctx() context: Context) {
+  async getRewardPoints(@Query() query: any, @Ctx() context: Context) {
     return await this.rewardPointsService.getRewardPoints(query, context);
+  }
+
+  @Get('/me')
+  @UseGuards(AuthGuard)
+  async getUserRewardPoints(@Ctx() context: Context) {
+    const points = await RewardPointsService.getUserRewardPoints(context.user.id, context);
+    return { points };
   }
 }
