@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Query, UseGuards } from '@nestjs/common';
 import { ValidateFor } from '../../config/types';
 import { Context } from '../../context';
 import { Ctx } from '../../decorators/context.decorator';
@@ -24,5 +24,18 @@ export class RewardPointsController {
   async getUserRewardPoints(@Ctx() context: Context) {
     const points = await RewardPointsService.getUserRewardPoints(context.user.id, context);
     return { points };
+  }
+
+  @Get('/daily')
+  @UseGuards(AuthGuard)
+  async canUserClaimDailyReward(@Ctx() context: Context) {
+    const canClaim = await this.rewardPointsService.canUserClaimDailyReward(context);
+    return { canClaim };
+  }
+
+  @Patch('/daily')
+  @UseGuards(AuthGuard)
+  async claimUserDailyReward(@Ctx() context: Context) {
+    return this.rewardPointsService.claimUserDailyReward(context);
   }
 }

@@ -1,14 +1,45 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
+import { PoolConnection } from 'mysql2/promise';
+import { BadRequestErrorCode, ResourceNotFoundErrorCode, SerializeFor, SystemErrorCode } from '../../config/types';
 import { Context } from '../../context';
 import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
-import { RewardPoints, RewardType } from './models/reward-points.model';
-import { PoolConnection } from 'mysql2/promise';
 import { CodeException } from '../../lib/exceptions/exceptions';
-import { ResourceNotFoundErrorCode, SerializeFor, SystemErrorCode } from '../../config/types';
 import { RewardPointsTransaction } from './models/reward-points-transaction.model';
+import { RewardPoints, RewardType } from './models/reward-points.model';
 
 @Injectable()
 export class RewardPointsService {
+  /**
+   * Check if user can claim daily reward.
+   * @param context Context.
+   * @returns Whether user can claim daily reward.
+   */
+  public async canUserClaimDailyReward(context: Context): Promise<boolean> {
+    return await new RewardPointsTransaction({}, context).canClaimDailyReward(context.user.id);
+  }
+
+  /**
+   * Claim user daily reward.
+   *
+   * @param context Context.
+   * @returns User reward points.
+   */
+  public async claimUserDailyReward(context: Context) {
+    const canClaim = await this.canUserClaimDailyReward(context);
+    if (!canClaim) {
+      throw new CodeException({
+        code: BadRequestErrorCode.DAILY_REWARD_ALREADY_CLAIMED,
+        errorCodes: BadRequestErrorCode,
+        status: HttpStatus.BAD_REQUEST,
+        sourceFunction: `${this.constructor.name}/claimUserDailyReward`,
+        context
+      });
+    }
+
+    const reward = await RewardPointsService.awardPoints(context.user.id, RewardType.DAILY_LOGIN, context);
+    return reward.serialize(SerializeFor.USER);
+  }
+
   /**
    * Get reward points.
    * @param query Query filter.

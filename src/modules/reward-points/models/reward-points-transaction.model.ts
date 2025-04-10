@@ -75,4 +75,29 @@ export class RewardPointsTransaction extends AdvancedSQLModel {
 
     return rows.length && rows[0].totalPoints ? rows[0].totalPoints : 0;
   }
+
+  /**
+   * Check if user can claim daily reward.
+   *
+   * @param userId User ID.
+   * @param conn Pool connection.
+   * @returns Whether user can claim daily reward.
+   */
+  public async canClaimDailyReward(userId: number, conn?: PoolConnection): Promise<boolean> {
+    const lastClaim = await this.db().paramExecute(
+      `
+      SELECT createTime 
+      FROM ${DbTables.REWARD_POINTS_TRANSACTION}
+      WHERE user_id = @userId 
+        AND type = ${RewardType.DAILY_LOGIN}
+        AND DATE(createTime) = CURDATE()
+      ORDER BY createTime DESC
+      LIMIT 1
+    `,
+      { userId },
+      conn
+    );
+
+    return lastClaim.length === 0;
+  }
 }
