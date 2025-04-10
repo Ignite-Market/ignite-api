@@ -9,7 +9,7 @@ import {
 } from '../../config/types';
 import { Context } from '../../context';
 import { CodeException, ValidationException } from '../../lib/exceptions/exceptions';
-import { Proposal } from '../prediction-set-proposal/models/proposal.model';
+import { Proposal } from '../proposal/models/proposal.model';
 import { PredictionSet } from '../prediction-set/models/prediction-set.model';
 import { User } from '../user/models/user.model';
 import { CommentCreateDto } from './dtos/comment-create.dto';

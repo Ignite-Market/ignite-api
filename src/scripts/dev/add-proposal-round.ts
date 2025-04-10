@@ -1,4 +1,4 @@
-import { ProposalRound, ProposalRoundStatus } from '../../modules/prediction-set-proposal/models/proposal-round.model';
+import { ProposalRound, ProposalRoundStatus } from '../../modules/proposal/models/proposal-round.model';
 import { createContext } from './context';
 
 const tenMinutes = 10 * 60 * 1000;

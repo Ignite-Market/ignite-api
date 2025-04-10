@@ -1,4 +1,4 @@
-import { Proposal } from '../../modules/prediction-set-proposal/models/proposal.model';
+import { Proposal } from '../../modules/proposal/models/proposal.model';
 import { createContext } from './context';
 
 const data = {

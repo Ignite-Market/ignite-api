@@ -6,7 +6,7 @@ import { CommentModule } from './modules/comment/comment.module';
 import { MySQLModule } from './modules/database/mysql.module';
 import { PredictionSetModule } from './modules/prediction-set/prediction-set.module';
 import { UserModule } from './modules/user/user.module';
-import { ProposalModule } from './modules/prediction-set-proposal/proposal.module';
+import { ProposalModule } from './modules/proposal/proposal.module';
 
 @Module({
   imports: [MySQLModule, UserModule, PredictionSetModule, CommentModule, BaseModule, ProposalModule],

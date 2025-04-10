@@ -1,5 +1,5 @@
 import { DbTables, SqlModelStatus } from '../../config/types';
-import { ProposalRoundStatus } from '../../modules/prediction-set-proposal/models/proposal-round.model';
+import { ProposalRoundStatus } from '../../modules/proposal/models/proposal-round.model';
 
 export async function upgrade(queryFn: (query: string, values?: any[]) => Promise<any[]>): Promise<void> {
   await queryFn(`

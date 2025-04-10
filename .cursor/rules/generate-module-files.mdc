@@ -1,0 +1,309 @@
+---
+description: Guidelines for generating controller, service and module files from a model file
+globs: 
+alwaysApply: false
+---
+# Generate Module Files from Model
+
+This rule provides guidelines for generating controller, service and module files from a model file.
+
+## File Structure
+
+For a given model file at `src/modules/{feature}/models/{name}.model.ts`, create:
+
+1. Controller: `src/modules/{feature}/{name}.controller.ts`
+2. Service: `src/modules/{feature}/{name}.service.ts` 
+3. Module: `src/modules/{feature}/{name}.module.ts`
+
+## Controller Template
+
+```typescript
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { AuthGuard } from '../../guards/auth.guard';
+import { Context } from '../../context';
+import { Ctx } from '../../decorators/context.decorator';
+import { ValidationGuard } from '../../guards/validation.guard';
+import { Validation } from '../../decorators/validation.decorator';
+import { ValidateFor } from '../../config/types';
+
+@Controller('{plural-name}')
+export class {Name}Controller {
+  constructor(
+    private readonly {name}Service: {Name}Service,
+  ) {}
+
+  @Get()
+  @Validation({ dto: {Name}QueryFilter, validateFor: ValidateFor.QUERY })
+  @UseGuards(ValidationGuard)
+  async getAll{Name}s(
+    @Ctx() context: Context,
+    @Query() filter: {Name}QueryFilter,
+  ) {
+    return this.{name}Service.get{Name}List(filter, context);
+  }
+
+  @Get(':id')
+  async get{Name}ById(
+    @Param('id', ParseIntPipe) id: number,
+    @Ctx() context: Context,
+  ) {
+    return this.{name}Service.get{Name}ById(id, context);
+  }
+
+  @Post()
+  @UseGuards(AuthGuard)
+  async create{Name}(@Body() data: any, @Ctx() context: Context) {
+    return this.{name}Service.create{Name}(data, context);
+  }
+
+  @Put(':id')
+  @UseGuards(AuthGuard)
+  async update{Name}(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() data: any,
+    @Ctx() context: Context,
+  ) {
+    return this.{name}Service.update{Name}(id, data, context);
+  }
+
+  @Delete(':id')
+  @UseGuards(AuthGuard)
+  async delete{Name}(
+    @Param('id', ParseIntPipe) id: number,
+    @Ctx() context: Context,
+  ) {
+    return this.{name}Service.delete{Name}(id, context);
+  }
+}
+```
+
+## Service Template
+
+```typescript
+import { HttpStatus, Injectable } from '@nestjs/common';
+import { Context } from '../../context';
+import {
+  ResourceNotFoundErrorCode,
+  SerializeFor,
+  ValidationErrorCode,
+} from '../../config/types';
+import {
+  CodeException,
+  ModelValidationException,
+} from '../../lib/exceptions/exceptions';
+import { {Name} } from './models/{name}.model';
+
+@Injectable()
+export class {Name}Service {
+  async get{Name}ById(id: number, ctx: Context) {
+    const {name} = new {Name}({}, ctx);
+    await {name}.populateById(id);
+
+    if (!{name}.exists()) {
+      throw new CodeException({
+        code: ResourceNotFoundErrorCode.DEFAULT_RESOURCE_NOT_FOUND_ERROR,
+        status: HttpStatus.NOT_FOUND,
+        errorCodes: ResourceNotFoundErrorCode,
+        errorMessage: '{Name} not found',
+      });
+    }
+
+    return {name}.serialize(SerializeFor.USER);
+  }
+
+  async get{Name}List(filter: {Name}QueryFilter, ctx: Context) {
+    return new {Name}({}, ctx).getList(filter);
+  }
+
+  async create{Name}(data: any, ctx: Context) {
+    const {name} = new {Name}({}, ctx);
+    {name}.populate(data, PopulateFrom.USER_INSERT);
+
+    await {name}.validateOrThrow(ModelValidationException);
+    await {name}.insert();
+    return {name}.serialize(SerializeFor.USER);
+  }
+
+  async update{Name}(id: number, data: any, ctx: Context) {
+    const {name} = new {Name}({}, ctx);
+    await {name}.populateById(id);
+
+    if (!{name}.exists()) {
+      throw new CodeException({
+        code: ResourceNotFoundErrorCode.DEFAULT_RESOURCE_NOT_FOUND_ERROR,
+        status: HttpStatus.NOT_FOUND,
+        errorCodes: ResourceNotFoundErrorCode,
+        errorMessage: '{Name} not found',
+      });
+    }
+
+    {name}.populate(data, PopulateFrom.USER_UPDATE);
+    await {name}.validateOrThrow(ModelValidationException);
+    await {name}.update();
+    return {name}.serialize(SerializeFor.USER);
+  }
+
+  async delete{Name}(id: number, ctx: Context) {
+    const {name} = new {Name}({}, ctx);
+    await {name}.populateById(id);
+
+    if (!{name}.exists()) {
+      throw new CodeException({
+        code: ResourceNotFoundErrorCode.DEFAULT_RESOURCE_NOT_FOUND_ERROR,
+        status: HttpStatus.NOT_FOUND,
+        errorCodes: ResourceNotFoundErrorCode,
+        errorMessage: '{Name} not found',
+      });
+    }
+
+    await {name}.markDeleted();
+    return { success: true };
+  }
+}
+```
+
+## Module Template
+
+```typescript
+import { Module } from '@nestjs/common';
+import { {Name}Controller } from './{name}.controller';
+import { {Name}Service } from './{name}.service';
+
+@Module({
+  controllers: [{Name}Controller],
+  providers: [{Name}Service],
+})
+export class {Name}Module {}
+```
+
+## Usage Instructions
+
+1. Replace all instances of `{name}` with the lowercase model name
+2. Replace all instances of `{Name}` with the PascalCase model name
+3. Replace `{plural-name}` with the plural form of the model name in kebab-case for the controller route
+
+## Example
+
+For a model file `user.model.ts`:
+
+- `{name}` becomes `user`
+- `{Name}` becomes `User`
+- `{plural-name}` becomes `users`
+
+## Required Files
+
+Make sure to also create:
+
+1. Query filter DTO: `src/modules/{feature}/dtos/{name}-query-filter.dto.ts`
+2. Any additional DTOs needed for validation
+
+## Query Filter DTO Template
+
+Create a file at `src/modules/{feature}/dtos/{name}-query-filter.dto.ts`:
+
+```typescript
+import { prop } from '@rawmodel/core';
+import { BaseQueryFilter } from '../../../lib/base-models/base-query-filter.model';
+import { stringParser } from '@rawmodel/parsers';
+import { PopulateFrom } from '../../../config/types';
+
+export class {Name}QueryFilter extends BaseQueryFilter {
+  @prop({
+    parser: { resolver: stringParser() },
+    populatable: [PopulateFrom.USER_SELECT],
+  })
+  public search: string;
+
+  @prop({
+    parser: { resolver: stringParser(), array: true },
+    populatable: [PopulateFrom.USER_SELECT],
+  })
+  public status: string[];
+}
+```
+
+### Query Filter Properties
+
+1. Base Properties:
+   - The filter extends `BaseQueryFilter` which provides common filtering capabilities
+   - Inherits pagination, sorting, and other base filtering functionality
+
+2. Common Properties:
+   - `search`: String field for general text search
+   - `status`: Array of strings for filtering by status values
+
+3. Property Decorators:
+   - Use `@prop` decorator from `@rawmodel/core`
+   - Configure parser with appropriate type (string, integer, etc.)
+   - Set `array: true` for array fields
+   - Always include `populatable: [PopulateFrom.USER_SELECT]`
+
+### Adding Custom Filter Properties
+
+To add more filter properties, follow this pattern:
+
+```typescript
+@prop({
+  parser: { 
+    resolver: stringParser(), // or integerParser(), etc.
+    array: true, // if the field should accept multiple values
+  },
+  populatable: [PopulateFrom.USER_SELECT],
+})
+public yourField: string; // or string[], number, etc.
+```
+
+### Example Usage in Model's getList Method
+
+The model should implement a `getList` method that uses the filter:
+
+```typescript
+public async getList(filter: {Name}QueryFilter) {
+  const { params, filters } = getQueryParams(
+    { ...filter.getDefaultValues() },
+    'alias',
+    {},
+    filter.serialize(),
+  );
+
+  const qSelect = {
+    qSelect: `
+      SELECT ${this.generateSelectFields('alias')}
+    `,
+    qFrom: `
+      FROM ${this.tableName} alias
+      WHERE (@status IS NULL OR FIND_IN_SET(alias.status, @status) > 0)
+      AND (
+        @search IS NULL 
+        OR alias.name LIKE CONCAT('%', @search, '%')
+        // Add more search fields as needed
+      )
+    `,
+    qFilter: `
+      ORDER BY ${filters.orderStr || 'alias.id DESC'}
+      LIMIT ${filters.limit} OFFSET ${filters.offset};
+    `,
+  };
+
+  return await selectAndCountQuery(this.db(), qSelect, params, 'alias.id');
+}
+```
+
+## Best Practices
+
+1. Always implement proper validation in the DTOs
+2. Add appropriate guards for protected endpoints
+3. Implement proper error handling
+4. Follow the existing project structure and naming conventions
+5. Add appropriate documentation using Swagger decorators if needed 

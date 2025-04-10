@@ -35,7 +35,9 @@ export enum DbTables {
   PREDICTION_SET_CATEGORY = 'prediction_set_category',
   PROPOSAL = 'proposal',
   PROPOSAL_ROUND = 'proposal_round',
-  PROPOSAL_VOTE = 'proposal_vote'
+  PROPOSAL_VOTE = 'proposal_vote',
+  REWARD_POINTS = 'reward_points',
+  REWARD_POINTS_TRANSACTION = 'reward_points_transaction'
 }
 /**
  * Validation error codes - 422_00_000.
@@ -99,7 +101,8 @@ export enum ResourceNotFoundErrorCode {
   COMMENT_DOES_NOT_EXISTS = 404_00_004,
   PREDICTION_SET_PROPOSAL_DOES_NOT_EXISTS = 404_00_005,
   PREDICTION_SET_PROPOSAL_ROUND_DOES_NOT_EXISTS = 404_00_006,
-  PREDICTION_SET_PROPOSAL_ACTIVE_ROUND_DOES_NOT_EXISTS = 404_00_007
+  PREDICTION_SET_PROPOSAL_ACTIVE_ROUND_DOES_NOT_EXISTS = 404_00_007,
+  REWARD_POINTS_DOES_NOT_EXISTS = 404_00_008
 }
 
 /**

@@ -1,0 +1,180 @@
+---
+description: Guidelines for creating model files from SQL migration files
+globs: 
+alwaysApply: false
+---
+
+# Creating Models from SQL Migrations
+
+This guide explains how to create model files from SQL migration files in our project.
+
+## Model File Location
+
+Models should be placed in the appropriate module directory under `src/modules/{module-name}/models/` with the naming convention `{model-name}.model.ts`.
+
+Example:
+```
+src/modules/auction/models/offer.model.ts
+```
+
+## Model Structure
+
+1. Basic model structure should follow this template:
+
+```typescript
+import { prop } from '@rawmodel/core';
+import { dateParser, floatParser, integerParser } from '@rawmodel/parsers';
+import { presenceValidator } from '@rawmodel/validators';
+import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
+import {
+  DbTables,
+  PopulateFrom,
+  SerializeFor,
+  SqlModelStatus,
+} from '../../../config/types';
+import type { Context } from '../../../context';
+
+export class ModelName extends AdvancedSQLModel {
+  public tableName = DbTables.TABLE_NAME;
+
+  // Properties go here
+  
+  constructor(data: any, context?: Context) {
+    super(data, context);
+  }
+}
+```
+
+2. Property Mapping Rules:
+
+For each SQL column, create a corresponding class property using the @prop decorator:
+
+- INT columns -> use integerParser
+- DECIMAL/FLOAT columns -> use floatParser
+- DATETIME columns -> use dateParser
+- VARCHAR/TEXT columns -> no parser needed (string)
+
+Example:
+```typescript
+@prop({
+  parser: {
+    resolver: integerParser(),
+  },
+  serializable: [
+    SerializeFor.USER,
+    SerializeFor.SELECT_DB,
+    SerializeFor.INSERT_DB,
+    SerializeFor.UPDATE_DB,
+  ],
+  populatable: [PopulateFrom.DB],
+})
+public id: number;
+```
+
+3. You can skip this fields as they are part of parent object AdvancedSQLModel:
+  - `id` field for primary key
+  - createTime
+  - createUser
+  - updateTime
+  - updateUser
+  - status
+
+4. Foreign Key Relationships:
+When the migration includes foreign keys (CONSTRAINT statements), add corresponding properties with the same name as the foreign key column.
+
+Example from migration:
+```sql
+CONSTRAINT \`fk_offer_auction1\`
+  FOREIGN KEY (\`auction_id\`)
+  REFERENCES \`auctions\` (\`id\`)
+```
+
+Corresponding model property:
+```typescript
+@prop({
+  parser: {
+    resolver: integerParser(),
+  },
+  serializable: [
+    SerializeFor.USER,
+    SerializeFor.SELECT_DB,
+    SerializeFor.INSERT_DB,
+    SerializeFor.UPDATE_DB,
+  ],
+  populatable: [PopulateFrom.DB],
+})
+public auction_id: number;
+```
+
+5. Validation Rules:
+- Add presence validators for NOT NULL columns
+- Add range validators for numeric fields where appropriate
+- Add custom validators based on business logic
+
+Example:
+```typescript
+@prop({
+  parser: {
+    resolver: floatParser(),
+  },
+  serializable: [SerializeFor.USER, SerializeFor.SELECT_DB],
+  populatable: [PopulateFrom.DB],
+  validators: [
+    {
+      resolver: presenceValidator(),
+      code: ValidationErrorCode.DEFAULT_VALIDATION_ERROR,
+    },
+  ],
+})
+public amount: number;
+```
+
+6. Common Methods:
+Standard CRUD methods are part of the parent object (AdvancedSQLModel) so you can skip that. Add only listing method. Example for "Auction" model:
+
+```typescript
+ public async getList(filter: AuctionQueryFilter) {
+    const { params, filters } = getQueryParams(
+      { ...filter.getDefaultValues() },
+      'a',
+      {},
+      filter.serialize(),
+    );
+
+    const qSelect = {
+      qSelect: `
+        SELECT 
+          ${this.generateSelectFields('a')}
+        `,
+      qFrom: `
+        FROM ${DbTables.AUCTION} a
+        WHERE (@status IS NULL OR FIND_IN_SET(a.status, @status) > 0)
+        AND (
+          @search IS NULL 
+          OR a.title LIKE CONCAT('%', @search, '%') 
+          OR a.refId LIKE CONCAT('%', @search, '%')
+        )
+        AND (@type IS NULL OR FIND_IN_SET(a.type, @type) > 0)
+        AND (@category IS NULL OR FIND_IN_SET(a.category_id, @category) > 0)
+        AND (@company IS NULL OR FIND_IN_SET(a.company_id, @company) > 0)
+      `,
+      qFilter: `
+          ORDER BY ${filters.orderStr || 'a.title ASC'}
+          LIMIT ${filters.limit} OFFSET ${filters.offset};
+      `,
+    };
+
+    return await selectAndCountQuery(this.db(), qSelect, params, 'a.id');
+  }
+```
+
+## Best Practices
+
+1. Always extend from `AdvancedSQLModel`
+2. Use appropriate parsers for type conversion
+3. Include proper serialization and population rules
+4. Add validation where necessary
+5. Document complex business logic methods
+6. Use enums for fields with fixed values
+7. Follow the existing model patterns in the codebase 
+
