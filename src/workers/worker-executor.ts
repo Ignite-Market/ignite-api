@@ -6,13 +6,14 @@ import { WorkerLogStatus, writeWorkerLog } from '../lib/worker/logger';
 import { ServiceDefinition, ServiceDefinitionType, WorkerDefinition } from '../lib/worker/serverless-workers';
 import { QueueWorkerType } from '../lib/worker/serverless-workers/base-queue-worker';
 import { CreatePredictionSetWorker } from './create-prediction-set.worker';
-import { FinalizeAutomaticPredictionSetWorker } from './flare/finalize-automatic-prediction-sets.worker';
 import { FinalizeManualPredictionSetWorker } from './finalize-manual-prediction-sets.worker';
+import { FinalizeProposalRoundsWorker } from './finalize-proposal-rounds.worker';
+import { FinalizeAutomaticPredictionSetWorker } from './flare/finalize-automatic-prediction-sets.worker';
+import { RequestAttestationProofWorker } from './flare/request-attestation-proof.worker';
+import { RequestAttestationWorker } from './flare/request-attestation.worker';
 import { PredictionSetParserWorker } from './prediction-set-parser.worker';
 import { PredictionSetsFactoryParserWorker } from './prediction-sets-factory-parser.worker';
 import { RefreshOutcomeChancesWorker } from './refresh-outcome-chances.worker';
-import { RequestAttestationProofWorker } from './flare/request-attestation-proof.worker';
-import { RequestAttestationWorker } from './flare/request-attestation.worker';
 import { Scheduler } from './scheduler';
 import { VotingParserWorker } from './voting-parser.worker';
 
@@ -29,7 +30,8 @@ export enum WorkerName {
   REFRESH_OUTCOME_CHANCES = 'RefreshOutcomeChances',
   REQUEST_ATTESTATION_PROOF = 'RequestAttestationProof',
   REQUEST_ATTESTATION = 'RequestAttestation',
-  VOTING_PARSER = 'VotingParser'
+  VOTING_PARSER = 'VotingParser',
+  FINALIZE_PROPOSAL_ROUNDS = 'FinalizeProposalRounds'
 }
 
 /**
@@ -136,6 +138,10 @@ export async function handleLambdaEvent(event: any, context: Context, serviceDef
       await new VotingParserWorker(workerDefinition, context).run();
       break;
 
+    case WorkerName.FINALIZE_PROPOSAL_ROUNDS:
+      await new FinalizeProposalRoundsWorker(workerDefinition, context).run();
+      break;
+
     default:
       console.error(`ERROR - INVALID WORKER NAME: ${workerDefinition.workerName}`);
       await writeWorkerLog(
@@ -232,6 +238,12 @@ export async function handleSqsMessages(event: any, context: Context, serviceDef
 
         case WorkerName.VOTING_PARSER:
           await new VotingParserWorker(workerDefinition, context).run({
+            executeArg: message?.body
+          });
+          break;
+
+        case WorkerName.FINALIZE_PROPOSAL_ROUNDS:
+          await new FinalizeProposalRoundsWorker(workerDefinition, context).run({
             executeArg: message?.body
           });
           break;

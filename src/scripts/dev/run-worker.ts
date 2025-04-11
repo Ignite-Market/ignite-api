@@ -1,15 +1,11 @@
 import { exit } from 'process';
 import { WorkerDefinition } from '../../lib/worker/serverless-workers';
-import { PredictionSetsFactoryParserWorker } from '../../workers/prediction-sets-factory-parser.worker';
 import { WorkerName } from '../../workers/worker-executor';
 import { createContext } from './context';
-import { FinalizeAutomaticPredictionSetWorker } from '../../workers/flare/finalize-automatic-prediction-sets.worker';
-import { RequestAttestationWorker } from '../../workers/flare/request-attestation.worker';
-import { RequestAttestationProofWorker } from '../../workers/flare/request-attestation-proof.worker';
-import { FinalizeManualPredictionSetWorker } from '../../workers/finalize-manual-prediction-sets.worker';
+import { FinalizeProposalRoundsWorker } from '../../workers/finalize-proposal-rounds.worker';
 
-const WORKER_NAME = WorkerName.REQUEST_ATTESTATION;
-const WorkerClass = RequestAttestationWorker;
+const WORKER_NAME = WorkerName.FINALIZE_PROPOSAL_ROUNDS;
+const WorkerClass = FinalizeProposalRoundsWorker;
 
 (async () => {
   const start = new Date();
