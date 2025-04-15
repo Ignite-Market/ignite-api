@@ -26,7 +26,7 @@ const data = {
   resolutionType: ResolutionType.AUTOMATIC,
   consensusThreshold: 60,
   tags: 'github',
-  imgUrl: 'https://images.ignitemarket.xyz/prediction-sets/nba.svg',
+  imgUrl: 'https://images.ignitemarket.xyz/prediction-sets/nba.png',
   predictionOutcomes: [
     {
       name: 'Lakers',

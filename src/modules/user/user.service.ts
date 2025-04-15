@@ -34,13 +34,14 @@ export class UserService {
 
   /**
    * Returns users predictions.
+   *
    * @param id User id.
    * @param query Query filter.
    * @param context Application context.
    * @returns User data.
    */
   public async getUserPredictions(id: number, query: BaseQueryFilter, context: Context) {
-    return await new PredictionSet({}, context).getUserList(id, query);
+    return await new PredictionSet({}, context).getUserPredictions(id, query);
   }
 
   /**

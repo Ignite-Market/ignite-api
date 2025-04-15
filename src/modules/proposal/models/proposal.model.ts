@@ -6,6 +6,7 @@ import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
 import { getQueryParams, selectAndCountQuery } from '../../../lib/database/sql-utils';
 import { ProposalsQueryFilter } from '../dtos/proposals-query-filter';
 import { CONSTANT_ARRAY_DEFAULT_DELIMITER, ConstantArray } from '../../../decorators/constant-array.decorator';
+import { CommentEntityTypes } from '../../comment/models/comment.model';
 
 /**
  * Prediction set proposal model.
@@ -118,6 +119,7 @@ export class Proposal extends AdvancedSQLModel {
         SELECT
           ${this.generateSelectFields('p')},
           COALESCE(SUM(pv.voteType), 0) AS totalVotes,
+          COUNT(c.id) AS totalComments,
           u.username,
           u.walletAddress AS userWallet,
           CONCAT(
@@ -142,6 +144,9 @@ export class Proposal extends AdvancedSQLModel {
         FROM ${DbTables.PROPOSAL} p
         LEFT JOIN ${DbTables.PROPOSAL_VOTE} pv
           ON pv.proposal_id = p.id
+        LEFT JOIN ${DbTables.COMMENT} c
+          ON c.entity_id = p.id
+          AND c.entityType = ${CommentEntityTypes.PROPOSAL}
         INNER JOIN ${DbTables.USER} u
           ON p.user_id = u.id
         WHERE p.status <> ${SqlModelStatus.DELETED}

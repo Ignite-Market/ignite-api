@@ -807,12 +807,13 @@ export class PredictionSet extends AdvancedSQLModel {
   }
 
   /**
+   *  Returns user's predictions.
    *
-   * @param id
-   * @param query
-   * @returns
+   * @param id User ID.
+   * @param query User's query filter.
+   * @returns List of user's predictions.
    */
-  public async getUserList(id: number, query: BaseQueryFilter): Promise<any> {
+  public async getUserPredictions(id: number, query: BaseQueryFilter): Promise<any> {
     const defaultParams = {
       id: null
     };
@@ -833,6 +834,7 @@ export class PredictionSet extends AdvancedSQLModel {
         SELECT 
           ${new PredictionSet({}).generateSelectFields('p')},
           o.name AS outcomeName,
+          o.imgUrl AS outcomeImg,
           SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)) AS boughtAmount,
           SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0)) AS soldAmount,
           SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.outcomeTokens, 0)) AS outcomeTokens

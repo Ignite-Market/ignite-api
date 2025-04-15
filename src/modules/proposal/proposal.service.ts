@@ -181,6 +181,18 @@ export class ProposalService {
       });
     }
 
+    // Proposals cannot be changed once they have any votes.
+    const count = await new ProposalVote({}, context).getProposalVotesCount(proposal.id);
+    if (count > 0) {
+      throw new CodeException({
+        code: BadRequestErrorCode.PROPOSAL_CANNOT_BE_UPDATE,
+        errorCodes: BadRequestErrorCode,
+        status: HttpStatus.NOT_FOUND,
+        sourceFunction: `${this.constructor.name}/updateProposal`,
+        context
+      });
+    }
+
     proposal.populate(data, PopulateFrom.USER);
     try {
       await proposal.validate();

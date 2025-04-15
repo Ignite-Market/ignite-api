@@ -64,6 +64,7 @@ export class ProposalVote extends AdvancedSQLModel {
 
   /**
    * Get vote by user and proposal and type.
+   *
    * @param userId - User ID.
    * @param proposalId - Proposal ID.
    * @returns Vote.
@@ -86,5 +87,29 @@ export class ProposalVote extends AdvancedSQLModel {
     );
 
     return data?.length ? this.populate(data[0], PopulateFrom.DB) : this.reset();
+  }
+
+  /**
+   * Get proposal votes count.
+   *
+   * @param proposalId - Proposal ID.
+   * @returns Count.
+   */
+  public async getProposalVotesCount(proposalId: number, conn?: PoolConnection, forUpdate = false) {
+    const res = await this.getContext().mysql.paramExecute(
+      `
+          SELECT COUNT(*) as cnt
+          FROM \`${this.tableName}\`
+          WHERE status <> ${SqlModelStatus.DELETED}
+            AND proposal_id = @proposalId
+          ${conn && forUpdate ? 'FOR UPDATE' : ''};
+          `,
+      {
+        proposalId
+      },
+      conn
+    );
+
+    return res[0].cnt;
   }
 }
