@@ -1,12 +1,11 @@
 import { prop } from '@rawmodel/core';
 import { dateParser, integerParser } from '@rawmodel/parsers';
 import { presenceValidator } from '@rawmodel/validators';
+import { PoolConnection } from 'mysql2/promise';
 import { DbTables, ErrorCode, PopulateFrom, SerializeFor, SqlModelStatus, ValidatorErrorCode } from '../../../config/types';
 import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
-import { enumInclusionValidator } from '../../../lib/validators';
-import { BaseQueryFilter } from '../../../lib/base-models/base-query-filter.model';
 import { getQueryParams, selectAndCountQuery } from '../../../lib/database/sql-utils';
-import { PoolConnection } from 'mysql2/promise';
+import { enumInclusionValidator } from '../../../lib/validators';
 import { ProposalRoundsQueryFilter } from '../dtos/proposals-query-filter copy';
 
 /**

@@ -60,8 +60,6 @@ export interface IEnv {
 
   ORACLE_CONTRACT: string;
   JSON_VERIFIER_CONTRACT: string;
-  COLLATERAL_TOKEN_CONTRACT: string;
-  COLLATERAL_TOKEN_DECIMALS: number;
   CONDITIONAL_TOKEN_CONTRACT: string;
   FPMM_FACTORY_CONTRACT: string;
   SIGNER_PRIVATE_KEY: string;
@@ -85,7 +83,6 @@ export interface IEnv {
   MARKET_FEE_PERCENT: string;
   MARKET_TREASURY_PERCENT: number;
   MARKET_TREASURY_ADDRESS: string;
-  MARKET_COLLATERAL_FUNDING_THRESHOLD: string;
 
   MOCK_RESULTS_API_ENDPOINT: string;
 }
@@ -162,8 +159,6 @@ export let env: IEnv = {
   /**
    * Fixed product market maker & conditional token contracts.
    */
-  COLLATERAL_TOKEN_CONTRACT: process.env['COLLATERAL_TOKEN_CONTRACT'],
-  COLLATERAL_TOKEN_DECIMALS: parseInt(process.env['COLLATERAL_TOKEN_DECIMALS']) || 6,
   CONDITIONAL_TOKEN_CONTRACT: process.env['CONDITIONAL_TOKEN_CONTRACT'],
   FPMM_FACTORY_CONTRACT: process.env['FPMM_FACTORY_CONTRACT'],
   ORACLE_CONTRACT: process.env['ORACLE_CONTRACT'],
@@ -190,7 +185,6 @@ export let env: IEnv = {
   MARKET_FEE_PERCENT: process.env['MARKET_FEE_PERCENT'] || '0.03', // Fee factor in ETH (18 decimals) - 0.03 -> 3%
   MARKET_TREASURY_PERCENT: parseInt(process.env['MARKET_TREASURY_PERCENT']) || 100, // 100 -> 1% (6 decimals)
   MARKET_TREASURY_ADDRESS: process.env['MARKET_TREASURY_ADDRESS'],
-  MARKET_COLLATERAL_FUNDING_THRESHOLD: process.env['MARKET_COLLATERAL_FUNDING_THRESHOLD'] || '200', // Market funding threshold in collateral tokens -> 200 -> 200 * 10 * COLLATERAL_TOKEN_DECIMALS
 
   MOCK_RESULTS_API_ENDPOINT: process.env['MOCK_RESULTS_API_ENDPOINT']
 };

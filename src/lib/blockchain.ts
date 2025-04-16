@@ -1,12 +1,13 @@
 import { HttpStatus, Logger } from '@nestjs/common';
 import { ethers } from 'ethers';
 import { env } from '../config/env';
-import { SystemErrorCode } from '../config/types';
+import { ResourceNotFoundErrorCode, SystemErrorCode } from '../config/types';
 import { Context } from '../context';
 import { PredictionSetChainData } from '../modules/prediction-set/models/prediction-set-chain-data.model';
 import { PredictionSet, ResolutionType } from '../modules/prediction-set/models/prediction-set.model';
 import { CONDITIONAL_TOKEN_ABI, FPMM_ABI, FPMM_FACTORY_ABI, ORACLE_ABI } from './abis';
 import { CodeException } from './exceptions/exceptions';
+import { CollateralToken } from '../modules/collateral-token/models/collateral-token.model';
 
 /**
  * Prediction set blockchain status.
@@ -53,6 +54,17 @@ export function setup(fpmmAddress: string = null) {
  */
 export async function addPredictionSet(predictionSet: PredictionSet, context: Context) {
   const { fpmmfContract, conditionalTokenContract, oracleContract } = setup();
+
+  const collateralToken = await new CollateralToken({}, context).populateById(predictionSet.collateral_token_id);
+  if (!collateralToken.exists() || !collateralToken.isEnabled()) {
+    throw new CodeException({
+      code: ResourceNotFoundErrorCode.COLLATERAL_TOKEN_DOES_NOT_EXISTS,
+      errorCodes: ResourceNotFoundErrorCode,
+      status: HttpStatus.NOT_FOUND,
+      sourceFunction: `${this.constructor.name}/addPredictionSet`,
+      context
+    });
+  }
 
   const questionId = numberToBytes32(predictionSet.id);
   const urls = [];
@@ -106,12 +118,12 @@ export async function addPredictionSet(predictionSet: PredictionSet, context: Co
   try {
     const createTx = await fpmmfContract.createFixedProductMarketMaker(
       env.CONDITIONAL_TOKEN_CONTRACT,
-      env.COLLATERAL_TOKEN_CONTRACT,
+      collateralToken.address,
       [conditionId],
       ethers.parseEther(env.MARKET_FEE_PERCENT),
       env.MARKET_TREASURY_PERCENT,
       env.MARKET_TREASURY_ADDRESS,
-      ethers.parseUnits(env.MARKET_COLLATERAL_FUNDING_THRESHOLD, env.COLLATERAL_TOKEN_DECIMALS)
+      ethers.parseUnits(collateralToken.fundingThreshold, collateralToken.decimals)
     );
     const txReceipt = await createTx.wait();
     receiptBlock = txReceipt.blockNumber;

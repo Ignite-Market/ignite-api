@@ -1,0 +1,115 @@
+import { prop } from '@rawmodel/core';
+import { integerParser, stringParser } from '@rawmodel/parsers';
+import { DbTables, PopulateFrom, SerializeFor, SqlModelStatus } from '../../../config/types';
+import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
+import { BaseQueryFilter } from '../../../lib/base-models/base-query-filter.model';
+import { getQueryParams, selectAndCountQuery } from '../../../lib/database/sql-utils';
+
+/**
+ * Collateral token model.
+ */
+export class CollateralToken extends AdvancedSQLModel {
+  /**
+   * Collateral token's table.
+   */
+  public tableName = DbTables.COLLATERAL_TOKEN;
+
+  /**
+   * Collateral token name.
+   */
+  @prop({
+    parser: { resolver: stringParser() },
+    populatable: [PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
+  })
+  public name: string;
+
+  /**
+   * Collateral token symbol.
+   */
+  @prop({
+    parser: { resolver: stringParser() },
+    populatable: [PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
+  })
+  public symbol: string;
+
+  /**
+   * Collateral token address.
+   */
+  @prop({
+    parser: { resolver: stringParser() },
+    populatable: [PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
+  })
+  public address: string;
+
+  /**
+   * Collateral token decimals.
+   */
+  @prop({
+    parser: { resolver: integerParser() },
+    populatable: [PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
+  })
+  public decimals: number;
+
+  /**
+   * Prediction set market funding threshold in collateral token without decimals.
+   */
+  @prop({
+    parser: { resolver: stringParser() },
+    populatable: [PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
+  })
+  public fundingThreshold: string;
+
+  /**
+   * Collateral token image URL.
+   */
+  @prop({
+    parser: {
+      resolver: stringParser()
+    },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER]
+  })
+  imgUrl: string;
+
+  /**
+   * Get list of collateral tokens.
+   * @param query Filtering query.
+   * @returns List of collateral tokens.
+   */
+  public async getList(query: BaseQueryFilter): Promise<any> {
+    const defaultParams = {
+      id: null
+    };
+
+    // Map URL query with SQL fields.
+    const fieldMap = {
+      id: 'ct.id'
+    };
+
+    const { params, filters } = getQueryParams(defaultParams, 'ct', fieldMap, query.serialize());
+    const sqlQuery = {
+      qSelect: `
+        SELECT 
+          ${this.generateSelectFields('ct')}
+        `,
+      qFrom: `
+        FROM ${DbTables.REWARD_POINTS} ct
+        WHERE ct.status <> ${SqlModelStatus.DELETED}
+        `,
+      qGroup: `
+        GROUP BY ct.id
+      `,
+      qFilter: `
+        ORDER BY ${filters.orderStr}
+        LIMIT ${filters.limit} OFFSET ${filters.offset};
+      `
+    };
+
+    return await selectAndCountQuery(this.getContext().mysql, sqlQuery, params, 'ct.id');
+  }
+}

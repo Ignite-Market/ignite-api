@@ -37,7 +37,8 @@ export enum DbTables {
   PROPOSAL_ROUND = 'proposal_round',
   PROPOSAL_VOTE = 'proposal_vote',
   REWARD_POINTS = 'reward_points',
-  REWARD_POINTS_TRANSACTION = 'reward_points_transaction'
+  REWARD_POINTS_TRANSACTION = 'reward_points_transaction',
+  COLLATERAL_TOKEN = 'collateral_token'
 }
 /**
  * Validation error codes - 422_00_000.
@@ -102,7 +103,8 @@ export enum ResourceNotFoundErrorCode {
   PREDICTION_SET_PROPOSAL_DOES_NOT_EXISTS = 404_00_005,
   PREDICTION_SET_PROPOSAL_ROUND_DOES_NOT_EXISTS = 404_00_006,
   PREDICTION_SET_PROPOSAL_ACTIVE_ROUND_DOES_NOT_EXISTS = 404_00_007,
-  REWARD_POINTS_DOES_NOT_EXISTS = 404_00_008
+  REWARD_POINTS_DOES_NOT_EXISTS = 404_00_008,
+  COLLATERAL_TOKEN_DOES_NOT_EXISTS = 404_00_009
 }
 
 /**

@@ -15,6 +15,7 @@ import { DataSource } from './models/data-source.model';
 import { Outcome } from './models/outcome.model';
 import { PredictionSet, PredictionSetStatus, ResolutionType } from './models/prediction-set.model';
 import { UserWatchlist } from './models/user-watchlist';
+import { CollateralToken } from '../collateral-token/models/collateral-token.model';
 
 @Injectable()
 export class PredictionSetService {
@@ -81,6 +82,17 @@ export class PredictionSetService {
    */
   public async createPredictionSet(predictionSet: PredictionSet, dataSourceIds: number[], context: Context): Promise<PredictionSet> {
     const conn = await context.mysql.start();
+
+    const collateralToken = await new CollateralToken({}, context).populateById(predictionSet.collateral_token_id);
+    if (!collateralToken.exists() || !collateralToken.isEnabled()) {
+      throw new CodeException({
+        code: ResourceNotFoundErrorCode.COLLATERAL_TOKEN_DOES_NOT_EXISTS,
+        errorCodes: ResourceNotFoundErrorCode,
+        status: HttpStatus.NOT_FOUND,
+        sourceFunction: `${this.constructor.name}/createPredictionSet`,
+        context
+      });
+    }
 
     // Create prediction set.
     predictionSet.setId = this._generatePredictionSetId(predictionSet);

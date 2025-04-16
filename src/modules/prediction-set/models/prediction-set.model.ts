@@ -77,6 +77,16 @@ export class PredictionSet extends AdvancedSQLModel {
   public winner_outcome_id: number;
 
   /**
+   * Collateral token ID reference.
+   */
+  @prop({
+    parser: { resolver: integerParser() },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER]
+  })
+  public collateral_token_id: number;
+
+  /**
    * Set ID - A distinct code that uniquely identifies each prediction set within the platform.
    */
   @prop({
@@ -357,6 +367,9 @@ export class PredictionSet extends AdvancedSQLModel {
   })
   public volume: number;
 
+  /**
+   * User's open positions.
+   */
   @prop({
     serializable: [SerializeFor.USER],
     populatable: [PopulateFrom.USER],
