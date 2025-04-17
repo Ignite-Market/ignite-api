@@ -18,7 +18,6 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
     \`resolutionType\` INT NOT NULL DEFAULT '${ResolutionType.AUTOMATIC}',
     \`consensusThreshold\` INT NULL,
     \`setStatus\` INT NOT NULL DEFAULT '${PredictionSetStatus.INITIALIZED}',
-    \`tags\` TEXT NULL,
     \`imgUrl\` VARCHAR(500) NOT NULL,
     \`status\` INT NOT NULL DEFAULT '${SqlModelStatus.ACTIVE}',
     \`createTime\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

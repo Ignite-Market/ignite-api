@@ -298,18 +298,6 @@ export class PredictionSet extends AdvancedSQLModel {
   public setStatus: PredictionSetStatus;
 
   /**
-   * Tags - Used for filtering prediction sets.
-   */
-  @prop({
-    parser: {
-      resolver: stringParser()
-    },
-    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
-    populatable: [PopulateFrom.DB, PopulateFrom.USER]
-  })
-  tags: string;
-
-  /**
    * Img URL.
    */
   @prop({
@@ -524,25 +512,19 @@ export class PredictionSet extends AdvancedSQLModel {
           o.*, 
           JSON_OBJECT(
             'id', oc.id,
-            'status', oc.status,
             'createTime', oc.createTime,
-            'updateTime', oc.updateTime,
-            'outcome_id', oc.outcome_id,
-            'prediction_set_id', oc.prediction_set_id,
             'chance', oc.chance,
-            'supply', oc.supply,
-            'totalSupply', oc.totalSupply
           ) AS latestChance,
-          SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0)) AS volume
+          SUM(CASE WHEN ost.type = ${ShareTransactionType.BUY} THEN ost.amount ELSE 0 END) - SUM(CASE WHEN ost.type = ${ShareTransactionType.SELL} THEN ost.amount ELSE 0 END) AS volume
         FROM ${DbTables.OUTCOME} o
         LEFT JOIN (
           SELECT oc.*
-          FROM (
-              SELECT *,
-                ROW_NUMBER() OVER (PARTITION BY outcome_id ORDER BY createTime DESC) AS rn
-              FROM ${DbTables.OUTCOME_CHANCE}
-          ) oc
-          WHERE oc.rn = 1
+          FROM ${DbTables.OUTCOME_CHANCE} oc
+          INNER JOIN (
+            SELECT outcome_id, MAX(createTime) AS latest_create_time
+            FROM ${DbTables.OUTCOME_CHANCE}
+            GROUP BY outcome_id
+          ) latest ON oc.outcome_id = latest.outcome_id AND oc.createTime = latest.latest_create_time
         ) oc ON oc.outcome_id = o.id
         LEFT JOIN ${DbTables.OUTCOME_SHARE_TRANSACTION} ost
           ON ost.outcome_id = o.id
@@ -948,9 +930,6 @@ export class PredictionSet extends AdvancedSQLModel {
         )
         AND (@search IS NULL
           OR p.question LIKE CONCAT('%', @search, '%')
-        )
-        AND (@tag IS NULL
-          OR p.tags LIKE CONCAT('%', @tag, '%')
         )
         AND (@watchlist IS NULL OR @watchlist = 0 OR uw.id IS NOT NULL)
         AND (@category IS NULL

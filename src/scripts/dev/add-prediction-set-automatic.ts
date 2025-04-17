@@ -14,6 +14,7 @@ const sixHours = 6 * 60 * 60 * 1000;
 const oneWeek = 7 * 24 * 60 * 60 * 1000;
 
 const data = {
+  collateral_token_id: 1,
   question: 'NBA: Lakers vs. Rockets',
   description: 'Who will win the game between the Lakers and Rockets?',
   generalResolutionDef: 'This market will resolve to the winning team based on the final score at the end of the game.',
@@ -25,7 +26,6 @@ const data = {
   resolutionTime: new Date(Number(new Date()) + fifteenMinutes * 2),
   resolutionType: ResolutionType.AUTOMATIC,
   consensusThreshold: 60,
-  tags: 'github',
   imgUrl: 'https://images.ignitemarket.xyz/prediction-sets/nba.png',
   predictionOutcomes: [
     {

@@ -2,7 +2,7 @@ import { MiddlewareConsumer, Module, RequestMethod } from '@nestjs/common';
 import { AuthenticateUserMiddleware } from './middlewares/authentication.middleware';
 import { ContextMiddleware } from './middlewares/context.middleware';
 import { BaseModule } from './modules/base/base.module';
-import { CollateralToken } from './modules/collateral-token/models/collateral-token.model';
+import { CollateralTokenModule } from './modules/collateral-token/collateral-token.module';
 import { CommentModule } from './modules/comment/comment.module';
 import { MySQLModule } from './modules/database/mysql.module';
 import { PredictionSetModule } from './modules/prediction-set/prediction-set.module';
@@ -11,7 +11,7 @@ import { RewardPointsModule } from './modules/reward-points/reward-points.module
 import { UserModule } from './modules/user/user.module';
 
 @Module({
-  imports: [MySQLModule, UserModule, PredictionSetModule, CommentModule, BaseModule, ProposalModule, RewardPointsModule, CollateralToken],
+  imports: [MySQLModule, UserModule, PredictionSetModule, CommentModule, BaseModule, ProposalModule, RewardPointsModule, CollateralTokenModule],
   controllers: [],
   providers: []
 })

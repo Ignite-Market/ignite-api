@@ -98,7 +98,7 @@ export class CollateralToken extends AdvancedSQLModel {
           ${this.generateSelectFields('ct')}
         `,
       qFrom: `
-        FROM ${DbTables.REWARD_POINTS} ct
+        FROM ${DbTables.COLLATERAL_TOKEN} ct
         WHERE ct.status <> ${SqlModelStatus.DELETED}
         `,
       qGroup: `
