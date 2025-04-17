@@ -513,7 +513,7 @@ export class PredictionSet extends AdvancedSQLModel {
           JSON_OBJECT(
             'id', oc.id,
             'createTime', oc.createTime,
-            'chance', oc.chance,
+            'chance', oc.chance
           ) AS latestChance,
           SUM(CASE WHEN ost.type = ${ShareTransactionType.BUY} THEN ost.amount ELSE 0 END) - SUM(CASE WHEN ost.type = ${ShareTransactionType.SELL} THEN ost.amount ELSE 0 END) AS volume
         FROM ${DbTables.OUTCOME} o
