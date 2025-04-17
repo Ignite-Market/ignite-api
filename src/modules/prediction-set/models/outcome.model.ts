@@ -1,5 +1,5 @@
 import { prop } from '@rawmodel/core';
-import { integerParser, stringParser } from '@rawmodel/parsers';
+import { floatParser, integerParser, stringParser } from '@rawmodel/parsers';
 import { presenceValidator } from '@rawmodel/validators';
 import { PoolConnection } from 'mysql2/promise';
 import { DbTables, PopulateFrom, SerializeFor, SqlModelStatus, ValidatorErrorCode } from '../../../config/types';
@@ -78,18 +78,18 @@ export class Outcome extends AdvancedSQLModel {
   imgUrl: string;
 
   /**
-   * Latest outcome chance.
+   * Latest outcome chance - virtual field, populated from outcome chances table.
    */
   @prop({
-    parser: { resolver: OutcomeChance },
+    parser: { resolver: floatParser() },
     serializable: [SerializeFor.USER],
     populatable: [PopulateFrom.DB],
-    defaultValue: () => null
+    defaultValue: () => 0
   })
-  latestChance: OutcomeChance;
+  latestChance: number;
 
   /**
-   * Outcome volume.
+   * Outcome volume - virtual field, calculated, not saved.
    */
   @prop({
     parser: { resolver: integerParser() },
