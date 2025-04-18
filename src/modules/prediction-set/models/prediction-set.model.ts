@@ -915,10 +915,32 @@ export class PredictionSet extends AdvancedSQLModel {
               ),
             ']'
           ) AS outcomes,
-        IF(uw.id IS NOT NULL, 1, 0) AS isWatched
+          IF(uw.id IS NOT NULL, 1, 0) AS isWatched,
+          COALESCE(tv.volume, 0) AS volume
         `,
       qFrom: `
         FROM ${DbTables.PREDICTION_SET} p
+        LEFT JOIN (
+          SELECT 
+            ps.id AS prediction_set_id,
+            (
+              COALESCE((
+                SELECT SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)) - 
+                       SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0))
+                FROM ${DbTables.OUTCOME_SHARE_TRANSACTION} ost
+                WHERE ost.prediction_set_id = ps.id
+                GROUP BY ost.prediction_set_id
+              ), 0) +
+              COALESCE((
+                SELECT SUM(psft.collateralAmount)
+                FROM ${DbTables.PREDICTION_SET_FUNDING_TRANSACTION} psft
+                WHERE psft.prediction_set_id = ps.id
+                GROUP BY psft.prediction_set_id
+              ), 0)
+            ) AS volume
+          FROM ${DbTables.PREDICTION_SET} ps
+          WHERE ps.status <> ${SqlModelStatus.DELETED}
+        ) tv ON tv.prediction_set_id = p.id
         LEFT JOIN ${DbTables.OUTCOME} o
           ON o.prediction_set_id = p.id
           AND o.status = ${SqlModelStatus.ACTIVE}
@@ -947,6 +969,7 @@ export class PredictionSet extends AdvancedSQLModel {
         AND (@category IS NULL
           OR pc.category LIKE CONCAT('%', @category, '%')
         )
+        AND (@collateralTokenId IS NULL OR p.collateral_token_id = @collateralTokenId)
         `,
       qGroup: `
         GROUP BY p.id
@@ -967,7 +990,10 @@ export class PredictionSet extends AdvancedSQLModel {
     };
     const res = await selectAndCountQuery(this.getContext().mysql, sqlQuery, params, 'p.id');
     if (res.items.length) {
-      res.items = res?.items?.map((x: any) => ({ ...x, outcomes: JSON.parse(x.outcomes) }));
+      res.items = res?.items?.map((x: any) => ({
+        ...x,
+        outcomes: JSON.parse(x.outcomes)
+      }));
     }
     return res;
   }
