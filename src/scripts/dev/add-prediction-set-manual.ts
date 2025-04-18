@@ -7,10 +7,10 @@ import { createContext } from './context';
 const twoHours = 2 * 60 * 60 * 1000;
 const fourHours = 4 * 60 * 60 * 1000;
 const sixHours = 6 * 60 * 60 * 1000;
-
 const oneWeek = 7 * 24 * 60 * 60 * 1000;
 
 const data = {
+  collateral_token_id: 1,
   question: 'Bitcoin all time high by March 31?',
   description: 'Bitcoin all time high prediction.',
   generalResolutionDef: 'This market will resolve to "Yes" if Bitcoin reaches the all time high between December 30 and January 31.',

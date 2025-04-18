@@ -363,7 +363,8 @@ export class PredictionSetService {
 
   /**
    * Get prediction set activity.
-   * @param id
+   *
+   * @param query
    * @param context
    * @returns
    */
@@ -373,7 +374,8 @@ export class PredictionSetService {
 
   /**
    * Get prediction set holders.
-   * @param id
+   *
+   * @param query
    * @param context
    * @returns
    */
@@ -383,6 +385,7 @@ export class PredictionSetService {
 
   /**
    * Cancel prediction set on CHAIN.
+   *
    * @param predictionSet Prediction set.
    * @param context Application context.
    */
@@ -408,6 +411,7 @@ export class PredictionSetService {
 
   /**
    * Delete prediction set.
+   *
    * @param predictionSet Prediction set.
    * @param context Application context.
    */

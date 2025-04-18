@@ -345,15 +345,26 @@ export class PredictionSet extends AdvancedSQLModel {
   public isWatched: boolean;
 
   /**
-   * Prediction set's liquidity volume.
+   * Prediction set's liquidity (funding) volume.
    */
   @prop({
     parser: { resolver: integerParser() },
     serializable: [SerializeFor.USER],
     populatable: [PopulateFrom.USER],
-    defaultValue: () => false
+    defaultValue: () => 0
   })
-  public volume: number;
+  public fundingVolume: number;
+
+  /**
+   * Prediction set's transactions volume.
+   */
+  @prop({
+    parser: { resolver: integerParser() },
+    serializable: [SerializeFor.USER],
+    populatable: [PopulateFrom.USER],
+    defaultValue: () => 0
+  })
+  public transactionsVolume: number;
 
   /**
    * User's open positions.
@@ -396,7 +407,9 @@ export class PredictionSet extends AdvancedSQLModel {
     }
 
     if (populate?.volume) {
-      this.volume = await this.getVolume(conn);
+      const volume = await this.getVolume(conn);
+      this.fundingVolume = volume?.fundingVolume | 0;
+      this.transactionsVolume = volume?.transactionsVolume | 0;
     }
 
     this.positions = await this.getOpenPositions(conn);
@@ -476,27 +489,32 @@ export class PredictionSet extends AdvancedSQLModel {
    * Gets prediction sets volume.
    *
    * @param conn Pool connection.
-   * @returns Volume.
+   * @returns Volume object with share, funding and total volumes.
    */
-  public async getVolume(conn?: PoolConnection): Promise<number> {
-    const volume = await this.db().paramExecute(
+  public async getVolume(conn?: PoolConnection): Promise<{ transactionsVolume: number; fundingVolume: number }> {
+    const volumeData = await this.db().paramExecute(
       `
         SELECT
-          IFNULL(SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)), 0)
-          - IFNULL(SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0)), 0)
-          + (
+          (
+            SELECT IFNULL(SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)), 0)
+            - IFNULL(SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0)), 0)
+            FROM ${DbTables.OUTCOME_SHARE_TRANSACTION} ost
+            WHERE ost.prediction_set_id = @predictionSetId
+          ) AS transactionsVolume,
+          (
             SELECT IFNULL(SUM(psft.collateralAmount), 0)
             FROM ${DbTables.PREDICTION_SET_FUNDING_TRANSACTION} psft
             WHERE psft.prediction_set_id = @predictionSetId
-          ) AS volume
-        FROM ${DbTables.OUTCOME_SHARE_TRANSACTION} ost
-        WHERE ost.prediction_set_id = @predictionSetId
+          ) AS fundingVolume
       `,
       { predictionSetId: this.id },
       conn
     );
 
-    return volume[0].volume;
+    return {
+      transactionsVolume: volumeData[0].transactionsVolume,
+      fundingVolume: volumeData[0].fundingVolume
+    };
   }
 
   /**
@@ -888,9 +906,7 @@ export class PredictionSet extends AdvancedSQLModel {
                     'name', o.name,
                     'outcomeIndex', o.outcomeIndex,
                     'positionId', o.positionId,
-                    'chance', oc.chance,
-                    'supply', oc.supply,
-                    'totalSupply', oc.totalSupply,
+                    'latestChance', oc.chance,
                     'imgUrl', o.imgUrl
                   )
                   ORDER BY o.id
