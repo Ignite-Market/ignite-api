@@ -741,6 +741,38 @@ export class PredictionSet extends AdvancedSQLModel {
           OR p.question LIKE CONCAT('%', @search, '%')
         )
         `
+      },
+      {
+        qSelect: `
+        SELECT 
+          ${new PredictionSet({}).generateSelectFields('p')},
+          u.id as userId,
+          u.username,
+          u.walletAddress as userWallet,
+          o.name AS outcomeName,
+          t.id as transactionId,
+          t.amount AS userAmount,
+          5 as type,
+          NULL AS outcomeTokens,
+          t.txHash,
+          t.createTime AS transactionTime
+        `,
+        qFrom: `
+        FROM ${DbTables.CLAIM_TRANSACTION} t
+        JOIN ${DbTables.PREDICTION_SET} p
+          ON t.prediction_set_id = p.id
+        JOIN ${DbTables.USER} u
+          ON u.id = t.user_id
+        JOIN ${DbTables.OUTCOME} o 
+          ON o.id = t.outcome_id
+        WHERE p.status <> ${SqlModelStatus.DELETED}
+        AND (@predictionId IS NULL OR t.prediction_set_id = @predictionId)
+        AND (@userId IS NULL OR t.user_id = @userId)
+        AND (@type IS NULL OR 5 = @type)
+        AND (@search IS NULL
+          OR p.question LIKE CONCAT('%', @search, '%')
+        )
+        `
       }
     ];
 

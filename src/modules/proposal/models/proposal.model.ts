@@ -119,7 +119,12 @@ export class Proposal extends AdvancedSQLModel {
         SELECT
           ${this.generateSelectFields('p')},
           COALESCE(SUM(pv.voteType), 0) AS totalVotes,
-          COUNT(c.id) AS totalComments,
+          (
+            SELECT COUNT(*) 
+            FROM ${DbTables.COMMENT} 
+            WHERE entity_id = p.id 
+            AND entityType = ${CommentEntityTypes.PROPOSAL}
+          ) AS totalComments,
           u.username,
           u.walletAddress AS userWallet,
           CONCAT(
@@ -144,9 +149,6 @@ export class Proposal extends AdvancedSQLModel {
         FROM ${DbTables.PROPOSAL} p
         LEFT JOIN ${DbTables.PROPOSAL_VOTE} pv
           ON pv.proposal_id = p.id
-        LEFT JOIN ${DbTables.COMMENT} c
-          ON c.entity_id = p.id
-          AND c.entityType = ${CommentEntityTypes.PROPOSAL}
         INNER JOIN ${DbTables.USER} u
           ON p.user_id = u.id
         WHERE p.status <> ${SqlModelStatus.DELETED}
