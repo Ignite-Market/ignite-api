@@ -21,6 +21,7 @@ export enum DbTables {
   PREDICTION_SET = 'prediction_set',
   PREDICTION_SET_CHAIN_DATA = 'prediction_set_chain_data',
   PREDICTION_SET_FUNDING_TRANSACTION = 'prediction_set_funding_transaction',
+  CLAIM_TRANSACTION = 'claim_transaction',
   DATA_SOURCE = 'data_source',
   PREDICTION_SET_DATA_SOURCE = 'prediction_set_data_source',
   OUTCOME = 'outcome',

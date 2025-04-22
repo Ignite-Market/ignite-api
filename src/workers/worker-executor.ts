@@ -31,7 +31,8 @@ export enum WorkerName {
   REQUEST_ATTESTATION_PROOF = 'RequestAttestationProof',
   REQUEST_ATTESTATION = 'RequestAttestation',
   VOTING_PARSER = 'VotingParser',
-  FINALIZE_PROPOSAL_ROUNDS = 'FinalizeProposalRounds'
+  FINALIZE_PROPOSAL_ROUNDS = 'FinalizeProposalRounds',
+  CLAIMS_PARSER = 'ClaimsParser'
 }
 
 /**

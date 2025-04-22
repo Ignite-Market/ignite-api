@@ -3,9 +3,10 @@ import { WorkerDefinition } from '../../lib/worker/serverless-workers';
 import { WorkerName } from '../../workers/worker-executor';
 import { createContext } from './context';
 import { FinalizeProposalRoundsWorker } from '../../workers/finalize-proposal-rounds.worker';
+import { ClaimsParserWorker } from '../../workers/claims-parser.worker';
 
-const WORKER_NAME = WorkerName.FINALIZE_PROPOSAL_ROUNDS;
-const WorkerClass = FinalizeProposalRoundsWorker;
+const WORKER_NAME = WorkerName.CLAIMS_PARSER;
+const WorkerClass = ClaimsParserWorker;
 
 (async () => {
   const start = new Date();
