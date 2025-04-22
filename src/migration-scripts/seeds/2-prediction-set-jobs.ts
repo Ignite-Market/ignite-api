@@ -15,7 +15,8 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
       ('${WorkerName.PREDICTION_SET_PARSER}', 0, '* * * * *', 5),
       ('${WorkerName.PREDICTION_SETS_FACTORY_PARSER}', 0, '* * * * *', 5),
       ('${WorkerName.REFRESH_OUTCOME_CHANCES}', 0, '*/15 * * * *', 5),
-      ('${WorkerName.FINALIZE_PROPOSAL_ROUNDS}', 0, '0 * * * *', 5)
+      ('${WorkerName.FINALIZE_PROPOSAL_ROUNDS}', 0, '0 * * * *', 5),
+      ('${WorkerName.CLAIMS_PARSER}', 0, '0 * * * *', 5)
   `);
 }
 
@@ -26,5 +27,6 @@ export async function downgrade(queryFn: (query: string, values?: any[]) => Prom
     DELETE FROM ${DbTables.JOB} WHERE name IN ('${WorkerName.PREDICTION_SET_PARSER}');
     DELETE FROM ${DbTables.JOB} WHERE name IN ('${WorkerName.PREDICTION_SETS_FACTORY_PARSER}');
     DELETE FROM ${DbTables.JOB} WHERE name IN ('${WorkerName.REFRESH_OUTCOME_CHANCES}');
+    DELETE FROM ${DbTables.JOB} WHERE name IN ('${WorkerName.CLAIMS_PARSER}');
   `);
 }

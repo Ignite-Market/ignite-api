@@ -5,6 +5,7 @@ import { MySql } from '../lib/database/mysql';
 import { WorkerLogStatus, writeWorkerLog } from '../lib/worker/logger';
 import { ServiceDefinition, ServiceDefinitionType, WorkerDefinition } from '../lib/worker/serverless-workers';
 import { QueueWorkerType } from '../lib/worker/serverless-workers/base-queue-worker';
+import { ClaimsParserWorker } from './claims-parser.worker';
 import { CreatePredictionSetWorker } from './create-prediction-set.worker';
 import { FinalizeManualPredictionSetWorker } from './finalize-manual-prediction-sets.worker';
 import { FinalizeProposalRoundsWorker } from './finalize-proposal-rounds.worker';
@@ -143,6 +144,10 @@ export async function handleLambdaEvent(event: any, context: Context, serviceDef
       await new FinalizeProposalRoundsWorker(workerDefinition, context).run();
       break;
 
+    case WorkerName.CLAIMS_PARSER:
+      await new FinalizeProposalRoundsWorker(workerDefinition, context).run();
+      break;
+
     default:
       console.error(`ERROR - INVALID WORKER NAME: ${workerDefinition.workerName}`);
       await writeWorkerLog(
@@ -245,6 +250,12 @@ export async function handleSqsMessages(event: any, context: Context, serviceDef
 
         case WorkerName.FINALIZE_PROPOSAL_ROUNDS:
           await new FinalizeProposalRoundsWorker(workerDefinition, context).run({
+            executeArg: message?.body
+          });
+          break;
+
+        case WorkerName.CLAIMS_PARSER:
+          await new ClaimsParserWorker(workerDefinition, context).run({
             executeArg: message?.body
           });
           break;
