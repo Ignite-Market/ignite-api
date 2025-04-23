@@ -7,7 +7,7 @@ import { CodeException } from '../../lib/exceptions/exceptions';
 import { WorkerName } from '../../workers/worker-executor';
 import { ActivityQueryFilter } from './dtos/activity-query-filter';
 import { HoldersQueryFilter } from './dtos/holders-query-filter';
-import { PredictionSetChanceHistoryQueryFilter } from './dtos/prediciton-set-chance-history-query-filter';
+import { PredictionSetChanceHistoryQueryFilter } from './dtos/prediction-set-chance-history-query-filter';
 import { PredictionSetQueryFilter } from './dtos/prediction-set-query-filter';
 import { PredictionSetDto } from './dtos/prediction-set.dto';
 import { Banner } from './models/banner';
@@ -364,9 +364,9 @@ export class PredictionSetService {
   /**
    * Get prediction set activity.
    *
-   * @param query
-   * @param context
-   * @returns
+   * @param query Filtering query.
+   * @param context Application context.
+   * @returns Prediction set activity.
    */
   public async getPredictionActivity(query: ActivityQueryFilter, context: Context) {
     return await new PredictionSet({}, context).getActivityList(query);
@@ -375,9 +375,9 @@ export class PredictionSetService {
   /**
    * Get prediction set holders.
    *
-   * @param query
-   * @param context
-   * @returns
+   * @param query Filtering query.
+   * @param context Application context.
+   * @returns Prediction set holders.
    */
   public async getPredictionHolders(query: HoldersQueryFilter, context: Context) {
     return await new PredictionSet({}, context).getHoldersList(query);
@@ -434,11 +434,12 @@ export class PredictionSetService {
   }
 
   /**
+   * Get prediction chance history.
    *
-   * @param predictionSetId
-   * @param query
-   * @param context
-   * @returns
+   * @param predictionSetId Prediction set ID.
+   * @param query Query filter.
+   * @param context Application context.
+   * @returns Prediction chance history.
    */
   public async getPredictionChanceHistory(predictionSetId: number, query: PredictionSetChanceHistoryQueryFilter, context: Context) {
     const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId);
@@ -456,10 +457,11 @@ export class PredictionSetService {
   }
 
   /**
+   * Add user watchlist.
    *
-   * @param predictionSetId
-   * @param context
-   * @returns
+   * @param predictionSetId Prediction set ID.
+   * @param context Application context.
+   * @returns True if user watchlist added, false otherwise.
    */
   public async addUserWatchlist(predictionSetId: number, context: Context) {
     const existingWatchlist = await new UserWatchlist({}, context).populateByUserAndPredictionSetId(context.user.id, predictionSetId);
@@ -478,10 +480,11 @@ export class PredictionSetService {
   }
 
   /**
+   * Remove user watchlist.
    *
-   * @param predictionSetId
-   * @param context
-   * @returns
+   * @param predictionSetId Prediction set ID.
+   * @param context Application context.
+   * @returns True if user watchlist removed, false otherwise.
    */
   public async removeUserWatchlist(predictionSetId: number, context: Context) {
     const existingWatchlist = await new UserWatchlist({}, context).populateByUserAndPredictionSetId(context.user.id, predictionSetId);
@@ -494,16 +497,17 @@ export class PredictionSetService {
   }
 
   /**
+   * Get active banners.
    *
-   * @param context
-   * @returns
+   * @param context Application context.
+   * @returns Active banners.
    */
   public async getBanners(context: Context) {
     return await new Banner({}, context).getActive();
   }
 
   /**
-   * Get prediction set ID.
+   * Generate prediction set ID.
    *
    * @param predictionSet Prediction set.
    * @returns Prediction set ID.

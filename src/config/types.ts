@@ -78,7 +78,8 @@ export enum ValidatorErrorCode {
   PROPOSAL_GENERAL_RESOLUTION_NOT_PRESENT = 422_00_030,
   PROPOSAL_OUTCOME_RESOLUTION_NOT_PRESENT = 422_00_031,
   PROPOSAL_VOTE_TYPE_NOT_VALID = 422_00_032,
-  COMMENT_ENTITY_TYPE_NOT_VALID = 422_00_033
+  COMMENT_ENTITY_TYPE_NOT_VALID = 422_00_033,
+  TOP_USERS_QUERY_FILTER_COLLATERAL_TOKEN_ID_NOT_PRESENT = 422_00_034
 }
 
 /**
@@ -256,4 +257,14 @@ export enum CacheKeyTTL {
  */
 export enum JwtTokenType {
   USER_LOGIN = 'user-login'
+}
+
+/**
+ * Time range filter.
+ */
+export enum TimeRange {
+  ONE_DAY = '1D',
+  ONE_WEEK = '1W',
+  ONE_MONTH = '1M',
+  ALL = 'ALL'
 }

@@ -8,10 +8,21 @@ import { MySQLModule } from './modules/database/mysql.module';
 import { PredictionSetModule } from './modules/prediction-set/prediction-set.module';
 import { ProposalModule } from './modules/proposal/proposal.module';
 import { RewardPointsModule } from './modules/reward-points/reward-points.module';
+import { StatsModule } from './modules/stats/stats.module';
 import { UserModule } from './modules/user/user.module';
 
 @Module({
-  imports: [MySQLModule, UserModule, PredictionSetModule, CommentModule, BaseModule, ProposalModule, RewardPointsModule, CollateralTokenModule],
+  imports: [
+    MySQLModule,
+    UserModule,
+    PredictionSetModule,
+    CommentModule,
+    BaseModule,
+    ProposalModule,
+    RewardPointsModule,
+    CollateralTokenModule,
+    StatsModule
+  ],
   controllers: [],
   providers: []
 })

@@ -12,7 +12,7 @@ import { dateToSqlString } from '../../../lib/utils';
 import { enumInclusionValidator } from '../../../lib/validators';
 import { ActivityQueryFilter } from '../dtos/activity-query-filter';
 import { HoldersQueryFilter } from '../dtos/holders-query-filter';
-import { PredictionSetChanceHistoryQueryFilter } from '../dtos/prediciton-set-chance-history-query-filter';
+import { PredictionSetChanceHistoryQueryFilter } from '../dtos/prediction-set-chance-history-query-filter';
 import { PredictionSetQueryFilter } from '../dtos/prediction-set-query-filter';
 import { DataSource } from './data-source.model';
 import { Outcome } from './outcome.model';
@@ -605,6 +605,7 @@ export class PredictionSet extends AdvancedSQLModel {
 
   /**
    * Adds a data source to the prediction set.
+   *
    * @param dataSourceId Data source ID.
    * @param conn Database connection.
    * @returns Prediction set.
@@ -627,6 +628,7 @@ export class PredictionSet extends AdvancedSQLModel {
 
   /**
    * Remove all data sources for this prediction set.
+   *
    * @param conn Database connection.
    * @returns Prediction set.
    */
@@ -647,6 +649,7 @@ export class PredictionSet extends AdvancedSQLModel {
 
   /**
    * Remove all outcomes for this prediction set.
+   *
    * @param conn Database connection.
    * @returns Prediction set.
    */
@@ -666,9 +669,10 @@ export class PredictionSet extends AdvancedSQLModel {
   }
 
   /**
+   * Returns prediction set activity list.
    *
-   * @param query
-   * @returns
+   * @param query Activity query filter.
+   * @returns Array of activity.
    */
   public async getActivityList(query: ActivityQueryFilter): Promise<any> {
     const defaultParams = {
@@ -788,9 +792,10 @@ export class PredictionSet extends AdvancedSQLModel {
   }
 
   /**
+   * Returns prediction set holders list.
    *
-   * @param query
-   * @returns
+   * @param query Holders query filter.
+   * @returns Array of holders.
    */
   public async getHoldersList(query: HoldersQueryFilter): Promise<any> {
     const defaultParams = {
@@ -848,7 +853,7 @@ export class PredictionSet extends AdvancedSQLModel {
   }
 
   /**
-   *  Returns user's predictions.
+   * Returns user's predictions.
    *
    * @param id User ID.
    * @param query User's query filter.
@@ -905,9 +910,10 @@ export class PredictionSet extends AdvancedSQLModel {
   }
 
   /**
+   * Returns prediction set list.
    *
-   * @param query
-   * @returns
+   * @param query Prediction set query filter.
+   * @returns Array of prediction sets.
    */
   public async getList(query: PredictionSetQueryFilter): Promise<any> {
     const defaultParams = {
@@ -1031,9 +1037,10 @@ export class PredictionSet extends AdvancedSQLModel {
   }
 
   /**
+   * Returns prediction set chance history.
    *
-   * @param query
-   * @returns
+   * @param query Chance history query filter.
+   * @returns Array of chance history.
    */
   public async getChanceHistory(query: PredictionSetChanceHistoryQueryFilter): Promise<any> {
     let rangeCondition = '';

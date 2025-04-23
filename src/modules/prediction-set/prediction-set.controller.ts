@@ -11,8 +11,7 @@ import { Outcome } from './models/outcome.model';
 import { PredictionSet } from './models/prediction-set.model';
 import { PredictionSetService } from './prediction-set.service';
 import { PredictionSetQueryFilter } from './dtos/prediction-set-query-filter';
-import { PredictionSetChanceHistoryQueryFilter } from './dtos/prediciton-set-chance-history-query-filter';
-import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
+import { PredictionSetChanceHistoryQueryFilter } from './dtos/prediction-set-chance-history-query-filter';
 import { ActivityQueryFilter } from './dtos/activity-query-filter';
 import { HoldersQueryFilter } from './dtos/holders-query-filter';
 

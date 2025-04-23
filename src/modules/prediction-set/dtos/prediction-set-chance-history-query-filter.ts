@@ -1,23 +1,22 @@
 import { prop } from '@rawmodel/core';
 import { integerParser, stringParser } from '@rawmodel/parsers';
-import { PopulateFrom, ValidatorErrorCode } from '../../../config/types';
+import { PopulateFrom, TimeRange, ValidatorErrorCode } from '../../../config/types';
 import { ModelBase } from '../../../lib/base-models/base';
 import { enumInclusionValidator } from '../../../lib/validators';
 
-export enum PredictionSetChanceHistoryRange {
-  ONE_DAY = '1D',
-  ONE_WEEK = '1W',
-  ONE_MONTH = '1M',
-  ALL = 'ALL'
-}
-
+/**
+ * Query filter for retrieving prediction set chance history.
+ */
 export class PredictionSetChanceHistoryQueryFilter extends ModelBase {
+  /**
+   * Filter by time range.
+   */
   @prop({
     parser: { resolver: stringParser() },
     populatable: [PopulateFrom.USER],
     validators: [
       {
-        resolver: enumInclusionValidator(PredictionSetChanceHistoryRange, false),
+        resolver: enumInclusionValidator(TimeRange, false),
         code: ValidatorErrorCode.PREDICTION_SET_CHANCE_HISTORY_RANGE_NOT_VALID
       }
     ]
