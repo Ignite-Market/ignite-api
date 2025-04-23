@@ -145,7 +145,7 @@ export async function handleLambdaEvent(event: any, context: Context, serviceDef
       break;
 
     case WorkerName.CLAIMS_PARSER:
-      await new FinalizeProposalRoundsWorker(workerDefinition, context).run();
+      await new ClaimsParserWorker(workerDefinition, context).run();
       break;
 
     default:
