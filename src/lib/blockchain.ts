@@ -8,6 +8,7 @@ import { PredictionSet, ResolutionType } from '../modules/prediction-set/models/
 import { CONDITIONAL_TOKEN_ABI, FPMM_ABI, FPMM_FACTORY_ABI, ORACLE_ABI } from './abis';
 import { CodeException } from './exceptions/exceptions';
 import { CollateralToken } from '../modules/collateral-token/models/collateral-token.model';
+import { keccak256, AbiCoder } from 'ethers';
 
 /**
  * Prediction set blockchain status.
@@ -53,7 +54,7 @@ export function setup(fpmmAddress: string = null) {
  * @param context Application context.
  */
 export async function addPredictionSet(predictionSet: PredictionSet, context: Context) {
-  const { fpmmfContract, conditionalTokenContract, oracleContract } = setup();
+  const { fpmmfContract, conditionalTokenContract, oracleContract, signer } = setup();
 
   const collateralToken = await new CollateralToken({}, context).populateById(predictionSet.collateral_token_id);
   if (!collateralToken.exists() || !collateralToken.isEnabled()) {
@@ -82,6 +83,7 @@ export async function addPredictionSet(predictionSet: PredictionSet, context: Co
       urls,
       jqs,
       predictionSet.consensusThreshold,
+      Math.ceil(Number(predictionSet.endTime) / 1000),
       Math.ceil(Number(predictionSet.resolutionTime) / 1000),
       predictionSet.resolutionType === ResolutionType.AUTOMATIC
     );
@@ -114,6 +116,37 @@ export async function addPredictionSet(predictionSet: PredictionSet, context: Co
     });
   }
 
+  const salt = keccak256(
+    AbiCoder.defaultAbiCoder().encode(
+      [
+        'address', // creator
+        'string', // name
+        'string', // symbol
+        'address', // conditionalTokens
+        'address', // collateralToken
+        'bytes32[]', // conditionIds
+        'uint256', // fee
+        'uint256', // treasuryPercent
+        'address', // treasury
+        'uint256', // fundingThreshold
+        'uint256' // endTime
+      ],
+      [
+        signer.address,
+        'FPMM Shares',
+        'FPMM',
+        env.CONDITIONAL_TOKEN_CONTRACT,
+        collateralToken.address,
+        [conditionId],
+        ethers.parseEther(env.MARKET_FEE_PERCENT),
+        env.MARKET_TREASURY_PERCENT,
+        env.MARKET_TREASURY_ADDRESS,
+        ethers.parseUnits(collateralToken.fundingThreshold, collateralToken.decimals),
+        Math.ceil(Number(predictionSet.endTime) / 1000)
+      ]
+    )
+  );
+
   let receiptBlock = null;
   try {
     const createTx = await fpmmfContract.createFixedProductMarketMaker(
@@ -123,7 +156,9 @@ export async function addPredictionSet(predictionSet: PredictionSet, context: Co
       ethers.parseEther(env.MARKET_FEE_PERCENT),
       env.MARKET_TREASURY_PERCENT,
       env.MARKET_TREASURY_ADDRESS,
-      ethers.parseUnits(collateralToken.fundingThreshold, collateralToken.decimals)
+      ethers.parseUnits(collateralToken.fundingThreshold, collateralToken.decimals),
+      Math.ceil(Number(predictionSet.endTime) / 1000),
+      salt
     );
     const txReceipt = await createTx.wait();
     receiptBlock = txReceipt.blockNumber;
