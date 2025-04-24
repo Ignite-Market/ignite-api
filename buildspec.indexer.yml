@@ -9,7 +9,7 @@ phases:
 
   build:
     commands:
-      - docker build -t ignite-market-indexer .
+      - docker build -f Dockerfile.indexer -t ignite-market-indexer .
       - docker tag ignite-market-indexer:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME:ignite-market-$ENV
 
   post_build:
