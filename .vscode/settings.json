@@ -10,6 +10,7 @@
   "typescript.preferences.importModuleSpecifier": "relative",
   "cSpell.words": [
     "autorestart",
+    "awscli",
     "coston",
     "CURDATE",
     "flarenetwork",
