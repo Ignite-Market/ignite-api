@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM public.ecr.aws/sam/build-nodejs20.x
 
 # Create app directory
 WORKDIR /app
