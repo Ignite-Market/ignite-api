@@ -1,5 +1,5 @@
+import { createContext } from '../../lib/utils';
 import { CollateralToken } from '../../modules/collateral-token/models/collateral-token.model';
-import { createContext } from './context';
 
 const uscd = {
   name: 'USDC',

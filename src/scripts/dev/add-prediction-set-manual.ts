@@ -1,8 +1,8 @@
 import { addPredictionSet } from '../../lib/blockchain';
+import { createContext } from '../../lib/utils';
 import { Outcome } from '../../modules/prediction-set/models/outcome.model';
 import { PredictionSet, ResolutionType } from '../../modules/prediction-set/models/prediction-set.model';
 import { PredictionSetService } from '../../modules/prediction-set/prediction-set.service';
-import { createContext } from './context';
 
 const twoHours = 2 * 60 * 60 * 1000;
 const fourHours = 4 * 60 * 60 * 1000;

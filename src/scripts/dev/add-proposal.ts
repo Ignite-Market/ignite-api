@@ -1,5 +1,5 @@
+import { createContext } from '../../lib/utils';
 import { Proposal } from '../../modules/proposal/models/proposal.model';
-import { createContext } from './context';
 
 const data = {
   round_id: 2,

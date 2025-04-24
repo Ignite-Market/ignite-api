@@ -1,7 +1,7 @@
 import { env } from '../../config/env';
 import { DbTables } from '../../config/types';
+import { createContext } from '../../lib/utils';
 import { Contract, ContractId } from '../../modules/contract/models/contract.model';
-import { createContext } from './context';
 
 const contractId = ContractId.CONDITIONAL_TOKENS;
 const contractAddress = '0x3c1947f48BAA623B264e86cF1ac85AE3FCd09904';

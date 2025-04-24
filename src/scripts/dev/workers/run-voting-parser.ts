@@ -1,8 +1,8 @@
 import { exit } from 'process';
+import { createContext } from '../../../lib/utils';
 import { WorkerDefinition } from '../../../lib/worker/serverless-workers';
 import { VotingParserWorker } from '../../../workers/voting-parser.worker';
 import { WorkerName } from '../../../workers/worker-executor';
-import { createContext } from '../context';
 
 (async () => {
   const start = new Date();

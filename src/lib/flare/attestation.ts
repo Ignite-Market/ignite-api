@@ -7,6 +7,7 @@ import { deepCloneAbiCoderResult, getABI, toUtf8HexString } from './utils';
 
 /**
  * Inits provider and base Flare contracts.
+ *
  * @returns Provider, signer and contract registry contract.
  */
 export function init() {
@@ -19,6 +20,7 @@ export function init() {
 
 /**
  * Gets contract from the Flare's contract registry.
+ *
  * @param name Contract name.
  * @param registry Contract registry.
  * @param signer Signer.
@@ -112,6 +114,7 @@ export async function submitAttestationRequest(request: EncodedAttestationReques
 
 /**
  * Checks if voting round is finalized.
+ *
  * @param roundId Round ID.
  * @returns Boolean.
  */

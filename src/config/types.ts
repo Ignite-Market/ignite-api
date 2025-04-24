@@ -1,3 +1,6 @@
+import { ShareTransactionType } from '../modules/prediction-set/models/transactions/outcome-share-transaction.model';
+import { FundingTransactionType } from '../modules/prediction-set/models/transactions/prediction-set-funding-transaction.model';
+
 /**
  * Application environment types.
  */
@@ -267,4 +270,29 @@ export enum TimeRange {
   ONE_WEEK = '1W',
   ONE_MONTH = '1M',
   ALL = 'ALL'
+}
+
+/**
+ * Funding event definition.
+ */
+export interface FundingEvent {
+  type: FundingTransactionType;
+  txHash: string;
+  wallet: string;
+  amounts: string;
+  shares: string;
+  collateralRemovedFromFeePool?: string;
+}
+
+/**
+ * Transaction event definition.
+ */
+export interface TransactionEvent {
+  type: ShareTransactionType;
+  txHash: string;
+  wallet: string;
+  amount: string;
+  feeAmount: string;
+  outcomeIndex: number;
+  outcomeTokens: string;
 }

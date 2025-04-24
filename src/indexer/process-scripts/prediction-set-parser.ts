@@ -1,58 +1,47 @@
+import { Logger } from '@nestjs/common';
 import { ethers } from 'ethers';
-import { env } from '../config/env';
-import { DbTables, SerializeFor, SqlModelStatus, FundingEvent, TransactionEvent } from '../config/types';
-import { setup } from '../lib/blockchain';
-import { WorkerLogStatus } from '../lib/worker/logger';
-import { BaseQueueWorker } from '../lib/worker/serverless-workers/base-queue-worker';
-import { OutcomeShareTransaction, ShareTransactionType } from '../modules/prediction-set/models/transactions/outcome-share-transaction.model';
-import { Outcome } from '../modules/prediction-set/models/outcome.model';
+import { env } from '../../config/env';
+import { FundingEvent, SerializeFor, TransactionEvent } from '../../config/types';
+import { sendToWorkerQueue } from '../../lib/aws/aws-sqs';
+import { setup } from '../../lib/blockchain';
+import { WorkerLogStatus } from '../../lib/worker/logger';
+import { Outcome } from '../../modules/prediction-set/models/outcome.model';
+import { PredictionSet, PredictionSetStatus } from '../../modules/prediction-set/models/prediction-set.model';
+import { OutcomeShareTransaction, ShareTransactionType } from '../../modules/prediction-set/models/transactions/outcome-share-transaction.model';
 import {
   FundingTransactionType,
   PredictionSetFundingTransaction
-} from '../modules/prediction-set/models/transactions/prediction-set-funding-transaction.model';
-import { PredictionSet, PredictionSetStatus } from '../modules/prediction-set/models/prediction-set.model';
-import { User } from '../modules/user/models/user.model';
-import { sendToWorkerQueue } from '../lib/aws/aws-sqs';
-import { WorkerName } from './worker-executor';
+} from '../../modules/prediction-set/models/transactions/prediction-set-funding-transaction.model';
+import { User } from '../../modules/user/models/user.model';
+import { WorkerName } from '../../workers/worker-executor';
+import { BaseProcess } from '../base-process';
+import { ProcessName } from '../types';
 
 /**
- * Parses prediction set contracts.
+ * Main function to execute the prediction set parser process.
  */
-export class PredictionSetParserWorker extends BaseQueueWorker {
-  /**
-   * Gets predictions set IDs.
-   * @returns Array of prediction set IDs.
-   */
-  public async runPlanner(): Promise<number[]> {
-    const predictionSetIds = await this.context.mysql.paramExecute(
-      `
-        SELECT ps.id
-        FROM ${DbTables.PREDICTION_SET} ps
-        INNER JOIN ${DbTables.PREDICTION_SET_CHAIN_DATA} cd
-          ON ps.id = cd.prediction_set_id
-        WHERE 
-          ps.setStatus IN (${PredictionSetStatus.ACTIVE}, ${PredictionSetStatus.FUNDING})
-          AND ps.status = ${SqlModelStatus.ACTIVE}
-          AND cd.status = ${SqlModelStatus.ACTIVE}
-          AND cd.contractAddress IS NOT NULL
-        `,
-      {}
-    );
-
-    return predictionSetIds.map((d) => d.id);
+async function main() {
+  if (process.argv.length < 3 || !process.argv[2]) {
+    Logger.error('prediction-set-parser.ts', 'main', 'Prediction set ID is required.');
+    process.exit(1);
   }
 
-  /**
-   *
-   * @param predictionSetId Prediction set IDs.
-   */
-  public async runExecutor(predictionSetId: number): Promise<any> {
-    const conn = await this.context.mysql.start();
+  const predictionSetId = Number(process.argv[2]);
+  const workerProcess = new BaseProcess(ProcessName.PREDICTION_SET_PARSER);
+  let conn = null;
+
+  try {
+    await workerProcess.initialize();
+    const context = workerProcess.context;
+    conn = await context.mysql.start();
 
     try {
-      const predictionSet = await new PredictionSet({}, this.context).populateById(predictionSetId, null, false, { outcomes: true, chainData: true });
+      const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId, null, false, {
+        outcomes: true,
+        chainData: true
+      });
       if (!predictionSet.exists()) {
-        await this.writeLogToDb(
+        await workerProcess.writeLogToDb(
           WorkerLogStatus.ERROR,
           `Prediction set with ID: ${predictionSetId} does not exists.`,
           {
@@ -62,7 +51,7 @@ export class PredictionSetParserWorker extends BaseQueueWorker {
           null
         );
 
-        await this.context.mysql.rollback(conn);
+        await context.mysql.rollback(conn);
         return;
       }
 
@@ -77,8 +66,7 @@ export class PredictionSetParserWorker extends BaseQueueWorker {
       }
 
       if (fromBlock >= toBlock) {
-        await this.context.mysql.rollback(conn);
-
+        await context.mysql.rollback(conn);
         return;
       }
 
@@ -120,7 +108,7 @@ export class PredictionSetParserWorker extends BaseQueueWorker {
 
       // Insert funding events.
       for (const fundingEvent of fundingEvents) {
-        const user = await new User({}, this.context).populateByWalletAddress(fundingEvent.wallet, conn); // TODO: Should we let parse it without user ID?
+        const user = await new User({}, context).populateByWalletAddress(fundingEvent.wallet, conn); // TODO: Should we let parse it without user ID?
 
         let collateralAmount = null;
         if (fundingEvent.type === FundingTransactionType.ADDED) {
@@ -134,7 +122,7 @@ export class PredictionSetParserWorker extends BaseQueueWorker {
             prediction_set_id: predictionSet.id,
             collateralAmount
           },
-          this.context
+          context
         ).insert(SerializeFor.INSERT_DB, conn);
       }
 
@@ -184,15 +172,15 @@ export class PredictionSetParserWorker extends BaseQueueWorker {
 
       // Insert transaction events.
       for (const transactionEvent of transactionEvents) {
-        const user = await new User({}, this.context).populateByWalletAddress(transactionEvent.wallet, conn); // TODO: Should we let parse it without user ID?
-        const outcome = await new Outcome({}, this.context).populateByIndexAndPredictionSetId(transactionEvent.outcomeIndex, predictionSet.id, conn);
+        const user = await new User({}, context).populateByWalletAddress(transactionEvent.wallet, conn); // TODO: Should we let parse it without user ID?
+        const outcome = await new Outcome({}, context).populateByIndexAndPredictionSetId(transactionEvent.outcomeIndex, predictionSet.id, conn);
         if (!outcome.exists()) {
-          await this.writeLogToDb(WorkerLogStatus.ERROR, 'Outcome does not exists: ', {
+          await workerProcess.writeLogToDb(WorkerLogStatus.ERROR, 'Outcome does not exists: ', {
             predictionSetId,
             outcomeIndex: transactionEvent.outcomeIndex
           });
 
-          await this.context.mysql.rollback(conn);
+          await context.mysql.rollback(conn);
           return;
         }
 
@@ -203,29 +191,48 @@ export class PredictionSetParserWorker extends BaseQueueWorker {
             outcome_id: outcome.id,
             prediction_set_id: predictionSet.id
           },
-          this.context
+          context
         ).insert(SerializeFor.INSERT_DB, conn);
       }
 
       // Refresh chances if any of the events happened.
       if (fundingEvents.length || transactionEvents.length) {
-        await sendToWorkerQueue(WorkerName.REFRESH_OUTCOME_CHANCES, [predictionSetId], this.context);
+        // TODO: Move to indexer worker?
+        await sendToWorkerQueue(WorkerName.REFRESH_OUTCOME_CHANCES, [predictionSetId], context);
       }
 
       // Update blocks.
       await predictionSet.chainData.updateLastProcessedBlock(toBlock, conn);
-      await this.context.mysql.commit(conn);
+      await context.mysql.commit(conn);
+      conn = null;
     } catch (error) {
-      await this.context.mysql.rollback(conn);
+      if (conn) {
+        await context.mysql.rollback(conn);
+        conn = null;
+      }
 
-      await this.writeLogToDb(
+      await workerProcess.writeLogToDb(
         WorkerLogStatus.ERROR,
         'Error while parsing prediction set events: ',
         {
           predictionSetId
         },
-        error
+        error,
+        null
       );
+      throw error;
     }
+  } catch (error) {
+    Logger.error('prediction-set-parser.ts', 'main', 'Error executing prediction set parser process:', error);
+    process.exit(1);
+  } finally {
+    try {
+      await workerProcess.shutdown();
+    } catch (shutdownError) {
+      Logger.error('prediction-set-parser.ts', 'main', 'Error during shutdown:', shutdownError);
+    }
+    process.exit(0);
   }
 }
+
+main();

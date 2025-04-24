@@ -9,6 +9,7 @@
   "javascript.preferences.importModuleSpecifier": "relative",
   "typescript.preferences.importModuleSpecifier": "relative",
   "cSpell.words": [
+    "autorestart",
     "coston",
     "CURDATE",
     "flarenetwork",
