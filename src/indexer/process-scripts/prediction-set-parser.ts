@@ -51,6 +51,7 @@ async function main() {
           null
         );
 
+        console.log('ROLLING BACK: Prediction set does not exists.');
         await context.mysql.rollback(conn);
         return;
       }
@@ -65,7 +66,11 @@ async function main() {
         toBlock = currentBlock;
       }
 
-      if (fromBlock >= toBlock) {
+      if (fromBlock > toBlock) {
+        console.log('ROLLING BACK: BLOCK NOT REACHED YET.');
+        console.log('FROM BLOCK: ', fromBlock);
+        console.log('TO BLOCK: ', toBlock);
+        console.log('CURRENT BLOCK: ', currentBlock);
         await context.mysql.rollback(conn);
         return;
       }
@@ -180,6 +185,7 @@ async function main() {
             outcomeIndex: transactionEvent.outcomeIndex
           });
 
+          console.log('ROLLING BACK: Outcome does not exits.');
           await context.mysql.rollback(conn);
           return;
         }
@@ -207,6 +213,8 @@ async function main() {
       conn = null;
     } catch (error) {
       if (conn) {
+        console.log('ROLLING BACK: Error while parsing prediction set events.');
+        console.log(error);
         await context.mysql.rollback(conn);
         conn = null;
       }
