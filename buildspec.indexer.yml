@@ -14,7 +14,7 @@ phases:
 
   post_build:
     commands:
-      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME:ignite-market-$ENV
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME:ignite-market-indexer-$ENV
 
       - echo $VPS_DEPLOY_KEY_B64 | base64 -d > deploy_key.pem
       - chmod 600 deploy_key.pem
