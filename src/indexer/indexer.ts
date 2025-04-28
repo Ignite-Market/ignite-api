@@ -4,6 +4,7 @@ import { env } from '../config/env';
 import { Context } from '../context';
 import { createContext } from '../lib/utils';
 import { ProcessName } from './types';
+import { sendSlackWebhook } from '../lib/slack-webhook';
 
 /**
  * Indexer service that manages worker processes using PM2.
@@ -23,7 +24,7 @@ export class Indexer {
    * Initializes the indexer service.
    */
   public async initialize(): Promise<void> {
-    Logger.log('indexer.ts', 'initialize', 'Initializing indexer service...');
+    Logger.log('Initializing indexer service...', 'indexer.ts/initialize');
 
     // Create context.
     this._context = await createContext(); // TODO: Do we need db connection here.
@@ -34,24 +35,39 @@ export class Indexer {
     // Initialize worker processes in PM2
     await this._initializeWorkerProcesses();
 
-    Logger.log('indexer.ts', 'initialize', 'Indexer service initialized successfully.');
+    Logger.log('Indexer service initialized successfully.', 'indexer.ts/initialize');
   }
 
   /**
    * Connects to PM2.
    */
   private async _connectToPM2(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      pm2.connect((error) => {
-        if (error) {
-          Logger.error('indexer.ts', 'connectToPM2', 'Error connecting to PM2:', error);
-          reject(error);
-          return;
-        }
-        Logger.log('indexer.ts', 'connectToPM2', 'Connected to PM2 successfully');
-        resolve();
+    try {
+      await new Promise((resolve, reject) => {
+        pm2.connect((error) => {
+          if (error) {
+            Logger.error('Error connecting to PM2:', error, 'indexer.ts/_connectToPM2');
+            reject(error);
+            return;
+          }
+          Logger.log('Connected to PM2 successfully.', 'indexer.ts/_connectToPM2');
+
+          resolve(true);
+        });
       });
-    });
+    } catch (error) {
+      Logger.error('Error connecting to PM2 service:', error, 'indexer.ts/_connectToPM2');
+
+      await sendSlackWebhook(
+        `
+            *[INDEXER ERROR]*: Error initializing worker process: \n
+            - Error: \`${error}\`
+            `,
+        true
+      );
+
+      await this.shutdown();
+    }
   }
 
   /**
@@ -89,9 +105,17 @@ export class Indexer {
             );
           });
         } catch (error) {
-          console.log(error);
-          // Throw error.
-          Logger.error('indexer.ts', 'initialize', 'Error initializing worker process:', error);
+          Logger.error('Error initializing worker process:', error, 'indexer.ts/initialize');
+
+          await sendSlackWebhook(
+            `
+            *[INDEXER ERROR]*: Error initializing worker process: \n
+            - Error: \`${error}\`
+            `,
+            true
+          );
+
+          await this.shutdown();
         }
       }
     }
@@ -101,7 +125,7 @@ export class Indexer {
    * Shuts down the indexer service.
    */
   public async shutdown(): Promise<void> {
-    Logger.log('indexer.ts', 'shutdown', 'Shutting down indexer service...');
+    Logger.log('Shutting down indexer service...', 'indexer.ts/shutdown');
 
     // Stop all running worker processes.
     for (const [processName, process] of this._processes.entries()) {
@@ -110,18 +134,18 @@ export class Indexer {
           await new Promise((resolve, reject) => {
             pm2.stop(processName, (error) => {
               if (error) {
-                Logger.error('indexer.ts', 'shutdown', `Error stopping worker ${processName}:`, error);
+                Logger.error(`Error stopping worker ${processName}:`, error, 'indexer.ts/shutdown');
                 reject(error);
                 return;
               }
 
               process.isRunning = false;
-              Logger.log('indexer.ts', 'shutdown', `Worker ${processName} stopped successfully`);
+              Logger.log(`Worker ${processName} stopped successfully.`, 'indexer.ts/shutdown');
               resolve(true);
             });
           });
         } catch (error) {
-          Logger.error('indexer.ts', 'shutdown', `Error stopping worker ${processName}:`, error);
+          Logger.error(`Error stopping worker ${processName}:`, error, 'indexer.ts/shutdown');
         }
       }
     }
@@ -134,6 +158,6 @@ export class Indexer {
       await this._context.mysql.close();
     }
 
-    Logger.log('indexer.ts', 'shutdown', 'Indexer service shut down successfully.');
+    Logger.log('Indexer service shut down successfully.', 'indexer.ts/shutdown');
   }
 }

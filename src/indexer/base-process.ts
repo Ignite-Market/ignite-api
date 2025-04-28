@@ -37,11 +37,11 @@ export class BaseProcess {
       await new Promise((resolve, reject) => {
         pm2.connect((error) => {
           if (error) {
-            Logger.error('base-process.ts', 'connectToPM2', this.name + ': Error connecting to PM2:', error);
+            Logger.error(this.name + ': Error connecting to PM2:', error, 'base-process.ts/initialize');
             reject(error);
             return;
           }
-          Logger.log('base-process.ts', 'connectToPM2', this.name + ': Connected to PM2 successfully.');
+          Logger.log(this.name + ': Connected to PM2 successfully.', 'base-process.ts/initialize');
           resolve(true);
         });
       });
@@ -71,9 +71,9 @@ export class BaseProcess {
         status = WorkerLogStatus.ERROR;
       }
       await writeWorkerLog(this.context, status, this.name, null, message, data, error, errorId);
-      Logger.log('base-process.ts', 'writeLogToDb', this.name + ': ' + message, error);
+      Logger.log(this.name + ': ' + message, error, 'base-process.ts/writeLogToDb');
     } catch (e) {
-      Logger.error('base-process.ts', 'writeLogToDb', this.name + ': ' + error.message, e);
+      Logger.error(this.name + ': ' + error.message, e, 'base-process.ts/writeLogToDb');
     }
   }
 }

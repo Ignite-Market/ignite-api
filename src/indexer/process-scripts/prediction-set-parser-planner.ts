@@ -5,6 +5,8 @@ import { PredictionSetStatus } from '../../modules/prediction-set/models/predict
 import { BaseProcess } from '../base-process';
 import { ProcessName } from '../types';
 import { WorkerLogStatus } from '../../lib/worker/logger';
+import { randomUUID } from 'crypto';
+import { sendSlackWebhook } from '../../lib/slack-webhook';
 
 /**
  * Main execution function for the prediction set parser planner.
@@ -13,7 +15,7 @@ async function main() {
   const workerProcess = new BaseProcess(ProcessName.PREDICTION_SET_PARSER);
 
   try {
-    Logger.log('Starting prediction set parser planner process...', 'prediction-set-parser-planner.ts', 'main');
+    Logger.log('Starting prediction set parser planner process...', 'prediction-set-parser-planner.ts/main');
     await workerProcess.initialize(true);
 
     let predictionSetIds = await workerProcess.context.mysql.paramExecute(
@@ -53,25 +55,44 @@ async function main() {
           );
         });
       } catch (error) {
+        const errorId = randomUUID();
+        await sendSlackWebhook(
+          `
+        *[INDEXER ERROR]*: Error while starting parser for prediction set with ID: ${predictionSetId}. See DB worker logs for more info: \n
+          - Error ID: \`${errorId}\`\n
+          - Prediction set ID: \`${predictionSetId}\`
+          `,
+          true
+        );
+
         await workerProcess.writeLogToDb(
           WorkerLogStatus.ERROR,
           `Error while starting parser for prediction set with ID: ${predictionSetId}`,
           {
             predictionSetId
           },
-          error
+          error,
+          errorId
         );
 
-        Logger.error('Error starting prediction set parser process:', error, 'prediction-set-parser-planner.ts', 'main');
-        throw error;
+        Logger.error('Error starting prediction set parser process:', error, 'prediction-set-parser-planner.ts/main');
       }
     }
 
-    Logger.log('Prediction set parser planner process completed successfully.', 'prediction-set-parser-planner.ts', 'main');
+    Logger.log('Prediction set parser planner process completed successfully.', 'prediction-set-parser-planner.ts/main');
   } catch (error) {
-    await workerProcess.writeLogToDb(WorkerLogStatus.ERROR, `Error executing prediction set parser planner process:`, null, error);
+    const errorId = randomUUID();
+    await sendSlackWebhook(
+      `
+      *[INDEXER ERROR]*: Error while parsing prediction sets claims. See DB worker logs for more info: \n
+      - Error ID: \`${errorId}\`
+      `,
+      true
+    );
 
-    Logger.error('Error executing prediction set parser planner process:', error, 'prediction-set-parser-planner.ts', 'main');
+    await workerProcess.writeLogToDb(WorkerLogStatus.ERROR, `Error executing prediction set parser planner process:`, null, error, errorId);
+
+    Logger.error('Error executing prediction set parser planner process:', error, 'prediction-set-parser-planner.ts/main');
     process.exit(1);
   } finally {
     await workerProcess.shutdown();

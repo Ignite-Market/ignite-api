@@ -22,8 +22,8 @@ export async function sendSlackWebhook(message: string, tagChannel: boolean = fa
 
   try {
     await axios.post(env.SLACK_WEBHOOK_URL, payload);
-    Logger.log('Slack webhook successfully sent.', 'slack-webhook', 'sendSlackWebhook');
+    Logger.log('Slack webhook successfully sent.', 'slack-webhook.ts/sendSlackWebhook');
   } catch (error) {
-    Logger.error('Error while sending webhook to Slack: ', error, 'slack-webhook', 'sendSlackWebhook');
+    Logger.error('Error while sending webhook to Slack: ', error, 'slack-webhook.ts/sendSlackWebhook');
   }
 }

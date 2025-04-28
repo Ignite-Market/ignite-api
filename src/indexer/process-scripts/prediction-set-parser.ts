@@ -16,13 +16,15 @@ import { User } from '../../modules/user/models/user.model';
 import { WorkerName } from '../../workers/worker-executor';
 import { BaseProcess } from '../base-process';
 import { ProcessName } from '../types';
+import { randomUUID } from 'crypto';
+import { sendSlackWebhook } from '../../lib/slack-webhook';
 
 /**
  * Main function to execute the prediction set parser process.
  */
 async function main() {
   if (process.argv.length < 3 || !process.argv[2]) {
-    Logger.error('Prediction set ID is required.', 'prediction-set-parser.ts', 'main');
+    Logger.error('Prediction set ID is required.', 'prediction-set-parser.ts/main');
     process.exit(1);
   }
 
@@ -51,7 +53,7 @@ async function main() {
           null
         );
 
-        Logger.error(`ROLLING BACK: Prediction set does not exits: ${predictionSetId}`, 'prediction-set-parser.ts', 'main');
+        Logger.error(`ROLLING BACK: Prediction set does not exits: ${predictionSetId}`, 'prediction-set-parser.ts/main');
         await context.mysql.rollback(conn);
         return;
       }
@@ -67,7 +69,7 @@ async function main() {
       }
 
       if (fromBlock > toBlock) {
-        Logger.error('ROLLING BACK: Block not reached yet.', 'prediction-set-parser.ts', 'main');
+        Logger.error('ROLLING BACK: Block not reached yet.', 'prediction-set-parser.ts/main');
         await context.mysql.rollback(conn);
         return;
       }
@@ -184,8 +186,7 @@ async function main() {
 
           Logger.error(
             `ROLLING BACK: Outcome with outcome index ${transactionEvent} for prediction set ID ${predictionSet.id} does not exists.`,
-            'prediction-set-parser.ts',
-            'main'
+            'prediction-set-parser.ts/main'
           );
           await context.mysql.rollback(conn);
           return;
@@ -214,10 +215,20 @@ async function main() {
       conn = null;
     } catch (error) {
       if (conn) {
-        Logger.error('ROLLING BACK: Error while parsing prediction set events.', error, 'prediction-set-parser.ts', 'main');
+        Logger.error('ROLLING BACK: Error while parsing prediction set events.', error, 'prediction-set-parser.ts/main');
         await context.mysql.rollback(conn);
         conn = null;
       }
+
+      const errorId = randomUUID();
+      await sendSlackWebhook(
+        `
+        *[INDEXER ERROR]*: Error while parsing prediction set events. See DB worker logs for more info: \n
+        - Error ID: \`${errorId}\`\n
+        - Prediction set ID: \`${predictionSetId}\`
+        `,
+        true
+      );
 
       await workerProcess.writeLogToDb(
         WorkerLogStatus.ERROR,
@@ -231,13 +242,13 @@ async function main() {
       throw error;
     }
   } catch (error) {
-    Logger.error('Error executing prediction set parser process:', error, 'prediction-set-parser.ts', 'main');
+    Logger.error('Error executing prediction set parser process:', error, 'prediction-set-parser.ts/main');
     process.exit(1);
   } finally {
     try {
       await workerProcess.shutdown();
     } catch (shutdownError) {
-      Logger.error('Error during shutdown:', shutdownError, 'prediction-set-parser.ts', 'main');
+      Logger.error('Error during shutdown:', shutdownError, 'prediction-set-parser.ts/main');
     }
     process.exit(0);
   }
