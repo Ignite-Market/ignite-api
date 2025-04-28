@@ -4,6 +4,7 @@ import { DbTables, SqlModelStatus } from '../../config/types';
 import { PredictionSetStatus } from '../../modules/prediction-set/models/prediction-set.model';
 import { BaseProcess } from '../base-process';
 import { ProcessName } from '../types';
+import { WorkerLogStatus } from '../../lib/worker/logger';
 
 /**
  * Main execution function for the prediction set parser planner.
@@ -12,7 +13,7 @@ async function main() {
   const workerProcess = new BaseProcess(ProcessName.PREDICTION_SET_PARSER);
 
   try {
-    Logger.log('prediction-set-parser-planner.ts', 'main', 'Starting prediction set parser planner process...');
+    Logger.log('Starting prediction set parser planner process...', 'prediction-set-parser-planner.ts', 'main');
     await workerProcess.initialize(true);
 
     let predictionSetIds = await workerProcess.context.mysql.paramExecute(
@@ -52,14 +53,25 @@ async function main() {
           );
         });
       } catch (error) {
-        // Throw error.
-        Logger.error('prediction-set-parser-planner.ts', 'main', 'Error starting prediction set parser planner process:', error);
+        await workerProcess.writeLogToDb(
+          WorkerLogStatus.ERROR,
+          `Error while starting parser for prediction set with ID: ${predictionSetId}`,
+          {
+            predictionSetId
+          },
+          error
+        );
+
+        Logger.error('Error starting prediction set parser process:', error, 'prediction-set-parser-planner.ts', 'main');
+        throw error;
       }
     }
 
-    Logger.log('prediction-set-parser-planner.ts', 'main', 'Prediction set parser planner process completed successfully');
+    Logger.log('Prediction set parser planner process completed successfully.', 'prediction-set-parser-planner.ts', 'main');
   } catch (error) {
-    Logger.error('prediction-set-parser-planner.ts', 'main', 'Error executing prediction set parser planner process:', error);
+    await workerProcess.writeLogToDb(WorkerLogStatus.ERROR, `Error executing prediction set parser planner process:`, null, error);
+
+    Logger.error('Error executing prediction set parser planner process:', error, 'prediction-set-parser-planner.ts', 'main');
     process.exit(1);
   } finally {
     await workerProcess.shutdown();

@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import * as pm2 from 'pm2';
+import { env } from '../config/env';
 import { Context } from '../context';
 import { createContext } from '../lib/utils';
 import { ProcessName } from './types';
@@ -60,7 +61,7 @@ export class Indexer {
     // Define processes.
     this._processes.set(ProcessName.PREDICTION_SET_PARSER_PLANNER, {
       scriptName: 'prediction-set-parser-planner',
-      cronSchedule: '*/10 * * * * *',
+      cronSchedule: env.INDEXER_PREDICTION_SET_PARSER_CRON,
       isRunning: false
     });
 

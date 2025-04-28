@@ -2,7 +2,7 @@ import { Indexer } from './indexer';
 
 /**
  * Main entry point for the indexer service.
- * This service is designed to run on an EC2 instance as a standalone service.
+ * This service is designed to run on an server instance as a standalone service.
  */
 async function bootstrap() {
   try {

@@ -87,6 +87,8 @@ export interface IEnv {
   MARKET_TREASURY_ADDRESS: string;
 
   MOCK_RESULTS_API_ENDPOINT: string;
+
+  INDEXER_PREDICTION_SET_PARSER_CRON: string;
 }
 
 dotenv.config();
@@ -187,11 +189,13 @@ export let env: IEnv = {
   ORACLE_BLOCK_CONFIRMATIONS: parseInt(process.env['ORACLE_BLOCK_CONFIRMATIONS']) || 0,
   CONDITIONAL_TOKENS_BLOCK_CONFIRMATIONS: parseInt(process.env['CONDITIONAL_TOKENS_BLOCK_CONFIRMATIONS']) || 0,
 
-  MARKET_FEE_PERCENT: process.env['MARKET_FEE_PERCENT'] || '0.03', // Fee factor in ETH (18 decimals) - 0.03 -> 3%
-  MARKET_TREASURY_PERCENT: parseInt(process.env['MARKET_TREASURY_PERCENT']) || 100, // 100 -> 1% (6 decimals)
+  MARKET_FEE_PERCENT: process.env['MARKET_FEE_PERCENT'] || '0.015', // Fee factor in ETH (18 decimals) - 0.03 -> 3%
+  MARKET_TREASURY_PERCENT: parseInt(process.env['MARKET_TREASURY_PERCENT']) || 1000, // 100 -> 1% (6 decimals)
   MARKET_TREASURY_ADDRESS: process.env['MARKET_TREASURY_ADDRESS'],
 
-  MOCK_RESULTS_API_ENDPOINT: process.env['MOCK_RESULTS_API_ENDPOINT']
+  MOCK_RESULTS_API_ENDPOINT: process.env['MOCK_RESULTS_API_ENDPOINT'],
+
+  INDEXER_PREDICTION_SET_PARSER_CRON: process.env['INDEXER_PREDICTION_SET_PARSER_CRON'] || '*/5 * * * * *'
 };
 
 /**

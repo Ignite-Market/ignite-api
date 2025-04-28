@@ -22,7 +22,7 @@ import { ProcessName } from '../types';
  */
 async function main() {
   if (process.argv.length < 3 || !process.argv[2]) {
-    Logger.error('prediction-set-parser.ts', 'main', 'Prediction set ID is required.');
+    Logger.error('Prediction set ID is required.', 'prediction-set-parser.ts', 'main');
     process.exit(1);
   }
 
@@ -51,7 +51,7 @@ async function main() {
           null
         );
 
-        console.log('ROLLING BACK: Prediction set does not exists.');
+        Logger.error(`ROLLING BACK: Prediction set does not exits: ${predictionSetId}`, 'prediction-set-parser.ts', 'main');
         await context.mysql.rollback(conn);
         return;
       }
@@ -67,10 +67,7 @@ async function main() {
       }
 
       if (fromBlock > toBlock) {
-        console.log('ROLLING BACK: BLOCK NOT REACHED YET.');
-        console.log('FROM BLOCK: ', fromBlock);
-        console.log('TO BLOCK: ', toBlock);
-        console.log('CURRENT BLOCK: ', currentBlock);
+        Logger.error('ROLLING BACK: Block not reached yet.', 'prediction-set-parser.ts', 'main');
         await context.mysql.rollback(conn);
         return;
       }
@@ -185,7 +182,11 @@ async function main() {
             outcomeIndex: transactionEvent.outcomeIndex
           });
 
-          console.log('ROLLING BACK: Outcome does not exits.');
+          Logger.error(
+            `ROLLING BACK: Outcome with outcome index ${transactionEvent} for prediction set ID ${predictionSet.id} does not exists.`,
+            'prediction-set-parser.ts',
+            'main'
+          );
           await context.mysql.rollback(conn);
           return;
         }
@@ -213,8 +214,7 @@ async function main() {
       conn = null;
     } catch (error) {
       if (conn) {
-        console.log('ROLLING BACK: Error while parsing prediction set events.');
-        console.log(error);
+        Logger.error('ROLLING BACK: Error while parsing prediction set events.', error, 'prediction-set-parser.ts', 'main');
         await context.mysql.rollback(conn);
         conn = null;
       }
@@ -231,16 +231,18 @@ async function main() {
       throw error;
     }
   } catch (error) {
-    Logger.error('prediction-set-parser.ts', 'main', 'Error executing prediction set parser process:', error);
+    Logger.error('Error executing prediction set parser process:', error, 'prediction-set-parser.ts', 'main');
     process.exit(1);
   } finally {
     try {
       await workerProcess.shutdown();
     } catch (shutdownError) {
-      Logger.error('prediction-set-parser.ts', 'main', 'Error during shutdown:', shutdownError);
+      Logger.error('Error during shutdown:', shutdownError, 'prediction-set-parser.ts', 'main');
     }
     process.exit(0);
   }
 }
 
 main();
+
+// TODO: Add some Slack webhooks?
