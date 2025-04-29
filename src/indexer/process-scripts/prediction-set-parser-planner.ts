@@ -47,7 +47,7 @@ async function main() {
               name: processName,
               args: [predictionSetId, processName],
               instances: 1,
-              exec_mode: 'cluster',
+              exec_mode: 'fork',
               autorestart: false,
               stop_exit_codes: [0, 1],
               watch: false
