@@ -39,28 +39,18 @@ async function main() {
       try {
         const processName = `${ProcessName.PREDICTION_SET_PARSER}_${predictionSetId}`;
 
-        // Only start if process does not exist.
-        const exists = await new Promise<boolean>((resolve) => {
-          pm2.describe(processName, (error, proc) => {
-            resolve(error ? false : proc.length > 0);
-          });
-        });
-
-        if (exists) {
-          Logger.log(`Parser for prediction set ${predictionSetId} is already running, skipping...`, 'prediction-set-parser-planner.ts/main');
-          continue;
-        }
-
         // Start process.
         await new Promise((resolve, reject) => {
           pm2.start(
             {
               script: `./dist/indexer/process-scripts/prediction-set-parser.js`,
               name: processName,
-              args: [predictionSetId],
+              args: [predictionSetId, processName],
               instances: 1,
-              exec_mode: 'fork',
-              autorestart: false
+              exec_mode: 'cluster',
+              autorestart: false,
+              stop_exit_codes: [0, 1],
+              watch: false
             },
             (error) => {
               if (error) {

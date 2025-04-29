@@ -1,9 +1,12 @@
 import { Logger } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { ethers } from 'ethers';
+import * as pm2 from 'pm2';
 import { env } from '../../config/env';
 import { FundingEvent, SerializeFor, TransactionEvent } from '../../config/types';
 import { sendToWorkerQueue } from '../../lib/aws/aws-sqs';
 import { setup } from '../../lib/blockchain';
+import { sendSlackWebhook } from '../../lib/slack-webhook';
 import { WorkerLogStatus } from '../../lib/worker/logger';
 import { Outcome } from '../../modules/prediction-set/models/outcome.model';
 import { PredictionSet, PredictionSetStatus } from '../../modules/prediction-set/models/prediction-set.model';
@@ -15,25 +18,23 @@ import {
 import { User } from '../../modules/user/models/user.model';
 import { WorkerName } from '../../workers/worker-executor';
 import { BaseProcess } from '../base-process';
-import { ProcessName } from '../types';
-import { randomUUID } from 'crypto';
-import { sendSlackWebhook } from '../../lib/slack-webhook';
 
 /**
  * Main function to execute the prediction set parser process.
  */
 async function main() {
-  if (process.argv.length < 3 || !process.argv[2]) {
-    Logger.error('Prediction set ID is required.', 'prediction-set-parser.ts/main');
+  if (process.argv.length < 3 || !process.argv[2] || !process.argv[3]) {
+    Logger.error('Prediction set ID and process name are required.', 'prediction-set-parser.ts/main');
     process.exit(1);
   }
 
   const predictionSetId = Number(process.argv[2]);
-  const workerProcess = new BaseProcess(ProcessName.PREDICTION_SET_PARSER);
+  const processName = process.argv[3];
+  const workerProcess = new BaseProcess(processName);
   let conn = null;
 
   try {
-    await workerProcess.initialize();
+    await workerProcess.initialize(true);
     const context = workerProcess.context;
     conn = await context.mysql.start();
 
@@ -247,6 +248,17 @@ async function main() {
   } finally {
     try {
       await workerProcess.shutdown();
+
+      await new Promise<void>((resolve) => {
+        pm2.delete(processName, (deleteError) => {
+          if (deleteError) {
+            Logger.error(`Error deleting PM2 process ${processName}:`, deleteError, 'prediction-set-parser.ts/main');
+          } else {
+            Logger.log(`Successfully deleted PM2 process ${processName}`, 'prediction-set-parser.ts/main');
+          }
+          resolve();
+        });
+      });
     } catch (shutdownError) {
       Logger.error('Error during shutdown:', shutdownError, 'prediction-set-parser.ts/main');
     }
