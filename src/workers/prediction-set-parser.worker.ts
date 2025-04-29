@@ -120,7 +120,7 @@ export class PredictionSetParserWorker extends BaseQueueWorker {
 
       // Insert funding events.
       for (const fundingEvent of fundingEvents) {
-        const user = await new User({}, this.context).populateByWalletAddress(fundingEvent.wallet, conn); // TODO: Should we let parse it without user ID?
+        const user = await new User({}, this.context).populateByWalletAddress(fundingEvent.wallet, conn);
 
         let collateralAmount = null;
         if (fundingEvent.type === FundingTransactionType.ADDED) {
@@ -130,7 +130,7 @@ export class PredictionSetParserWorker extends BaseQueueWorker {
         await new PredictionSetFundingTransaction(
           {
             ...fundingEvent,
-            user_id: user.id,
+            user_id: user?.id,
             prediction_set_id: predictionSet.id,
             collateralAmount
           },
@@ -184,7 +184,7 @@ export class PredictionSetParserWorker extends BaseQueueWorker {
 
       // Insert transaction events.
       for (const transactionEvent of transactionEvents) {
-        const user = await new User({}, this.context).populateByWalletAddress(transactionEvent.wallet, conn); // TODO: Should we let parse it without user ID?
+        const user = await new User({}, this.context).populateByWalletAddress(transactionEvent.wallet, conn);
         const outcome = await new Outcome({}, this.context).populateByIndexAndPredictionSetId(transactionEvent.outcomeIndex, predictionSet.id, conn);
         if (!outcome.exists()) {
           await this.writeLogToDb(WorkerLogStatus.ERROR, 'Outcome does not exists: ', {
@@ -199,7 +199,7 @@ export class PredictionSetParserWorker extends BaseQueueWorker {
         await new OutcomeShareTransaction(
           {
             ...transactionEvent,
-            user_id: user.id,
+            user_id: user?.id,
             outcome_id: outcome.id,
             prediction_set_id: predictionSet.id
           },

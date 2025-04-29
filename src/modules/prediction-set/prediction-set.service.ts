@@ -329,7 +329,7 @@ export class PredictionSetService {
    * @param context Application context.
    * @returns Prediction group.
    */
-  public async getPredictions(query: PredictionSetQueryFilter, context: Context) {
+  public async getPredictionSets(query: PredictionSetQueryFilter, context: Context) {
     return await new PredictionSet({}, context).getList(query);
   }
 
@@ -345,7 +345,8 @@ export class PredictionSetService {
       outcomes: true,
       chainData: true,
       isWatched: true,
-      volume: true
+      volume: true,
+      positions: true
     });
 
     if (!predictionSet.exists() || !predictionSet.isEnabled()) {
@@ -362,13 +363,38 @@ export class PredictionSetService {
   }
 
   /**
+   * Get prediction set positions.
+   *
+   * @param id Prediction set ID.
+   * @param context Application context.
+   * @returns Prediction set positions.
+   */
+  public async getPredictionSetPositions(id: number, context: Context) {
+    const predictionSet = await new PredictionSet({}, context).populateById(id, null, false, {
+      positions: true
+    });
+
+    if (!predictionSet.exists() || !predictionSet.isEnabled()) {
+      throw new CodeException({
+        code: ResourceNotFoundErrorCode.PREDICTION_SET_DOES_NOT_EXISTS,
+        errorCodes: ResourceNotFoundErrorCode,
+        status: HttpStatus.NOT_FOUND,
+        sourceFunction: `${this.constructor.name}/getPredictionSetPositions`,
+        context
+      });
+    }
+
+    return predictionSet.positions;
+  }
+
+  /**
    * Get prediction set activity.
    *
    * @param query Filtering query.
    * @param context Application context.
    * @returns Prediction set activity.
    */
-  public async getPredictionActivity(query: ActivityQueryFilter, context: Context) {
+  public async getPredictionSetActivity(query: ActivityQueryFilter, context: Context) {
     return await new PredictionSet({}, context).getActivityList(query);
   }
 
@@ -379,34 +405,8 @@ export class PredictionSetService {
    * @param context Application context.
    * @returns Prediction set holders.
    */
-  public async getPredictionHolders(query: HoldersQueryFilter, context: Context) {
+  public async getPredictionSetHolders(query: HoldersQueryFilter, context: Context) {
     return await new PredictionSet({}, context).getHoldersList(query);
-  }
-
-  /**
-   * Cancel prediction set on CHAIN.
-   *
-   * @param predictionSet Prediction set.
-   * @param context Application context.
-   */
-  public async cancelPredictionSet(predictionSetId: number, context: Context) {
-    const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId);
-
-    // Only delete if processed/pending
-    if (![PredictionSetStatus.PENDING, PredictionSetStatus.ACTIVE].includes(predictionSet.setStatus)) {
-      throw new CodeException({
-        code: SystemErrorCode.SQL_SYSTEM_ERROR,
-        errorCodes: SystemErrorCode,
-        status: HttpStatus.INTERNAL_SERVER_ERROR,
-        sourceFunction: `${this.constructor.name}/cancelPredictionSet`,
-        context
-      });
-    }
-
-    predictionSet.setStatus = PredictionSetStatus.INITIALIZED;
-    await predictionSet.update();
-
-    // TODO: Cancel on blockchain
   }
 
   /**
@@ -418,7 +418,7 @@ export class PredictionSetService {
   public async deletePredictionSet(predictionSetId: number, context: Context) {
     const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId);
 
-    // Only delete if not processed/pending
+    // Only delete if not processed/pending.
     if (![PredictionSetStatus.INITIALIZED, PredictionSetStatus.ERROR].includes(predictionSet.setStatus)) {
       throw new CodeException({
         code: SystemErrorCode.SQL_SYSTEM_ERROR,

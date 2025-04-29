@@ -34,21 +34,21 @@ export class PredictionSetController {
   @Validation({ dto: PredictionSetQueryFilter, validateFor: ValidateFor.QUERY })
   @UseGuards(ValidationGuard)
   async getPredictions(@Query() query: PredictionSetQueryFilter, @Ctx() context: Context) {
-    return await this.predictionSetService.getPredictions(query, context);
+    return await this.predictionSetService.getPredictionSets(query, context);
   }
 
   @Get('/activity')
   @Validation({ dto: ActivityQueryFilter, validateFor: ValidateFor.QUERY })
   @UseGuards(ValidationGuard)
-  async getPredictionActivity(@Query() query: ActivityQueryFilter, @Ctx() context: Context) {
-    return await this.predictionSetService.getPredictionActivity(query, context);
+  async getPredictionSetActivity(@Query() query: ActivityQueryFilter, @Ctx() context: Context) {
+    return await this.predictionSetService.getPredictionSetActivity(query, context);
   }
 
   @Get('/holders')
   @Validation({ dto: HoldersQueryFilter, validateFor: ValidateFor.QUERY })
   @UseGuards(ValidationGuard)
-  async getPredictionHolders(@Query() query: HoldersQueryFilter, @Ctx() context: Context) {
-    return await this.predictionSetService.getPredictionHolders(query, context);
+  async getPredictionSetHolders(@Query() query: HoldersQueryFilter, @Ctx() context: Context) {
+    return await this.predictionSetService.getPredictionSetHolders(query, context);
   }
 
   @Get('/banners')
@@ -59,6 +59,13 @@ export class PredictionSetController {
   @Get('/:id')
   async getPredictionById(@Param('id', ParseIntPipe) id: number, @Ctx() context: Context) {
     return await this.predictionSetService.getPredictionById(id, context);
+  }
+
+  @Get('/:id/positions')
+  @Validation({ dto: HoldersQueryFilter, validateFor: ValidateFor.QUERY })
+  @UseGuards(ValidationGuard)
+  async getPredictionSetPositions(@Param('id', ParseIntPipe) predictionSetId: number, @Ctx() context: Context) {
+    return await this.predictionSetService.getPredictionSetPositions(predictionSetId, context);
   }
 
   @Get('/:id/chance-history')
@@ -78,13 +85,6 @@ export class PredictionSetController {
   @Roles(DefaultUserRole.ADMIN)
   async updatePredictionSet(@Param('id', ParseIntPipe) id: number, @Body() data: PredictionSetDto, @Ctx() context: Context) {
     return await this.predictionSetService.updatePredictionSet(id, data, context);
-  }
-
-  @Patch('/:id/cancel')
-  @UseGuards(AuthGuard)
-  @Roles(DefaultUserRole.ADMIN)
-  async cancelPredictionSet(@Param('id', ParseIntPipe) id: number, @Ctx() context: Context) {
-    return await this.predictionSetService.cancelPredictionSet(id, context);
   }
 
   @Delete('/:id')

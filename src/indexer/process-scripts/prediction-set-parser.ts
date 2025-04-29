@@ -112,7 +112,7 @@ async function main() {
 
       // Insert funding events.
       for (const fundingEvent of fundingEvents) {
-        const user = await new User({}, context).populateByWalletAddress(fundingEvent.wallet, conn); // TODO: Should we let parse it without user ID?
+        const user = await new User({}, context).populateByWalletAddress(fundingEvent.wallet, conn);
 
         let collateralAmount = null;
         if (fundingEvent.type === FundingTransactionType.ADDED) {
@@ -122,7 +122,7 @@ async function main() {
         await new PredictionSetFundingTransaction(
           {
             ...fundingEvent,
-            user_id: user.id,
+            user_id: user?.id,
             prediction_set_id: predictionSet.id,
             collateralAmount
           },
@@ -176,7 +176,7 @@ async function main() {
 
       // Insert transaction events.
       for (const transactionEvent of transactionEvents) {
-        const user = await new User({}, context).populateByWalletAddress(transactionEvent.wallet, conn); // TODO: Should we let parse it without user ID?
+        const user = await new User({}, context).populateByWalletAddress(transactionEvent.wallet, conn);
         const outcome = await new Outcome({}, context).populateByIndexAndPredictionSetId(transactionEvent.outcomeIndex, predictionSet.id, conn);
         if (!outcome.exists()) {
           await workerProcess.writeLogToDb(WorkerLogStatus.ERROR, 'Outcome does not exists: ', {
@@ -195,7 +195,7 @@ async function main() {
         await new OutcomeShareTransaction(
           {
             ...transactionEvent,
-            user_id: user.id,
+            user_id: user?.id,
             outcome_id: outcome.id,
             prediction_set_id: predictionSet.id
           },
@@ -255,5 +255,3 @@ async function main() {
 }
 
 main();
-
-// TODO: Add some Slack webhooks?

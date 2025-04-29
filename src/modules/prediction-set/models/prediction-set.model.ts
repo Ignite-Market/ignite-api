@@ -389,7 +389,13 @@ export class PredictionSet extends AdvancedSQLModel {
     id: any,
     conn?: PoolConnection,
     forUpdate?: boolean,
-    populate?: { outcomes?: boolean; chainData?: boolean; isWatched?: boolean; volume?: boolean }
+    populate?: {
+      outcomes?: boolean;
+      chainData?: boolean;
+      isWatched?: boolean;
+      volume?: boolean;
+      positions?: boolean;
+    }
   ): Promise<this> {
     const context = this.getContext();
     const model = await super.populateById(id, conn, forUpdate);
@@ -412,7 +418,9 @@ export class PredictionSet extends AdvancedSQLModel {
       this.transactionsVolume = volume?.transactionsVolume | 0;
     }
 
-    this.positions = await this.getOpenPositions(conn);
+    if (populate?.positions) {
+      this.positions = await this.getOpenPositions(conn);
+    }
 
     return model;
   }
