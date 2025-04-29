@@ -38,7 +38,7 @@ async function main() {
     conn = await context.mysql.start();
 
     try {
-      const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId, null, false, {
+      const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId, null, true, {
         outcomes: true,
         chainData: true
       });
