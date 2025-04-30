@@ -4,7 +4,7 @@ import { WorkerLogStatus } from '../lib/worker/logger';
 import { BaseSingleThreadWorker, SingleThreadWorkerAlertType } from '../lib/worker/serverless-workers/base-single-thread-worker';
 import { Job } from '../modules/job/job.model';
 import { ProposalRound, ProposalRoundStatus } from '../modules/proposal/models/proposal-round.model';
-import { RewardType } from '../modules/reward-points/models/reward-points.model';
+import { RewardPoints, RewardType } from '../modules/reward-points/models/reward-points.model';
 import { RewardPointsService } from '../modules/reward-points/reward-points.service';
 
 /**
@@ -76,9 +76,10 @@ export class FinalizeProposalRoundsWorker extends BaseSingleThreadWorker {
         await proposalRound.update(SerializeFor.UPDATE_DB, conn);
 
         // Start a new round.
+        const rewardPoints = await new RewardPoints({}, this.context).populateByType(RewardType.PROPOSAL_WINNER, conn);
         const newRound = new ProposalRound(
           {
-            rewardPoints: proposalRound.rewardPoints,
+            rewardPoints: rewardPoints?.value || proposalRound.rewardPoints,
             startTime: new Date(),
             endTime: new Date(Number(new Date()) + env.PROPOSAL_ROUND_OFFSET_DURATION),
             roundStatus: ProposalRoundStatus.ACTIVE
