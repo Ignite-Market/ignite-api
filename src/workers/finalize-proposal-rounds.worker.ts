@@ -1,9 +1,9 @@
+import { env } from '../config/env';
 import { DbTables, SerializeFor, SqlModelStatus } from '../config/types';
 import { WorkerLogStatus } from '../lib/worker/logger';
 import { BaseSingleThreadWorker, SingleThreadWorkerAlertType } from '../lib/worker/serverless-workers/base-single-thread-worker';
 import { Job } from '../modules/job/job.model';
 import { ProposalRound, ProposalRoundStatus } from '../modules/proposal/models/proposal-round.model';
-import { Proposal } from '../modules/proposal/models/proposal.model';
 import { RewardType } from '../modules/reward-points/models/reward-points.model';
 import { RewardPointsService } from '../modules/reward-points/reward-points.service';
 
@@ -74,6 +74,18 @@ export class FinalizeProposalRoundsWorker extends BaseSingleThreadWorker {
         // Finalize proposal round.
         proposalRound.roundStatus = ProposalRoundStatus.FINISHED;
         await proposalRound.update(SerializeFor.UPDATE_DB, conn);
+
+        // Start a new round.
+        const newRound = new ProposalRound(
+          {
+            rewardPoints: proposalRound.rewardPoints,
+            startTime: new Date(),
+            endTime: new Date(Number(new Date()) + env.PROPOSAL_ROUND_OFFSET_DURATION),
+            roundStatus: ProposalRoundStatus.ACTIVE
+          },
+          this.context
+        );
+        await newRound.insert(SerializeFor.INSERT_DB, conn);
 
         await this.context.mysql.commit(conn);
       } catch (error) {

@@ -48,9 +48,7 @@ async function main() {
               args: [predictionSetId, processName],
               instances: 1,
               exec_mode: 'fork',
-              autorestart: false,
-              stop_exit_codes: [0, 1],
-              watch: false
+              autorestart: false
             },
             (error) => {
               if (error) {
