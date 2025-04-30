@@ -12,6 +12,8 @@ import { Outcome } from '../modules/prediction-set/models/outcome.model';
 import { PredictionSetChainData } from '../modules/prediction-set/models/prediction-set-chain-data.model';
 import { PredictionSet } from '../modules/prediction-set/models/prediction-set.model';
 import { ClaimTransaction } from '../modules/prediction-set/models/transactions/claim-transaction.model';
+import { RewardType } from '../modules/reward-points/models/reward-points.model';
+import { RewardPointsService } from '../modules/reward-points/reward-points.service';
 import { User } from '../modules/user/models/user.model';
 
 /**
@@ -141,6 +143,9 @@ export class ClaimsParserWorker extends BaseSingleThreadWorker {
           },
           this.context
         ).insert(SerializeFor.INSERT_DB, conn);
+
+        // TODO: Do we always do this? Market funder will also receive this points.
+        await RewardPointsService.awardPoints(user.id, RewardType.MARKET_WINNER, this.context, conn);
       }
 
       await contract.updateLastProcessedBlock(toBlock, conn);
