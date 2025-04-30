@@ -5,21 +5,21 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
   const rewards = [
     {
       name: 'Market Funding',
-      description: '#POINTS points per $100 funded',
+      description: '#POINTS points per $100 funded (in a single transaction)',
       reason: 'Increases liquidity and market reliability.',
       type: RewardType.MARKET_FUNDING,
       value: 10
     },
     {
       name: 'Buying Shares',
-      description: '#POINTS points per $10 traded',
+      description: '#POINTS points per $10 traded (in a single transaction)',
       reason: 'Boosts market volume and trading activity.',
       type: RewardType.BUYING_SHARES,
       value: 5
     },
     {
       name: 'Selling Shares',
-      description: '#POINTS points per $10 traded',
+      description: '#POINTS points per $10 traded (in a single transaction)',
       reason: 'Maintains liquidity and active participation.',
       type: RewardType.SELLING_SHARES,
       value: 4

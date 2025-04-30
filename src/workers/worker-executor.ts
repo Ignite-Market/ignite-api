@@ -6,6 +6,7 @@ import { WorkerLogStatus, writeWorkerLog } from '../lib/worker/logger';
 import { ServiceDefinition, ServiceDefinitionType, WorkerDefinition } from '../lib/worker/serverless-workers';
 import { QueueWorkerType } from '../lib/worker/serverless-workers/base-queue-worker';
 import { ClaimsParserWorker } from './claims-parser.worker';
+import { CollateralTokenUsdPriceWorker } from './collateral-token-usd-price.worker';
 import { CreatePredictionSetWorker } from './create-prediction-set.worker';
 import { FinalizeManualPredictionSetWorker } from './finalize-manual-prediction-sets.worker';
 import { FinalizeProposalRoundsWorker } from './finalize-proposal-rounds.worker';
@@ -33,7 +34,8 @@ export enum WorkerName {
   REQUEST_ATTESTATION = 'RequestAttestation',
   VOTING_PARSER = 'VotingParser',
   FINALIZE_PROPOSAL_ROUNDS = 'FinalizeProposalRounds',
-  CLAIMS_PARSER = 'ClaimsParser'
+  CLAIMS_PARSER = 'ClaimsParser',
+  COLLATERAL_TOKEN_USD_PRICE = 'CollateralTokenUsdPrice'
 }
 
 /**
@@ -148,6 +150,10 @@ export async function handleLambdaEvent(event: any, context: Context, serviceDef
       await new ClaimsParserWorker(workerDefinition, context).run();
       break;
 
+    case WorkerName.COLLATERAL_TOKEN_USD_PRICE:
+      await new CollateralTokenUsdPriceWorker(workerDefinition, context).run();
+      break;
+
     default:
       console.error(`ERROR - INVALID WORKER NAME: ${workerDefinition.workerName}`);
       await writeWorkerLog(
@@ -256,6 +262,12 @@ export async function handleSqsMessages(event: any, context: Context, serviceDef
 
         case WorkerName.CLAIMS_PARSER:
           await new ClaimsParserWorker(workerDefinition, context).run({
+            executeArg: message?.body
+          });
+          break;
+
+        case WorkerName.COLLATERAL_TOKEN_USD_PRICE:
+          await new CollateralTokenUsdPriceWorker(workerDefinition, context).run({
             executeArg: message?.body
           });
           break;

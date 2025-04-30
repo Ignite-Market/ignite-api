@@ -1,5 +1,5 @@
 import { prop } from '@rawmodel/core';
-import { integerParser, stringParser } from '@rawmodel/parsers';
+import { floatParser, integerParser, stringParser } from '@rawmodel/parsers';
 import { DbTables, PopulateFrom, SerializeFor, SqlModelStatus } from '../../../config/types';
 import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
 import { BaseQueryFilter } from '../../../lib/base-models/base-query-filter.model';
@@ -65,6 +65,26 @@ export class CollateralToken extends AdvancedSQLModel {
   public fundingThreshold: string;
 
   /**
+   * Collateral token USD price ID.
+   */
+  @prop({
+    parser: { resolver: stringParser() },
+    populatable: [PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB]
+  })
+  public usdPriceId: string;
+
+  /**
+   * Collateral token USD price.
+   */
+  @prop({
+    parser: { resolver: floatParser() },
+    populatable: [PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB]
+  })
+  public usdPrice: number;
+
+  /**
    * Collateral token image URL.
    */
   @prop({
@@ -74,10 +94,11 @@ export class CollateralToken extends AdvancedSQLModel {
     serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB],
     populatable: [PopulateFrom.DB, PopulateFrom.USER]
   })
-  imgUrl: string;
+  public imgUrl: string;
 
   /**
    * Get list of collateral tokens.
+   *
    * @param query Filtering query.
    * @returns List of collateral tokens.
    */

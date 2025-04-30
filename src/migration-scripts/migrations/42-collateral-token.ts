@@ -9,6 +9,8 @@ export const upgrade = async (queryFn: (query: string, values?: any[]) => Promis
     \`address\` VARCHAR(42) NOT NULL,
     \`decimals\` INT NOT NULL,
     \`fundingThreshold\` INT NOT NULL,
+    \`usdPriceId\` VARCHAR(255) NULL,
+    \`usdPrice\` DECIMAL(16, 6) NULL,
     \`imgUrl\` VARCHAR(500) NULL,
     \`status\` INT NOT NULL DEFAULT ${SqlModelStatus.ACTIVE},
     \`createUser\` INT NULL,

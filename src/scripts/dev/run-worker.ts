@@ -1,11 +1,11 @@
 import { exit } from 'process';
 import { createContext } from '../../lib/utils';
 import { WorkerDefinition } from '../../lib/worker/serverless-workers';
-import { ClaimsParserWorker } from '../../workers/claims-parser.worker';
+import { CollateralTokenUsdPriceWorker } from '../../workers/collateral-token-usd-price.worker';
 import { WorkerName } from '../../workers/worker-executor';
 
-const WORKER_NAME = WorkerName.CLAIMS_PARSER;
-const WorkerClass = ClaimsParserWorker;
+const WORKER_NAME = WorkerName.COLLATERAL_TOKEN_USD_PRICE;
+const WorkerClass = CollateralTokenUsdPriceWorker;
 
 (async () => {
   const start = new Date();

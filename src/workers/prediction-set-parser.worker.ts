@@ -14,6 +14,8 @@ import { PredictionSet, PredictionSetStatus } from '../modules/prediction-set/mo
 import { User } from '../modules/user/models/user.model';
 import { sendToWorkerQueue } from '../lib/aws/aws-sqs';
 import { WorkerName } from './worker-executor';
+import { RewardPointsService } from '../modules/reward-points/reward-points.service';
+import { RewardType } from '../modules/reward-points/models/reward-points.model';
 
 /**
  * Parses prediction set contracts.
@@ -205,6 +207,8 @@ export class PredictionSetParserWorker extends BaseQueueWorker {
           },
           this.context
         ).insert(SerializeFor.INSERT_DB, conn);
+
+        // TODO: award points.
       }
 
       // Refresh chances if any of the events happened.

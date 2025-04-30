@@ -55,8 +55,15 @@ export class RewardPointsService {
    * @param rewardType Reward type.
    * @param context Context.
    * @param conn Pool connection.
+   * @param multiplier Multiplier for the reward points.
    */
-  public static async awardPoints(userId: number, rewardType: RewardType, context: Context, conn?: PoolConnection): Promise<RewardPointsTransaction> {
+  public static async awardPoints(
+    userId: number,
+    rewardType: RewardType,
+    context: Context,
+    conn?: PoolConnection,
+    multiplier: number = 1
+  ): Promise<RewardPointsTransaction> {
     const rewardPoints = await new RewardPoints({}, context).populateByType(rewardType, conn);
     if (!rewardPoints.exists() || !rewardPoints.isEnabled()) {
       throw new CodeException({
@@ -72,7 +79,7 @@ export class RewardPointsService {
       {
         user_id: userId,
         reward_points_id: rewardPoints.id,
-        value: rewardPoints.value,
+        value: rewardPoints.value * multiplier,
         type: rewardPoints.type
       },
       context

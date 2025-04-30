@@ -18,6 +18,9 @@ import {
 import { User } from '../../modules/user/models/user.model';
 import { WorkerName } from '../../workers/worker-executor';
 import { BaseProcess } from '../base-process';
+import { RewardPointsService } from '../../modules/reward-points/reward-points.service';
+import { RewardType } from '../../modules/reward-points/models/reward-points.model';
+import { CollateralToken } from '../../modules/collateral-token/models/collateral-token.model';
 
 /**
  * Main function to execute the prediction set parser process.
@@ -129,6 +132,20 @@ async function main() {
           },
           context
         ).insert(SerializeFor.INSERT_DB, conn);
+
+        // Award points per each 100 USD funded.
+        if (user?.id && fundingEvent.type === FundingTransactionType.ADDED) {
+          const collateralToken = await new CollateralToken({}, context).populateById(predictionSet.collateral_token_id, conn);
+
+          const amount = parseFloat(collateralAmount);
+          const amountInTokens = amount / Math.pow(10, collateralToken.decimals);
+          const amountInUsd = amountInTokens * collateralToken.usdPrice;
+
+          const pointsMultiplier = Math.floor(amountInUsd / 100);
+          if (pointsMultiplier > 0) {
+            await RewardPointsService.awardPoints(user.id, RewardType.MARKET_FUNDING, context, conn, pointsMultiplier);
+          }
+        }
       }
 
       if (fundingEvents.length) {
@@ -202,6 +219,22 @@ async function main() {
           },
           context
         ).insert(SerializeFor.INSERT_DB, conn);
+
+        // Award points per each 10 USD traded.
+        if (user?.id) {
+          const collateralToken = await new CollateralToken({}, context).populateById(predictionSet.collateral_token_id, conn);
+
+          const amount = parseFloat(transactionEvent.amount);
+          const amountInTokens = amount / Math.pow(10, collateralToken.decimals);
+          const amountInUsd = amountInTokens * collateralToken.usdPrice;
+
+          const pointsMultiplier = Math.floor(amountInUsd / 10);
+          if (pointsMultiplier > 0) {
+            const rewardType = transactionEvent.type === ShareTransactionType.BUY ? RewardType.BUYING_SHARES : RewardType.SELLING_SHARES;
+
+            await RewardPointsService.awardPoints(user.id, rewardType, context, conn, pointsMultiplier);
+          }
+        }
       }
 
       // Refresh chances if any of the events happened.
