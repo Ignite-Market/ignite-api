@@ -31,6 +31,27 @@ async function main() {
     process.exit(1);
   }
 
+  console.log('predictionSetId', process.argv[2]);
+  console.log('predictionSetId', process.argv[2]);
+  console.log('predictionSetId', process.argv[2]);
+  console.log('predictionSetId', process.argv[2]);
+  console.log('predictionSetId', process.argv[2]);
+  console.log('predictionSetId', process.argv[2]);
+  console.log('predictionSetId', process.argv[2]);
+  console.log('predictionSetId', process.argv[2]);
+  console.log('predictionSetId', process.argv[2]);
+  console.log('predictionSetId', process.argv[2]);
+  console.log('predictionSetId', process.argv[2]);
+  console.log('predictionSetId', process.argv[2]);
+  console.log('predictionSetId', process.argv[2]);
+  console.log('predictionSetId', process.argv[2]);
+  console.log('predictionSetId', process.argv[2]);
+  console.log('predictionSetId', process.argv[2]);
+  console.log('predictionSetId', process.argv[2]);
+  console.log('predictionSetId', process.argv[2]);
+  console.log('predictionSetId', process.argv[2]);
+  console.log('predictionSetId', process.argv[2]);
+
   const predictionSetId = Number(process.argv[2]);
   const processName = process.argv[3];
   const workerProcess = new BaseProcess(processName);

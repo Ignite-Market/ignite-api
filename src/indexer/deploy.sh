@@ -25,6 +25,6 @@ echo "Starting new container..."
 docker run --env-file .env --log-driver json-file --log-opt max-size=10m --log-opt max-file=3 -d --name "$CONTAINER_NAME" "$ECR_REPO:$IMAGE_TAG"
 
 echo "Pruning all unused images..."
-docker image prune -a
+echo y | docker image prune -a
 
 echo "Deployment complete."
