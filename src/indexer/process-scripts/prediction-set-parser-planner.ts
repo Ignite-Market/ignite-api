@@ -1,12 +1,14 @@
 import { Logger } from '@nestjs/common';
+import * as BetterQueue from 'better-queue';
+import { randomUUID } from 'crypto';
+import * as os from 'os';
 import * as pm2 from 'pm2';
 import { DbTables, SqlModelStatus } from '../../config/types';
+import { sendSlackWebhook } from '../../lib/slack-webhook';
+import { WorkerLogStatus } from '../../lib/worker/logger';
 import { PredictionSetStatus } from '../../modules/prediction-set/models/prediction-set.model';
 import { BaseProcess } from '../base-process';
 import { ProcessName } from '../types';
-import { WorkerLogStatus } from '../../lib/worker/logger';
-import { randomUUID } from 'crypto';
-import { sendSlackWebhook } from '../../lib/slack-webhook';
 
 /**
  * Main execution function for the prediction set parser planner.
@@ -35,53 +37,102 @@ async function main() {
     predictionSetIds = predictionSetIds.map((d) => d.id);
     Logger.log(`Found ${predictionSetIds.length} prediction sets to parse: ${predictionSetIds.join(', ')}`, 'prediction-set-parser-planner.ts/main');
 
-    for (const predictionSetId of predictionSetIds) {
-      try {
-        const processName = `${ProcessName.PREDICTION_SET_PARSER}_${predictionSetId}`;
+    // Check for any running prediction set parser processes.
+    const runningProcesses = await new Promise<any[]>((resolve, reject) => {
+      pm2.list((error, list) => {
+        if (error) reject(error);
+        else resolve(list || []);
+      });
+    });
 
-        // Start process.
-        await new Promise((resolve, reject) => {
-          pm2.start(
-            {
-              script: `./dist/indexer/process-scripts/prediction-set-parser.js`,
-              name: processName,
-              args: [predictionSetId, processName],
-              instances: 1,
-              exec_mode: 'fork',
-              autorestart: false
-            },
-            (error) => {
-              if (error) {
-                reject(error);
-              }
-              resolve(true);
-            }
-          );
-        });
-      } catch (error) {
-        const errorId = randomUUID();
-        await sendSlackWebhook(
-          `
-        *[INDEXER ERROR]*: Error while starting parser for prediction set with ID: ${predictionSetId}. See DB worker logs for more info: \n
-          - Error ID: \`${errorId}\`\n
-          - Prediction set ID: \`${predictionSetId}\`
-          `,
-          true
-        );
-
-        await workerProcess.writeLogToDb(
-          WorkerLogStatus.ERROR,
-          `Error while starting parser for prediction set with ID: ${predictionSetId}`,
-          {
-            predictionSetId
-          },
-          error,
-          errorId
-        );
-
-        Logger.error('Error starting prediction set parser process:', error, 'prediction-set-parser-planner.ts/main');
+    const runningParserIds = new Set<number>();
+    runningProcesses.forEach((proc) => {
+      const nameMatch = proc.name.match(new RegExp(`^${ProcessName.PREDICTION_SET_PARSER}_(\\d+)$`));
+      if (nameMatch && nameMatch[1]) {
+        runningParserIds.add(Number(nameMatch[1]));
       }
+    });
+
+    // Filter out prediction sets that already have a parser running
+    const setsToProcess = predictionSetIds.filter((id) => !runningParserIds.has(id));
+    Logger.log(
+      `Found ${setsToProcess.length} prediction sets to process (${predictionSetIds.length - setsToProcess.length} already running)`,
+      'prediction-set-parser-planner.ts/main'
+    );
+
+    // Get the number of available CPU cores.
+    const cpuCores = os.cpus().length;
+    Logger.log(`Running with ${cpuCores} CPU cores available.`, 'prediction-set-parser-planner.ts/main');
+
+    const processQueue = new BetterQueue<number, void>(
+      async (predictionSetId: number, cb: (error?: Error | null) => void) => {
+        try {
+          const processName = `${ProcessName.PREDICTION_SET_PARSER}_${predictionSetId}`;
+
+          await new Promise((resolve, reject) => {
+            pm2.start(
+              {
+                script: `./dist/indexer/process-scripts/prediction-set-parser.js`,
+                name: processName,
+                args: [predictionSetId.toString(), processName],
+                instances: 1,
+                exec_mode: 'cluster',
+                autorestart: false
+              },
+              (error) => {
+                if (error) {
+                  reject(error);
+                }
+                resolve(true);
+              }
+            );
+          });
+          cb(null);
+        } catch (error) {
+          const errorId = randomUUID();
+          await sendSlackWebhook(
+            `
+          *[INDEXER ERROR]*: Error while starting parser for prediction set with ID: ${predictionSetId}. See DB worker logs for more info: \n
+            - Error ID: \`${errorId}\`\n
+            - Prediction set ID: \`${predictionSetId}\`
+            `,
+            true
+          );
+
+          await workerProcess.writeLogToDb(
+            WorkerLogStatus.ERROR,
+            `Error while starting parser for prediction set with ID: ${predictionSetId}`,
+            {
+              predictionSetId
+            },
+            error,
+            errorId
+          );
+
+          Logger.error('Error starting prediction set parser process:', error, 'prediction-set-parser-planner.ts/main');
+          cb(error);
+        }
+      },
+      {
+        concurrent: cpuCores, // Utilize all available CPU cores.
+        maxRetries: 0 // Don't retry, let the next cron run handle it.
+      }
+    );
+
+    // Add filtered prediction set IDs to the queue
+    for (const predictionSetId of setsToProcess) {
+      processQueue.push(predictionSetId);
     }
+
+    Logger.log(
+      `Added ${setsToProcess.length} prediction sets to processing queue, execution will continue asynchronously`,
+      'prediction-set-parser-planner.ts/main'
+    );
+
+    // Setup drain listener just for logging purposes without waiting
+    processQueue.on('drain', () => {
+      Logger.log('Prediction set queue has drained (all parsers started)', 'prediction-set-parser-planner.ts/queue-drain');
+    });
 
     Logger.log('Prediction set parser planner process completed successfully.', 'prediction-set-parser-planner.ts/main');
   } catch (error) {
