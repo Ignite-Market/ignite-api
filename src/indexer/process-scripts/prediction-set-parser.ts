@@ -36,6 +36,27 @@ async function main() {
   const workerProcess = new BaseProcess(processName);
   let conn = null;
 
+  console.log('predictionSetId', predictionSetId);
+  console.log('predictionSetId', predictionSetId);
+  console.log('predictionSetId', predictionSetId);
+  console.log('predictionSetId', predictionSetId);
+  console.log('predictionSetId', predictionSetId);
+  console.log('predictionSetId', predictionSetId);
+  console.log('predictionSetId', predictionSetId);
+  console.log('predictionSetId', predictionSetId);
+  console.log('predictionSetId', predictionSetId);
+  console.log('predictionSetId', predictionSetId);
+  console.log('predictionSetId', predictionSetId);
+  console.log('predictionSetId', predictionSetId);
+  console.log('predictionSetId', predictionSetId);
+  console.log('predictionSetId', predictionSetId);
+  console.log('predictionSetId', predictionSetId);
+  console.log('predictionSetId', predictionSetId);
+  console.log('predictionSetId', predictionSetId);
+  console.log('predictionSetId', predictionSetId);
+  console.log('predictionSetId', predictionSetId);
+  console.log('predictionSetId', predictionSetId);
+
   try {
     await workerProcess.initialize(true);
     const context = workerProcess.context;
