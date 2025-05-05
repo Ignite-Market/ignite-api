@@ -26,57 +26,15 @@ import { CollateralToken } from '../../modules/collateral-token/models/collatera
  * Main function to execute the prediction set parser process.
  */
 async function main() {
-  if (process.argv.length < 3 || !process.argv[2] || !process.argv[3]) {
+  if (process.argv.length < 5 || !process.argv[3] || !process.argv[4]) {
     Logger.error('Prediction set ID and process name are required.', 'prediction-set-parser.ts/main');
     process.exit(1);
   }
 
-  console.log('predictionSetId', process.argv[2]);
-  console.log('predictionSetId', process.argv[2]);
-  console.log('predictionSetId', process.argv[2]);
-  console.log('predictionSetId', process.argv[2]);
-  console.log('predictionSetId', process.argv[2]);
-  console.log('predictionSetId', process.argv[2]);
-  console.log('predictionSetId', process.argv[2]);
-  console.log('predictionSetId', process.argv[2]);
-  console.log('predictionSetId', process.argv[2]);
-  console.log('predictionSetId', process.argv[2]);
-  console.log('predictionSetId', process.argv[2]);
-  console.log('predictionSetId', process.argv[2]);
-  console.log('predictionSetId', process.argv[2]);
-  console.log('predictionSetId', process.argv[2]);
-  console.log('predictionSetId', process.argv[2]);
-  console.log('predictionSetId', process.argv[2]);
-  console.log('predictionSetId', process.argv[2]);
-  console.log('predictionSetId', process.argv[2]);
-  console.log('predictionSetId', process.argv[2]);
-  console.log('predictionSetId', process.argv[2]);
-
-  const predictionSetId = Number(process.argv[2]);
-  const processName = process.argv[3];
+  const predictionSetId = Number(process.argv[3]);
+  const processName = process.argv[4];
   const workerProcess = new BaseProcess(processName);
   let conn = null;
-
-  console.log('predictionSetId', predictionSetId);
-  console.log('predictionSetId', predictionSetId);
-  console.log('predictionSetId', predictionSetId);
-  console.log('predictionSetId', predictionSetId);
-  console.log('predictionSetId', predictionSetId);
-  console.log('predictionSetId', predictionSetId);
-  console.log('predictionSetId', predictionSetId);
-  console.log('predictionSetId', predictionSetId);
-  console.log('predictionSetId', predictionSetId);
-  console.log('predictionSetId', predictionSetId);
-  console.log('predictionSetId', predictionSetId);
-  console.log('predictionSetId', predictionSetId);
-  console.log('predictionSetId', predictionSetId);
-  console.log('predictionSetId', predictionSetId);
-  console.log('predictionSetId', predictionSetId);
-  console.log('predictionSetId', predictionSetId);
-  console.log('predictionSetId', predictionSetId);
-  console.log('predictionSetId', predictionSetId);
-  console.log('predictionSetId', predictionSetId);
-  console.log('predictionSetId', predictionSetId);
 
   try {
     await workerProcess.initialize(true);
