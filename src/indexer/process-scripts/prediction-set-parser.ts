@@ -271,7 +271,7 @@ async function main() {
           predictionSetId
         },
         error,
-        null
+        errorId
       );
       throw error;
     }
