@@ -1,8 +1,9 @@
-import { keccak256, solidityPacked } from 'ethers';
+import { ethers, keccak256, solidityPacked } from 'ethers';
 import { env } from '../../config/env';
 
 /**
  * Encodes string to HEX.
+ *
  * @param data String data.
  * @returns HEX string.
  */
@@ -17,6 +18,7 @@ export function toHex(data: string) {
 
 /**
  * Encodes data to UTF8 HEX string.
+ *
  * @param data String data.
  * @returns UTF8 HEX string.
  */
@@ -26,6 +28,7 @@ export function toUtf8HexString(data: string) {
 
 /**
  * Gets contract's ABI from explorer API.
+ *
  * @param address Contract's address.
  * @returns Contracts ABI.
  */
@@ -37,6 +40,7 @@ export async function getABI(address: string) {
 
 /**
  * Converts attestations proofs to named objects.
+ * TODO: FIX!
  *
  * @param rawProofs Raw proofs array.
  * @returns Named object proof array.
@@ -54,11 +58,15 @@ export function convertProofsToNamedObjects(rawProofs: any[][]): any[] {
         lowestUsedTimestamp: BigInt(lowestUsedTimestamp),
         requestBody: {
           url: requestBodyArray[0],
-          postprocessJq: requestBodyArray[1],
-          abi_signature: requestBodyArray[2]
+          httpMethod: requestBodyArray[1],
+          headers: requestBodyArray[2],
+          queryParams: requestBodyArray[3],
+          body: requestBodyArray[4],
+          postProcessJq: requestBodyArray[5],
+          abiSignature: requestBodyArray[6]
         },
         responseBody: {
-          abi_encoded_data: responseBodyArray[0]
+          abiEncodedData: responseBodyArray[0]
         }
       }
     };
@@ -67,6 +75,7 @@ export function convertProofsToNamedObjects(rawProofs: any[][]): any[] {
 
 /**
  * Ethers ABI coder results are read only so we need to correctly deep clone them.
+ *
  * @param result ABI coder results.
  * @returns Deep copy.
  */
@@ -90,6 +99,7 @@ export function deepCloneAbiCoderResult(result: any): any {
 
 /**
  * Creates JQ key.
+ *
  * @param url API URL.
  * @param jq API jq.
  * @returns JQ key
@@ -99,4 +109,18 @@ export function crateJQ(url: string, jq: string) {
   const jqKey = keccak256(packed);
 
   return jqKey;
+}
+
+/**
+ * Gets the implementation address of a proxy contract.
+ *
+ * @param provider Provider.
+ * @param contractAddress Address of the proxy contract.
+ * @returns Implementation address.
+ */
+export async function getProxyImplementationAddress(provider: ethers.Provider, contractAddress: string): Promise<string> {
+  const implementationSlot = '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'; // ERC-1967 implementation slot.
+  const implementationData = await provider.getStorage(contractAddress, implementationSlot);
+
+  return ethers.getAddress('0x' + implementationData.slice(-40));
 }

@@ -3,7 +3,7 @@ import { env } from '../../config/env';
 import { AttestationProof } from '../../modules/prediction-set/models/prediction-set-attestation.model';
 import { CONTRACT_REGISTRY_ABI } from './abis';
 import { ContractName, EncodedAttestationRequest, ProtocolIds } from './types';
-import { deepCloneAbiCoderResult, getABI, toUtf8HexString } from './utils';
+import { deepCloneAbiCoderResult, getABI, getProxyImplementationAddress, toUtf8HexString } from './utils';
 
 /**
  * Inits provider and base Flare contracts.
@@ -31,14 +31,7 @@ export async function getContract(
   registry: ethers.Contract,
   signer: ethers.Wallet | ethers.JsonRpcProvider
 ): Promise<ethers.Contract> {
-  let address = '';
-
-  // Returns hardcoded unofficial deployment instances of Flare core contracts. TODO: Change when Flare deploys official contract.
-  if (name === ContractName.JSON_API_VERIFICATION) {
-    address = env.JSON_VERIFIER_CONTRACT;
-  } else {
-    address = await registry.getContractAddressByName(name);
-  }
+  const address = await registry.getContractAddressByName(name);
   const abi = await getABI(address);
 
   return new ethers.Contract(address, abi, signer);
@@ -54,16 +47,20 @@ export async function getContract(
  */
 export async function prepareAttestationRequest(url: string, jq: string, abi: any): Promise<EncodedAttestationRequest> {
   const attestationRequest = {
-    attestationType: toUtf8HexString('IJsonApi'),
-    sourceId: toUtf8HexString('WEB2'),
+    attestationType: toUtf8HexString('Web2Json'),
+    sourceId: toUtf8HexString('PublicWeb2'),
     requestBody: {
       url,
-      postprocessJq: jq,
-      abi_signature: typeof abi === 'string' ? abi : JSON.stringify(abi)
+      postProcessJq: jq,
+      abiSignature: typeof abi === 'string' ? abi : JSON.stringify(abi),
+      httpMethod: 'GET',
+      body: '{}',
+      headers: '{}',
+      queryParams: '{}'
     }
   };
 
-  const verifierResponse = await fetch(`${env.FLARE_ATTESTATION_PROVIDER_URL}JsonApi/prepareRequest`, {
+  const verifierResponse = await fetch(`${env.FLARE_ATTESTATION_PROVIDER_URL}Web2Json/prepareRequest`, {
     method: 'POST',
     headers: {
       'X-API-KEY': env.FLARE_ATTESTATION_PROVIDER_API_KEY,
@@ -151,16 +148,22 @@ export async function getAttestationProof(roundId: number, abiEncodedRequest: st
  * Verifies attestation proof.
  *
  * @param attestationProof Results proof data.
- * @returns Boolean.
+ * @returns Boolean & proof data.
  */
 export async function verifyProof(attestationProof: AttestationProof): Promise<{ verified: boolean; proofData: any }> {
-  const { signer, contractRegistry } = init();
+  const { signer, provider, contractRegistry } = init();
 
-  const verifier = await getContract(ContractName.JSON_API_VERIFICATION, contractRegistry, signer);
-  const address = await verifier.getAddress();
-  const abi = await getABI(address);
+  const verifierProxy = await getContract(ContractName.FDC_VERIFICATION, contractRegistry, signer);
+  const verifierProxyAddress = await verifierProxy.getAddress();
 
-  const responseType = abi[0].inputs[0].components[1];
+  const verifierAddress = await getProxyImplementationAddress(provider, verifierProxyAddress);
+  const verifierAbi = await getABI(verifierAddress);
+
+  // Create verifier contract with proxy address and verifier ABI.
+  const verifier = new ethers.Contract(verifierProxyAddress, verifierAbi, signer);
+
+  const functionAbi = verifierAbi.find((el: any) => el.name === 'verifyJsonApi');
+  const responseType = functionAbi.inputs[0].components[1];
   const abiCoder = ethers.AbiCoder.defaultAbiCoder();
   const decodedResponse = abiCoder.decode([responseType], attestationProof.response_hex)[0];
 
@@ -169,6 +172,7 @@ export async function verifyProof(attestationProof: AttestationProof): Promise<{
     data: deepCloneAbiCoderResult(decodedResponse)
   };
 
+  console.log(proofData);
   const verified = await verifier.verifyJsonApi(proofData);
 
   return { verified, proofData };
