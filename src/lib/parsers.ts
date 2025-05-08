@@ -1,3 +1,8 @@
+/**
+ * Parses a string to return an object.
+ *
+ * @returns The resulting object after parsing the input value
+ */
 export function JSONParser(): any {
   return (value: string | any) => {
     try {
@@ -11,7 +16,14 @@ export function JSONParser(): any {
   };
 }
 
-// Not to be confused with arrayParser from rawmodel
+/**
+ * Parses a string to return an array.
+ *
+ * @param separator The separator to use.
+ * @returns The resulting array after parsing the input value
+ *
+ * Not to be confused with arrayParser from rawmodel
+ */
 export function stringArrayParser(separator = ','): (value: string) => string | string[] {
   return (value: string) => (value?.includes(separator) ? value.split(separator) : Array.isArray(value) ? value : [value]);
 }

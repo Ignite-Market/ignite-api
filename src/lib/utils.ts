@@ -1,18 +1,30 @@
+import { decode, sign, verify } from 'jsonwebtoken';
 import * as _ from 'lodash';
-import { sign, verify, decode } from 'jsonwebtoken';
 import { env, getEnvSecrets } from '../config/env';
 import { AppEnvironment } from '../config/types';
 import { Context } from '../context';
 import { MySql } from './database/mysql';
 
+/**
+ * Checks if a variable is a plain object.
+ *
+ * @param testVar The variable to check.
+ * @returns True if the variable is a plain object, false otherwise.
+ */
 export function isPlainObject(testVar: any): boolean {
-  // eslint-disable-next-line sonarjs/prefer-single-boolean-return
   if (testVar === null || testVar === undefined || typeof testVar !== 'object' || Array.isArray(testVar) || typeof testVar?.getMonth === 'function') {
     return false;
   }
   return true;
 }
 
+/**
+ * Converts a stream to a string.
+ *
+ * @param stream The stream to convert.
+ * @param encoding The encoding to use.
+ * @returns A promise that resolves to the string.
+ */
 export async function streamToString(stream: any, encoding: BufferEncoding): Promise<string> {
   const chunks = [];
   return new Promise((resolve, reject) => {
@@ -54,18 +66,53 @@ export async function runWithWorkers(data: Array<any>, workerCount: number, ctx:
   console.log(`COMPLETED=${data.length}/${data.length}`);
 }
 
+/**
+ * Converts a date to an object ID.
+ *
+ * @param date The date to convert.
+ * @returns The object ID.
+ */
 export function objectIdFromDate(date: Date) {
   return Math.floor(date.getTime() / 1000).toString(16) + '0000000000000000';
 }
 
+/**
+ * Converts an object to a JSON string.
+ *
+ * @param obj The object to convert.
+ * @returns The JSON string.
+ */
+export function stringifyBigInt(obj: any) {
+  return JSON.stringify(obj, (_, value) => (typeof value === 'bigint' ? value.toString() : value), 2);
+}
+
+/**
+ * Converts an object ID to a date.
+ *
+ * @param objectId The object ID to convert.
+ * @returns The date.
+ */
 export function dateFromObjectId(objectId: string) {
   return new Date(parseInt(objectId.substring(0, 8), 16) * 1000);
 }
 
+/**
+ * Converts a date to a Unix timestamp.
+ *
+ * @param date The date to convert.
+ * @returns The Unix timestamp.
+ */
 export function toUnixTimestamp(date: Date) {
   return !!date ? Math.floor(date.getTime() / 1000) : 0;
 }
 
+/**
+ * Parses a JSON string safely.
+ *
+ * @param inputString The JSON string to parse.
+ * @param defaultResult The default result to return if parsing fails.
+ * @returns The parsed JSON object or the default result.
+ */
 export function safeJsonParse(inputString: string, defaultResult = null) {
   try {
     defaultResult = JSON.parse(inputString);
@@ -75,6 +122,12 @@ export function safeJsonParse(inputString: string, defaultResult = null) {
   return defaultResult;
 }
 
+/**
+ * Checks if an email is valid.
+ *
+ * @param email The email to check.
+ * @returns True if the email is valid, false otherwise.
+ */
 export function checkEmail(email: string) {
   const regex =
     // eslint-disable-next-line security/detect-unsafe-regex
@@ -83,12 +136,13 @@ export function checkEmail(email: string) {
 }
 
 /**
- * JWT token
- * @param subject
- * @param data
- * @param expiresIn default 1d, 'never', or pass numeric or string representation of timestamp
- * @param secret
- * @returns
+ * Generates a JWT token.
+ *
+ * @param subject The subject of the token.
+ * @param data The data to include in the token.
+ * @param expiresIn The expiration time of the token.
+ * @param secret The secret key to use for the token.
+ * @returns The generated JWT token.
  */
 export function generateJwtToken(subject: string, data: object, expiresIn = '1d', secret?: string) {
   if (!subject && !expiresIn) {
@@ -104,18 +158,44 @@ export function generateJwtToken(subject: string, data: object, expiresIn = '1d'
   });
 }
 
+/**
+ * Parses a JWT token.
+ *
+ * @param subject The subject of the token.
+ * @param token The token to parse.
+ * @param secret The secret key to use for the token.
+ * @returns The parsed JWT token.
+ */
 export function parseJwtToken(subject: string, token: string, secret?: string) {
   return verify(token, secret ? secret : env.APP_SECRET, { subject }) as any;
 }
 
+/**
+ * Decodes a JWT token.
+ *
+ * @param token The token to decode.
+ * @returns The decoded JWT token.
+ */
 export function decodeJwtToken(token: string) {
   return decode(token) as any;
 }
 
+/**
+ * Generates a random password.
+ *
+ * @param length The length of the password.
+ * @returns The generated password.
+ */
 export function generatePassword(length: number) {
   return generateRandomString(length, true);
 }
 
+/**
+ * Generates a random string.
+ *
+ * @param length The length of the string.
+ * @returns The generated string.
+ */
 export function generateRandomString(length: number, includeSpecialChars = false) {
   const specialChars = '@#$&*€%';
   let charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
@@ -131,6 +211,12 @@ export function generateRandomString(length: number, includeSpecialChars = false
   return str;
 }
 
+/**
+ * Converts a date to a SQL string.
+ *
+ * @param date The date to convert.
+ * @returns The SQL string.
+ */
 export function dateToSqlString(date: Date): string {
   return date.toISOString().replace(/T/, ' ').replace(/Z/, '');
 }
@@ -147,6 +233,11 @@ export function dateToSqlString(date: Date): string {
 //   return Object.keys(enumerator).find((key) => enumerator[key] === value);
 // }
 
+/**
+ * Gets the arguments from the command line.
+ *
+ * @returns The arguments from the command line.
+ */
 export function getArgs() {
   return process.argv.reduce((args, arg) => {
     // long arg
@@ -184,6 +275,8 @@ export function splitArray<T>(arr: T[], splitBy: number): T[][] {
 
 /**
  * Creates context with MySQL connection.
+ *
+ * @returns The context.
  */
 export async function createContext(): Promise<Context> {
   await getEnvSecrets();

@@ -1,10 +1,9 @@
 import axios from 'axios';
-import { env } from '../config/env';
 
 /**
  * Gets token price from CoinGecko.
  *
- * @param tokenAddress Token address.
+ * @param tokenId Token ID.
  * @returns Token price in USD.
  */
 export async function getTokenPrice(tokenId: string): Promise<number> {

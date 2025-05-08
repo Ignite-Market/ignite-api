@@ -2089,11 +2089,6 @@ export const ORACLE_ABI = [
         'type': 'address'
       },
       {
-        'internalType': 'address',
-        'name': '_verification',
-        'type': 'address'
-      },
-      {
         'internalType': 'uint256',
         'name': '_minVotes',
         'type': 'uint256'
@@ -2307,16 +2302,36 @@ export const ORACLE_ABI = [
                   },
                   {
                     'internalType': 'string',
-                    'name': 'postprocessJq',
+                    'name': 'httpMethod',
                     'type': 'string'
                   },
                   {
                     'internalType': 'string',
-                    'name': 'abi_signature',
+                    'name': 'headers',
+                    'type': 'string'
+                  },
+                  {
+                    'internalType': 'string',
+                    'name': 'queryParams',
+                    'type': 'string'
+                  },
+                  {
+                    'internalType': 'string',
+                    'name': 'body',
+                    'type': 'string'
+                  },
+                  {
+                    'internalType': 'string',
+                    'name': 'postProcessJq',
+                    'type': 'string'
+                  },
+                  {
+                    'internalType': 'string',
+                    'name': 'abiSignature',
                     'type': 'string'
                   }
                 ],
-                'internalType': 'struct IJsonApi.RequestBody',
+                'internalType': 'struct IWeb2Json.RequestBody',
                 'name': 'requestBody',
                 'type': 'tuple'
               },
@@ -2324,21 +2339,21 @@ export const ORACLE_ABI = [
                 'components': [
                   {
                     'internalType': 'bytes',
-                    'name': 'abi_encoded_data',
+                    'name': 'abiEncodedData',
                     'type': 'bytes'
                   }
                 ],
-                'internalType': 'struct IJsonApi.ResponseBody',
+                'internalType': 'struct IWeb2Json.ResponseBody',
                 'name': 'responseBody',
                 'type': 'tuple'
               }
             ],
-            'internalType': 'struct IJsonApi.Response',
+            'internalType': 'struct IWeb2Json.Response',
             'name': 'data',
             'type': 'tuple'
           }
         ],
-        'internalType': 'struct IJsonApi.Proof[]',
+        'internalType': 'struct IWeb2Json.Proof[]',
         'name': 'proofs',
         'type': 'tuple[]'
       },
@@ -2561,7 +2576,7 @@ export const ORACLE_ABI = [
     'name': 'question',
     'outputs': [
       {
-        'internalType': 'enum IgniteOracle.Status',
+        'internalType': 'enum IgniteOracleCoston.Status',
         'name': 'status',
         'type': 'uint8'
       },
@@ -2678,19 +2693,6 @@ export const ORACLE_ABI = [
         'internalType': 'bool',
         'name': '',
         'type': 'bool'
-      }
-    ],
-    'stateMutability': 'view',
-    'type': 'function'
-  },
-  {
-    'inputs': [],
-    'name': 'verification',
-    'outputs': [
-      {
-        'internalType': 'contract IJsonApiVerification',
-        'name': '',
-        'type': 'address'
       }
     ],
     'stateMutability': 'view',

@@ -172,7 +172,6 @@ export async function verifyProof(attestationProof: AttestationProof): Promise<{
     data: deepCloneAbiCoderResult(decodedResponse)
   };
 
-  console.log(proofData);
   const verified = await verifier.verifyJsonApi(proofData);
 
   return { verified, proofData };
