@@ -55,7 +55,7 @@ export class CollateralToken extends AdvancedSQLModel {
   public decimals: number;
 
   /**
-   * Prediction set market funding threshold in collateral token without decimals.
+   * Prediction set market funding threshold in collateral token (with token decimals).
    */
   @prop({
     parser: { resolver: stringParser() },
@@ -95,6 +95,16 @@ export class CollateralToken extends AdvancedSQLModel {
     populatable: [PopulateFrom.DB, PopulateFrom.USER]
   })
   public imgUrl: string;
+
+  /**
+   * Required voting amount in collateral token (with token decimals).
+   */
+  @prop({
+    parser: { resolver: stringParser() },
+    populatable: [PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB]
+  })
+  public requiredVotingAmount: string;
 
   /**
    * Get list of collateral tokens.

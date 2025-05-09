@@ -143,7 +143,7 @@ export async function addPredictionSet(predictionSet: PredictionSet, context: Co
         ethers.parseEther(env.MARKET_FEE_PERCENT),
         env.MARKET_TREASURY_PERCENT,
         env.MARKET_TREASURY_ADDRESS,
-        ethers.parseUnits(collateralToken.fundingThreshold, collateralToken.decimals),
+        BigInt(collateralToken.fundingThreshold),
         Math.ceil(Number(predictionSet.endTime) / 1000)
       ]
     )
@@ -158,7 +158,7 @@ export async function addPredictionSet(predictionSet: PredictionSet, context: Co
       ethers.parseEther(env.MARKET_FEE_PERCENT),
       env.MARKET_TREASURY_PERCENT,
       env.MARKET_TREASURY_ADDRESS,
-      ethers.parseUnits(collateralToken.fundingThreshold, collateralToken.decimals),
+      BigInt(collateralToken.fundingThreshold),
       Math.ceil(Number(predictionSet.endTime) / 1000),
       salt
     );
