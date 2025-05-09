@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import {
   AuthorizationErrorCode,
   BadRequestErrorCode,
@@ -10,15 +10,13 @@ import {
 } from '../../config/types';
 import { Context } from '../../context';
 import { CodeException, ModelValidationException } from '../../lib/exceptions/exceptions';
-import { Proposal } from './models/proposal.model';
-import { ProposalRound, ProposalRoundStatus } from './models/proposal-round.model';
-import { ProposalVote, ProposalVoteType } from './models/proposal-vote.model';
+import { RewardType } from '../reward-points/models/reward-points.model';
+import { RewardPointsService } from '../reward-points/reward-points.service';
 import { ProposalsQueryFilter } from './dtos/proposals-query-filter';
 import { ProposalRoundsQueryFilter } from './dtos/proposals-query-filter copy';
-import { CollateralToken } from '../collateral-token/models/collateral-token.model';
-import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
-import { RewardPoints, RewardType } from '../reward-points/models/reward-points.model';
-import { RewardPointsService } from '../reward-points/reward-points.service';
+import { ProposalRound, ProposalRoundStatus } from './models/proposal-round.model';
+import { ProposalVote, ProposalVoteType } from './models/proposal-vote.model';
+import { Proposal } from './models/proposal.model';
 
 @Injectable()
 export class ProposalService {
@@ -152,7 +150,12 @@ export class ProposalService {
         context
       });
     }
-    await RewardPointsService.awardPoints(context.user.id, RewardType.PROPOSAL_VOTE, context);
+
+    try {
+      await RewardPointsService.awardPoints(context.user.id, RewardType.PROPOSAL_VOTE, context);
+    } catch (error) {
+      Logger.error('Error while awarding reward points: ', error, 'proposal.service.ts/voteOnProposal');
+    }
 
     return vote.serialize(SerializeFor.USER);
   }
