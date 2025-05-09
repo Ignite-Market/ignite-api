@@ -10,7 +10,8 @@ import { PoolConnection } from 'mysql2/promise';
  */
 export enum ProposalVoteType {
   UPVOTE = 1,
-  DOWNVOTE = -1
+  DOWNVOTE = -1,
+  NEUTRALIZED = 0 // User decided to revoke their vote.
 }
 
 /**

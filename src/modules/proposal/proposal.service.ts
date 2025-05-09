@@ -12,9 +12,13 @@ import { Context } from '../../context';
 import { CodeException, ModelValidationException } from '../../lib/exceptions/exceptions';
 import { Proposal } from './models/proposal.model';
 import { ProposalRound, ProposalRoundStatus } from './models/proposal-round.model';
-import { ProposalVote } from './models/proposal-vote.model';
+import { ProposalVote, ProposalVoteType } from './models/proposal-vote.model';
 import { ProposalsQueryFilter } from './dtos/proposals-query-filter';
 import { ProposalRoundsQueryFilter } from './dtos/proposals-query-filter copy';
+import { CollateralToken } from '../collateral-token/models/collateral-token.model';
+import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
+import { RewardPoints, RewardType } from '../reward-points/models/reward-points.model';
+import { RewardPointsService } from '../reward-points/reward-points.service';
 
 @Injectable()
 export class ProposalService {
@@ -110,9 +114,10 @@ export class ProposalService {
     const existingVote = await new ProposalVote({}, context).getByUserIdAndProposalId(context.user.id, proposal.id);
     if (existingVote.exists()) {
       try {
-        // If the user has already voted on this proposal, delete the vote.
+        // If the user has already voted on this proposal, neutralize the vote.
         if (existingVote.voteType === vote.voteType) {
-          await existingVote.delete();
+          existingVote.voteType = ProposalVoteType.NEUTRALIZED;
+          await existingVote.update();
           return existingVote.serialize(SerializeFor.USER);
         }
 
@@ -147,6 +152,7 @@ export class ProposalService {
         context
       });
     }
+    await RewardPointsService.awardPoints(context.user.id, RewardType.PROPOSAL_VOTE, context);
 
     return vote.serialize(SerializeFor.USER);
   }
