@@ -43,9 +43,21 @@ export async function getContract(
  * @param url API url for the data to attest.
  * @param jq JQ query to obtain data from API response.
  * @param abi ABI to encode/decode API response.
+ * @param httpMethod HTTP method to use.
+ * @param body Body to send to the API.
+ * @param headers Headers to send to the API.
+ * @param queryParams Query parameters to send to the API.
  * @returns Prepared attestation request.
  */
-export async function prepareAttestationRequest(url: string, jq: string, abi: any): Promise<EncodedAttestationRequest> {
+export async function prepareAttestationRequest(
+  url: string,
+  jq: string,
+  abi: any,
+  httpMethod: string = 'GET',
+  body: Object = {},
+  headers: Object = {},
+  queryParams: Object = {}
+): Promise<EncodedAttestationRequest> {
   const attestationRequest = {
     attestationType: toUtf8HexString('Web2Json'),
     sourceId: toUtf8HexString('PublicWeb2'),
@@ -53,10 +65,10 @@ export async function prepareAttestationRequest(url: string, jq: string, abi: an
       url,
       postProcessJq: jq,
       abiSignature: typeof abi === 'string' ? abi : JSON.stringify(abi),
-      httpMethod: 'GET',
-      body: '{}',
-      headers: '{}',
-      queryParams: '{}'
+      httpMethod: httpMethod ? httpMethod : 'GET',
+      body: body ? JSON.stringify(body) : '{}',
+      headers: headers ? JSON.stringify(headers) : '{}',
+      queryParams: queryParams ? JSON.stringify(queryParams) : '{}'
     }
   };
 

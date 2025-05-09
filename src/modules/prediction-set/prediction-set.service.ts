@@ -131,6 +131,8 @@ export class PredictionSetService {
 
       // Add data sources to the prediction set.
       for (const dataSourceId of dataSourceIds) {
+        // TODO: Do a check if data sources can be used for attestation!
+
         const dataSource = await new DataSource({}, context).populateById(dataSourceId, conn);
         if (!dataSource.exists() || !dataSource.isEnabled()) {
           await context.mysql.rollback(conn);
