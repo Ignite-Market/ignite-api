@@ -57,9 +57,16 @@ const processPredictionSet = async () => {
         const ds = await new DataSource(
           {
             endpoint: `${env.MOCK_RESULTS_API_ENDPOINT}/${id + i}`,
-            jqQuery: '.result',
+            jqQuery: `{ "outcomeIdx": .result }`,
             abi: {
-              'type': 'uint256'
+              'components': [
+                {
+                  'internalType': 'uint256',
+                  'name': 'outcomeIdx',
+                  'type': 'uint256'
+                }
+              ],
+              'type': 'tuple'
             }
           },
           context

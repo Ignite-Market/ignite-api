@@ -15,7 +15,6 @@ const abi = {
       'type': 'uint256'
     }
   ],
-  'name': 'task',
   'type': 'tuple'
 };
 

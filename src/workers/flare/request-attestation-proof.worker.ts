@@ -1,5 +1,6 @@
 import { DbTables, SqlModelStatus } from '../../config/types';
-import { getAttestationProof, isRoundFinalized } from '../../lib/flare/attestation';
+import { getAttestationProof, isRoundFinalized, submitAttestationRequest } from '../../lib/flare/attestation';
+import { AttestationVerifierStatus } from '../../lib/flare/types';
 import { WorkerLogStatus } from '../../lib/worker/logger';
 import { BaseSingleThreadWorker, SingleThreadWorkerAlertType } from '../../lib/worker/serverless-workers/base-single-thread-worker';
 import { Job } from '../../modules/job/job.model';
@@ -71,21 +72,46 @@ export class RequestAttestationProofWorker extends BaseSingleThreadWorker {
               attestation.proof = attestationProof;
               await attestation.update();
             } else {
+              // TODO: If this happens frequently should we also request attestation again?
               console.log('Invalid proof - we should wait one more cycle.');
             }
           } else {
             console.log('Round is not yet finalized.');
           }
         } catch (error) {
-          await this.writeLogToDb(
-            WorkerLogStatus.ERROR,
-            `Error while requesting attestation proof: `,
-            {
-              predictionSetId: predictionSet.id,
-              attestationId: attestation.id
-            },
-            error
-          );
+          // If we get HTTP 400, it means the request wasn't in the Merkle tree - we need to resubmit the attestation request.
+          if (error.status === 400 || (error.response && error.response.status === 400)) {
+            try {
+              const newRoundId = await submitAttestationRequest({
+                status: AttestationVerifierStatus.VALID,
+                abiEncodedRequest: attestation.abiEncodedRequest
+              });
+
+              attestation.roundId = newRoundId;
+              attestation.proof = null;
+              await attestation.update();
+            } catch (resubmitError) {
+              await this.writeLogToDb(
+                WorkerLogStatus.ERROR,
+                `Error while resubmitting attestation request`,
+                {
+                  predictionSetId: predictionSet.id,
+                  attestationId: attestation.id
+                },
+                resubmitError
+              );
+            }
+          } else {
+            await this.writeLogToDb(
+              WorkerLogStatus.ERROR,
+              `Error while requesting attestation proof`,
+              {
+                predictionSetId: predictionSet.id,
+                attestationId: attestation.id
+              },
+              error
+            );
+          }
           continue;
         }
       }
