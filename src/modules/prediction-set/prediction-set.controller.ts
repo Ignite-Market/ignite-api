@@ -68,6 +68,13 @@ export class PredictionSetController {
     return await this.predictionSetService.getPredictionSetPositions(predictionSetId, context);
   }
 
+  @Get('/:id/funding-positions')
+  @Validation({ dto: HoldersQueryFilter, validateFor: ValidateFor.QUERY })
+  @UseGuards(ValidationGuard)
+  async getPredictionSetFundingPositions(@Param('id', ParseIntPipe) predictionSetId: number, @Ctx() context: Context) {
+    return await this.predictionSetService.getPredictionSetFundingPositions(predictionSetId, context);
+  }
+
   @Get('/:id/chance-history')
   @Validation({ dto: PredictionSetChanceHistoryQueryFilter, validateFor: ValidateFor.QUERY })
   @UseGuards(ValidationGuard)

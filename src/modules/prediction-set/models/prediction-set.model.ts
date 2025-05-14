@@ -378,6 +378,17 @@ export class PredictionSet extends AdvancedSQLModel {
   public positions: any[];
 
   /**
+   * User's open funding positions.
+   */
+  @prop({
+    serializable: [SerializeFor.USER],
+    populatable: [PopulateFrom.USER],
+    defaultValue: () => 0,
+    emptyValue: () => 0
+  })
+  public fundingPositions: number;
+
+  /**
    * Populate prediction set by ID.
    * @param id Prediction set ID.
    * @param conn Pool connection.
@@ -395,6 +406,7 @@ export class PredictionSet extends AdvancedSQLModel {
       isWatched?: boolean;
       volume?: boolean;
       positions?: boolean;
+      fundingPositions?: boolean;
     }
   ): Promise<this> {
     const context = this.getContext();
@@ -420,6 +432,10 @@ export class PredictionSet extends AdvancedSQLModel {
 
     if (populate?.positions) {
       this.positions = await this.getOpenPositions(conn);
+    }
+
+    if (populate?.fundingPositions) {
+      this.fundingPositions = await this.getOpenFundingPositions(conn);
     }
 
     return model;
@@ -491,6 +507,37 @@ export class PredictionSet extends AdvancedSQLModel {
     );
 
     return positions;
+  }
+
+  /**
+   * Gets current user's open funding positions for this prediction set.
+   *
+   * @param conn Pool connection.
+   * @returns Sum of collateral amount.
+   */
+  public async getOpenFundingPositions(conn?: PoolConnection): Promise<number> {
+    const context = this.getContext();
+
+    if (!context.user) {
+      return 0;
+    }
+
+    const result = await this.db().paramExecute(
+      `
+        SELECT
+          SUM(psft.collateralAmount) AS collateralAmount
+        FROM ${DbTables.PREDICTION_SET_FUNDING_TRANSACTION} psft
+        WHERE psft.prediction_set_id = @predictionSetId
+          AND psft.user_id = @userId
+      `,
+      {
+        predictionSetId: this.id,
+        userId: context.user.id
+      },
+      conn
+    );
+
+    return result[0]?.collateralAmount || 0;
   }
 
   /**
@@ -830,6 +877,7 @@ export class PredictionSet extends AdvancedSQLModel {
           u.username,
           u.walletAddress as userWallet,
           o.name AS outcomeName,
+          p.collateral_token_id AS collateral_token_id,
           SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)) AS boughtAmount,
           SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0)) AS soldAmount,
           SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.outcomeTokens, 0)) AS outcomeTokens

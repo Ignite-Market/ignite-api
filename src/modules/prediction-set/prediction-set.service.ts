@@ -348,7 +348,8 @@ export class PredictionSetService {
       chainData: true,
       isWatched: true,
       volume: true,
-      positions: true
+      positions: true, // TODO: Remove positions from the response.
+      fundingPositions: true
     });
 
     if (!predictionSet.exists() || !predictionSet.isEnabled()) {
@@ -387,6 +388,31 @@ export class PredictionSetService {
     }
 
     return predictionSet.positions;
+  }
+
+  /**
+   * Get prediction set funding positions.
+   *
+   * @param id Prediction set ID.
+   * @param context Application context.
+   * @returns Prediction set funding positions.
+   */
+  public async getPredictionSetFundingPositions(id: number, context: Context) {
+    const predictionSet = await new PredictionSet({}, context).populateById(id, null, false, {
+      fundingPositions: true
+    });
+
+    if (!predictionSet.exists() || !predictionSet.isEnabled()) {
+      throw new CodeException({
+        code: ResourceNotFoundErrorCode.PREDICTION_SET_DOES_NOT_EXISTS,
+        errorCodes: ResourceNotFoundErrorCode,
+        status: HttpStatus.NOT_FOUND,
+        sourceFunction: `${this.constructor.name}/getPredictionSetFundingPositions`,
+        context
+      });
+    }
+
+    return predictionSet.fundingPositions;
   }
 
   /**
