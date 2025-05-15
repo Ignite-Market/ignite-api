@@ -7,6 +7,8 @@ const FK_CLAIM_TRANSACTION_OUTCOME_ID = 'fk_claim_transaction__outcome_id';
 const IDX_CLAIM_TRANSACTION_PREDICTION_SET_ID = 'idx_claim_transaction__prediction_set_id';
 const IDX_CLAIM_TRANSACTION_USER_ID = 'idx_claim_transaction__user_id';
 const IDX_CLAIM_TRANSACTION_OUTCOME_ID = 'idx_claim_transaction__outcome_id';
+const IDX_CLAIM_TRANSACTION_CREATE_TIME = 'idx_claim_transaction__create_time';
+const IDX_CLAIM_TRANSACTION_USER_PREDICTION_SET = 'idx_claim_transaction__user_prediction_set';
 
 export const upgrade = async (queryFn: (query: string, values?: any[]) => Promise<any[]>): Promise<void> => {
   await queryFn(`
@@ -14,6 +16,8 @@ export const upgrade = async (queryFn: (query: string, values?: any[]) => Promis
     ADD INDEX \`${IDX_CLAIM_TRANSACTION_PREDICTION_SET_ID}\` (\`prediction_set_id\`) VISIBLE,
     ADD INDEX \`${IDX_CLAIM_TRANSACTION_USER_ID}\` (\`user_id\`) VISIBLE,
     ADD INDEX \`${IDX_CLAIM_TRANSACTION_OUTCOME_ID}\` (\`outcome_id\`) VISIBLE,
+    ADD INDEX \`${IDX_CLAIM_TRANSACTION_CREATE_TIME}\` (\`createTime\`) VISIBLE,
+    ADD INDEX \`${IDX_CLAIM_TRANSACTION_USER_PREDICTION_SET}\` (\`user_id\`, \`prediction_set_id\`) VISIBLE,
     ADD CONSTRAINT \`${FK_CLAIM_TRANSACTION_PREDICTION_SET_ID}\`
       FOREIGN KEY (\`prediction_set_id\`)
       REFERENCES \`${DbTables.PREDICTION_SET}\` (\`id\`)
@@ -40,6 +44,8 @@ export const downgrade = async (queryFn: (query: string, values?: any[]) => Prom
       DROP FOREIGN KEY \`${FK_CLAIM_TRANSACTION_OUTCOME_ID}\`,
       DROP INDEX \`${IDX_CLAIM_TRANSACTION_PREDICTION_SET_ID}\`,
       DROP INDEX \`${IDX_CLAIM_TRANSACTION_USER_ID}\`,
-      DROP INDEX \`${IDX_CLAIM_TRANSACTION_OUTCOME_ID}\`;
+      DROP INDEX \`${IDX_CLAIM_TRANSACTION_OUTCOME_ID}\`,
+      DROP INDEX \`${IDX_CLAIM_TRANSACTION_CREATE_TIME}\`,
+      DROP INDEX \`${IDX_CLAIM_TRANSACTION_USER_PREDICTION_SET}\`
   `);
 };

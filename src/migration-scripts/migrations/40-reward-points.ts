@@ -14,7 +14,8 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
     \`createTime\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     \`updateUser\` INT NULL,
     \`updateTime\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (\`id\`)
+    PRIMARY KEY (\`id\` ASC),
+    INDEX \`idx_reward_points__type\` (\`type\` ASC) VISIBLE
   );
   `);
 }
