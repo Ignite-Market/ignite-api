@@ -56,6 +56,8 @@ export interface IEnv {
 
   PREDICTION_SET_MINIMAL_DATA_SOURCES: number;
 
+  PROSOPO_SECRET_KEY: string;
+
   SLACK_WEBHOOK_URL: string;
 
   ORACLE_CONTRACT: string;
@@ -112,6 +114,8 @@ export let env: IEnv = {
   SLACK_WEBHOOK_URL: process.env['SLACK_WEBHOOK_URL'],
 
   DEFAULT_PAGE_SIZE: parseInt(process.env['DEFAULT_PAGE_SIZE']) || 20,
+
+  PROSOPO_SECRET_KEY: process.env['PROSOPO_SECRET_KEY'],
 
   /**
    * Cache settings.
