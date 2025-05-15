@@ -17,6 +17,7 @@ import { ProposalRoundsQueryFilter } from './dtos/proposals-query-filter copy';
 import { ProposalRound, ProposalRoundStatus } from './models/proposal-round.model';
 import { ProposalVote, ProposalVoteType } from './models/proposal-vote.model';
 import { Proposal } from './models/proposal.model';
+import { isTextSafe } from '../../lib/content-moderation';
 
 @Injectable()
 export class ProposalService {
@@ -33,6 +34,18 @@ export class ProposalService {
         code: ResourceNotFoundErrorCode.PREDICTION_SET_PROPOSAL_ACTIVE_ROUND_DOES_NOT_EXISTS,
         errorCodes: ResourceNotFoundErrorCode,
         status: HttpStatus.NOT_FOUND,
+        sourceFunction: `${this.constructor.name}/createProposal`,
+        context
+      });
+    }
+
+    const textToCheck = [proposal.question, proposal.generalResolutionDef, ...(Array.isArray(proposal.outcomes) ? proposal.outcomes : [])].join('\n');
+    const isSafe = await isTextSafe(textToCheck);
+    if (!isSafe) {
+      throw new CodeException({
+        code: BadRequestErrorCode.TEXT_CONTENT_NOT_SAFE,
+        errorCodes: BadRequestErrorCode,
+        status: HttpStatus.BAD_REQUEST,
         sourceFunction: `${this.constructor.name}/createProposal`,
         context
       });
@@ -194,15 +207,27 @@ export class ProposalService {
     const count = await new ProposalVote({}, context).getProposalVotesCount(proposal.id);
     if (count > 0) {
       throw new CodeException({
-        code: BadRequestErrorCode.PROPOSAL_CANNOT_BE_UPDATE,
+        code: BadRequestErrorCode.PROPOSAL_CANNOT_BE_UPDATED,
         errorCodes: BadRequestErrorCode,
         status: HttpStatus.NOT_FOUND,
         sourceFunction: `${this.constructor.name}/updateProposal`,
         context
       });
     }
-
     proposal.populate(data, PopulateFrom.USER);
+
+    const textToCheck = [proposal.question, proposal.generalResolutionDef, ...(Array.isArray(proposal.outcomes) ? proposal.outcomes : [])].join('\n');
+    const isSafe = await isTextSafe(textToCheck);
+    if (!isSafe) {
+      throw new CodeException({
+        code: BadRequestErrorCode.TEXT_CONTENT_NOT_SAFE,
+        errorCodes: BadRequestErrorCode,
+        status: HttpStatus.BAD_REQUEST,
+        sourceFunction: `${this.constructor.name}/updateProposal`,
+        context
+      });
+    }
+
     try {
       await proposal.validate();
     } catch (error) {

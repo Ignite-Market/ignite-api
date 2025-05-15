@@ -91,6 +91,8 @@ export interface IEnv {
 
   INDEXER_PREDICTION_SET_PARSER_CRON: string;
   PROPOSAL_ROUND_OFFSET_DURATION: number;
+
+  OPENAI_API_KEY: string;
 }
 
 dotenv.config();
@@ -199,7 +201,9 @@ export let env: IEnv = {
   MOCK_RESULTS_API_ENDPOINT: process.env['MOCK_RESULTS_API_ENDPOINT'],
 
   INDEXER_PREDICTION_SET_PARSER_CRON: process.env['INDEXER_PREDICTION_SET_PARSER_CRON'] || '*/5 * * * * *',
-  PROPOSAL_ROUND_OFFSET_DURATION: parseInt(process.env['PROPOSAL_ROUND_OFFSET_DURATION']) || 7 * 24 * 60 * 60 * 1000 // One week by default.
+  PROPOSAL_ROUND_OFFSET_DURATION: parseInt(process.env['PROPOSAL_ROUND_OFFSET_DURATION']) || 7 * 24 * 60 * 60 * 1000, // One week by default.
+
+  OPENAI_API_KEY: process.env['OPENAI_API_KEY']
 };
 
 /**

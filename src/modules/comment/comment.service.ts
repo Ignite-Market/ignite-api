@@ -1,6 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import {
   AuthorizationErrorCode,
+  BadRequestErrorCode,
   DefaultUserRole,
   ResourceNotFoundErrorCode,
   SerializeFor,
@@ -16,6 +17,7 @@ import { CommentCreateDto } from './dtos/comment-create.dto';
 import { CommentUpdateDto } from './dtos/comment-update.dto';
 import { CommentsQueryFilter } from './dtos/comments-query-filter';
 import { Comment, CommentEntityTypes, DELETED_COMMENT_CONTENT } from './models/comment.model';
+import { isTextSafe } from '../../lib/content-moderation';
 
 @Injectable()
 export class CommentService {
@@ -25,6 +27,18 @@ export class CommentService {
   async createComment(data: CommentCreateDto, context: Context): Promise<any> {
     const comment = new Comment(data.serialize(), context);
     comment.user_id = context.user.id;
+
+    // Check if content is safe
+    const isSafe = await isTextSafe(comment.content);
+    if (!isSafe) {
+      throw new CodeException({
+        code: BadRequestErrorCode.TEXT_CONTENT_NOT_SAFE,
+        errorCodes: BadRequestErrorCode,
+        status: HttpStatus.BAD_REQUEST,
+        sourceFunction: `${this.constructor.name}/createComment`,
+        context
+      });
+    }
 
     if (comment.parent_comment_id) {
       const parentComment = await new Comment({}, context).populateByIdAllowDeleted(comment.parent_comment_id);
@@ -126,8 +140,20 @@ export class CommentService {
         context
       });
     }
-
     comment.content = data.content;
+
+    // Check if content is safe
+    const isSafe = await isTextSafe(comment.content);
+    if (!isSafe) {
+      throw new CodeException({
+        code: BadRequestErrorCode.TEXT_CONTENT_NOT_SAFE,
+        errorCodes: BadRequestErrorCode,
+        status: HttpStatus.BAD_REQUEST,
+        sourceFunction: `${this.constructor.name}/updateComment`,
+        context
+      });
+    }
+
     try {
       await comment.validate();
     } catch (error) {

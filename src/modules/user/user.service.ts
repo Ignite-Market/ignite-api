@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { verifyMessage } from 'ethers';
-import { DefaultUserRole, SerializeFor, UnauthorizedErrorCode, ValidatorErrorCode } from '../../config/types';
+import { BadRequestErrorCode, DefaultUserRole, SerializeFor, UnauthorizedErrorCode, ValidatorErrorCode } from '../../config/types';
 import { Context } from '../../context';
 import { CodeException, ValidationException } from '../../lib/exceptions/exceptions';
 import { User, UserEmailStatus } from './models/user.model';
@@ -10,6 +10,7 @@ import { UserEmailDto } from './dtos/user-email.dto';
 import { PredictionSet } from '../prediction-set/models/prediction-set.model';
 import { ActivityQueryFilter } from '../prediction-set/dtos/activity-query-filter';
 import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
+import { isTextSafe } from '../../lib/content-moderation';
 
 @Injectable()
 export class UserService {
@@ -119,9 +120,28 @@ export class UserService {
     return user.serialize(SerializeFor.USER);
   }
 
+  /**
+   * Updates user profile.
+   * @param data Profile data.
+   * @param context Application context.
+   * @returns User data.
+   */
   public async updateProfile(data: UserProfileDto, context: Context) {
     const user = context.user;
     user.username = data.username;
+
+    // Check if the username is safe
+    const isSafe = await isTextSafe(user.username);
+    if (!isSafe) {
+      throw new CodeException({
+        code: BadRequestErrorCode.TEXT_CONTENT_NOT_SAFE,
+        errorCodes: BadRequestErrorCode,
+        status: HttpStatus.BAD_REQUEST,
+        sourceFunction: `${this.constructor.name}/updateProfile`,
+        context
+      });
+    }
+
     try {
       await user.validate();
     } catch (error) {
@@ -135,6 +155,12 @@ export class UserService {
     return user.serialize(SerializeFor.USER);
   }
 
+  /**
+   * Updates user email.
+   * @param data Email data.
+   * @param context Application context.
+   * @returns User data.
+   */
   public async updateEmail(data: UserEmailDto, context: Context) {
     const user = context.user;
     const existingEmail = await new User({}).populateByEmail(data.email);
