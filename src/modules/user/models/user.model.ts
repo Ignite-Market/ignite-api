@@ -73,6 +73,18 @@ export class User extends AdvancedSQLModel {
   walletAddress: string;
 
   /**
+   * User's referral id.
+   */
+  @prop({
+    parser: {
+      resolver: stringParser()
+    },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB],
+    populatable: [PopulateFrom.DB]
+  })
+  referralId: string;
+
+  /**
    * User's authentication token.
    */
   @prop({

@@ -8,8 +8,10 @@ import { WalletLoginDto } from './dtos/wallet-login.dto';
 import { UserProfileDto } from './dtos/user-profile.dto';
 import { UserEmailDto } from './dtos/user-email.dto';
 import { PredictionSet } from '../prediction-set/models/prediction-set.model';
-import { ActivityQueryFilter } from '../prediction-set/dtos/activity-query-filter';
 import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
+import { nanoid } from 'nanoid';
+import { RewardType } from '../reward-points/models/reward-points.model';
+import { RewardPointsService } from '../reward-points/reward-points.service';
 import { isTextSafe } from '../../lib/content-moderation';
 
 @Injectable()
@@ -95,6 +97,8 @@ export class UserService {
 
       user.walletAddress = data.address;
       user.username = `${data.address.slice(0, 6)}...${data.address.slice(-4)}`;
+      user.referralId = nanoid(12);
+
       try {
         await user.validate();
       } catch (error) {
@@ -108,6 +112,13 @@ export class UserService {
       try {
         await user.insert(SerializeFor.INSERT_DB, conn);
         await user.addRole(DefaultUserRole.USER, conn);
+
+        if (data?.referralId) {
+          const referralUser = await new User({}, context).populateByUUID(data.referralId, 'referralId', conn);
+          if (referralUser.exists()) {
+            await RewardPointsService.awardPoints(referralUser.id, RewardType.USER_REFERRAL, context, conn);
+          }
+        }
 
         await context.mysql.commit(conn);
       } catch (error) {

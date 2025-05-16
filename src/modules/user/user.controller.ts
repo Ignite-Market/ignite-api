@@ -10,7 +10,6 @@ import { UserProfileDto } from './dtos/user-profile.dto';
 import { UserEmailDto } from './dtos/user-email.dto';
 import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
 import { ValidateFor } from '../../config/types';
-import { ActivityQueryFilter } from '../prediction-set/dtos/activity-query-filter';
 
 @Controller('users')
 export class UserController {
