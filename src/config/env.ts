@@ -93,6 +93,15 @@ export interface IEnv {
   PROPOSAL_ROUND_OFFSET_DURATION: number;
 
   OPENAI_API_KEY: string;
+
+  SMTP_HOST: string;
+  SMTP_PORT: number;
+  SMTP_NAME_FROM: string;
+  SMTP_EMAIL_FROM: string;
+  SMTP_USERNAME: string;
+  SMTP_PASSWORD: string;
+
+  MAIL_TEMPLATE_PATH: string;
 }
 
 dotenv.config();
@@ -203,7 +212,16 @@ export let env: IEnv = {
   INDEXER_PREDICTION_SET_PARSER_CRON: process.env['INDEXER_PREDICTION_SET_PARSER_CRON'] || '*/5 * * * * *',
   PROPOSAL_ROUND_OFFSET_DURATION: parseInt(process.env['PROPOSAL_ROUND_OFFSET_DURATION']) || 7 * 24 * 60 * 60 * 1000, // One week by default.
 
-  OPENAI_API_KEY: process.env['OPENAI_API_KEY']
+  OPENAI_API_KEY: process.env['OPENAI_API_KEY'],
+
+  SMTP_HOST: process.env['SMTP_HOST'],
+  SMTP_PORT: parseInt(process.env['SMTP_PORT']),
+  SMTP_NAME_FROM: process.env['SMTP_NAME_FROM'] || 'Ignite Market',
+  SMTP_EMAIL_FROM: process.env['SMTP_EMAIL_FROM'] || 'info@ignitemarket.xyz',
+  SMTP_USERNAME: process.env['SMTP_USERNAME'],
+  SMTP_PASSWORD: process.env['SMTP_PASSWORD'],
+
+  MAIL_TEMPLATE_PATH: process.env['MAIL_TEMPLATE_PATH'],
 };
 
 /**

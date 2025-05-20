@@ -1,8 +1,16 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { verifyMessage } from 'ethers';
-import { BadRequestErrorCode, DefaultUserRole, SerializeFor, UnauthorizedErrorCode, ValidatorErrorCode } from '../../config/types';
+import {
+  BadRequestErrorCode,
+  DefaultUserRole,
+  EmailTemplateType,
+  JwtTokenType,
+  SerializeFor,
+  UnauthorizedErrorCode,
+  ValidatorErrorCode
+} from '../../config/types';
 import { Context } from '../../context';
-import { CodeException, ValidationException } from '../../lib/exceptions/exceptions';
+import { CodeException, ModelValidationException, ValidationException } from '../../lib/exceptions/exceptions';
 import { User, UserEmailStatus } from './models/user.model';
 import { WalletLoginDto } from './dtos/wallet-login.dto';
 import { UserProfileDto } from './dtos/user-profile.dto';
@@ -13,6 +21,9 @@ import { nanoid } from 'nanoid';
 import { RewardType } from '../reward-points/models/reward-points.model';
 import { RewardPointsService } from '../reward-points/reward-points.service';
 import { isTextSafe } from '../../lib/content-moderation';
+import { generateJwtToken, parseJwtToken } from '../../lib/utils';
+import { SMTPsendDefaultTemplate } from '../../lib/mailing/smtp-mailer';
+import { env } from '../../config/env';
 
 @Injectable()
 export class UserService {
@@ -155,6 +166,10 @@ export class UserService {
 
     try {
       await user.validate();
+
+      if (user.email !== data.email) {
+        await this.updateEmail(new UserEmailDto({ email: data.email }), context);
+      }
     } catch (error) {
       await user.handle(error);
 
@@ -174,7 +189,7 @@ export class UserService {
    */
   public async updateEmail(data: UserEmailDto, context: Context) {
     const user = context.user;
-    const existingEmail = await new User({}).populateByEmail(data.email);
+    const existingEmail = await new User({}, context).populateByEmail(data.email);
 
     if (existingEmail.exists()) {
       if (existingEmail.id !== user.id) {
@@ -203,7 +218,8 @@ export class UserService {
       }
     }
     await user.update(SerializeFor.UPDATE_DB);
-    // TODO: Send email verification email.
+    // Send email verification email.
+    // await this.registerEmailVerification({ email: user.email }, context);
     return user.serialize(SerializeFor.USER);
   }
 
@@ -222,5 +238,70 @@ export class UserService {
       console.error('Signature verification failed:', error);
       return false;
     }
+  }
+
+  async registerEmailVerification(data: any, ctx: Context) {
+    if (!data?.email) {
+      throw new CodeException({
+        code: ValidatorErrorCode.DEFAULT_VALIDATION_ERROR,
+        status: HttpStatus.UNPROCESSABLE_ENTITY,
+        errorCodes: ValidatorErrorCode
+      });
+    }
+
+    const token = generateJwtToken(JwtTokenType.EMAIL_VERIFICATION, {
+      email: data.email,
+      id: ctx.user.id
+    });
+
+    await SMTPsendDefaultTemplate(ctx, {
+      templateName: EmailTemplateType.EMAIL_VERIFICATION,
+      mailAddresses: [data.email],
+      subject: 'Email verification',
+      templateData: {
+        actionUrl: `${env.APP_URL}/confirm-email?token=${token}`
+      }
+    });
+
+    return env.APP_ENV === 'test' ? { token } : {};
+  }
+
+  async changeEmail(data: any, ctx: Context) {
+    if (!data?.token) {
+      throw new CodeException({
+        code: ValidatorErrorCode.DEFAULT_VALIDATION_ERROR,
+        status: HttpStatus.UNPROCESSABLE_ENTITY,
+        errorCodes: ValidatorErrorCode
+      });
+    }
+
+    let payload;
+    try {
+      payload = parseJwtToken(JwtTokenType.EMAIL_VERIFICATION, data.token);
+    } catch (error) {
+      throw new CodeException({
+        code: UnauthorizedErrorCode.INVALID_TOKEN,
+        status: HttpStatus.UNAUTHORIZED,
+        errorCodes: UnauthorizedErrorCode,
+        details: error
+      });
+    }
+
+    const { id, email } = payload;
+    const user = await new User({}, ctx).populateById(id);
+    if (!user.exists()) {
+      throw new CodeException({
+        code: UnauthorizedErrorCode.INVALID_TOKEN,
+        status: HttpStatus.UNAUTHORIZED,
+        errorCodes: UnauthorizedErrorCode,
+      });
+    }
+    user.email = email;
+    user.emailStatus = UserEmailStatus.VERIFIED;
+
+    await user.validateOrThrow(ModelValidationException);
+    await user.update();
+
+    return user.serialize(SerializeFor.USER);
   }
 }

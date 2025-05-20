@@ -15,7 +15,7 @@ const oneWeek = 7 * 24 * 60 * 60 * 1000;
 
 const data = {
   collateral_token_id: 1,
-  question: 'NBA: Lakers vs. Rockets',
+  question: 'NBA: Lakers vs. Rockets 10:31',
   description: 'Who will win the game between the Lakers and Rockets?',
   generalResolutionDef: 'This market will resolve to the winning team based on the final score at the end of the game.',
   outcomeResolutionDef:

@@ -38,7 +38,7 @@ export class User extends AdvancedSQLModel {
    */
   @prop({
     parser: { resolver: stringParser() },
-    serializable: [SerializeFor.USER, SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB],
     populatable: [PopulateFrom.DB],
     validators: [
       {

@@ -112,7 +112,8 @@ export enum ResourceNotFoundErrorCode {
   PREDICTION_SET_PROPOSAL_ROUND_DOES_NOT_EXISTS = 404_00_006,
   PREDICTION_SET_PROPOSAL_ACTIVE_ROUND_DOES_NOT_EXISTS = 404_00_007,
   REWARD_POINTS_DOES_NOT_EXISTS = 404_00_008,
-  COLLATERAL_TOKEN_DOES_NOT_EXISTS = 404_00_009
+  COLLATERAL_TOKEN_DOES_NOT_EXISTS = 404_00_009,
+  TEMPLATE_NOT_FOUND = 404_010
 }
 
 /**
@@ -145,7 +146,8 @@ export enum SystemErrorCode {
   SQL_SYSTEM_ERROR = 500_00_002,
   AWS_SYSTEM_ERROR = 500_00_003,
   MICROSERVICE_SYSTEM_ERROR = 500_00_004,
-  BLOCKCHAIN_SYSTEM_ERROR = 500_00_005
+  BLOCKCHAIN_SYSTEM_ERROR = 500_00_005,
+  ERROR_SENDING_EMAIL = 500_006
 }
 
 /**
@@ -263,7 +265,8 @@ export enum CacheKeyTTL {
  * JWT Token signing types.
  */
 export enum JwtTokenType {
-  USER_LOGIN = 'user-login'
+  USER_LOGIN = 'user-login',
+  EMAIL_VERIFICATION = 'email-verification'
 }
 
 /**
@@ -299,4 +302,8 @@ export interface TransactionEvent {
   feeAmount: string;
   outcomeIndex: number;
   outcomeTokens: string;
+}
+
+export enum EmailTemplateType {
+  EMAIL_VERIFICATION = 'email-verification'
 }

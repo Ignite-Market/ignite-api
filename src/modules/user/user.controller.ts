@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { AuthGuard } from '../../guards/auth.guard';
 import { Context } from '../../context';
@@ -57,5 +57,15 @@ export class UserController {
   @UseGuards(AuthGuard, ValidationGuard)
   async updateEmail(@Body() data: UserEmailDto, @Ctx() context: Context) {
     return await this.userService.updateEmail(data, context);
+  }
+
+  @Post('email-verification')
+  async registerEmailVerification(@Body() data: any, @Ctx() context: Context) {
+    return await this.userService.registerEmailVerification(data, context);
+  }
+
+  @Patch('change-email')
+  async changeEmail(@Body() data: any, @Ctx() context: Context) {
+    return await this.userService.changeEmail(data, context);
   }
 }
