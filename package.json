@@ -8,6 +8,7 @@
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "tsc -p tsconfig.build.json && copyfiles -f ./src/lib/mailing/templates/*.html ./dist/lib/mailing/templates",
+    "build-indexer": "tsc -p tsconfig.build.json",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch --preserveWatchOutput",

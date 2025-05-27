@@ -16,7 +16,7 @@ RUN npm ci
 COPY . .
 
 # Build the application
-RUN npm run build
+RUN npm run build-indexer
 
 # Command to run the indexer with PM2
 CMD ["pm2-runtime", "dist/indexer/main.js"]
