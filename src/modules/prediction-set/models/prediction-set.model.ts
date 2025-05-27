@@ -20,6 +20,7 @@ import { PredictionSetAttestation } from './prediction-set-attestation.model';
 import { PredictionSetChainData } from './prediction-set-chain-data.model';
 import { ShareTransactionType } from './transactions/outcome-share-transaction.model';
 import { UserWatchlist } from './user-watchlist';
+import { FundingTransactionType } from './transactions/prediction-set-funding-transaction.model';
 
 /**
  * Prediction set resolution type.
@@ -734,10 +735,7 @@ export class PredictionSet extends AdvancedSQLModel {
       id: null
     };
 
-    const fieldMap = {};
-
-    const { params, filters } = getQueryParams(defaultParams, '', fieldMap, query.serialize());
-
+    const { params, filters } = getQueryParams(defaultParams, '', {}, query.serialize());
     const qSelects = [
       {
         qSelect: `
@@ -868,7 +866,6 @@ export class PredictionSet extends AdvancedSQLModel {
     };
 
     const { params, filters } = getQueryParams(defaultParams, 'ost', fieldMap, query.serialize());
-
     const sqlQuery = {
       qSelect: `
         SELECT 
@@ -927,10 +924,7 @@ export class PredictionSet extends AdvancedSQLModel {
       outcomeTokens: `SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.outcomeTokens, 0))`
     };
 
-    const { params, filters } = getQueryParams(defaultParams, 'p', fieldMap, query.serialize());
-
-    params.userId = id;
-
+    const { params, filters } = getQueryParams(defaultParams, 'p', fieldMap, { ...query.serialize(), userId: id });
     const sqlQuery = {
       qSelect: `
         SELECT 
@@ -966,6 +960,52 @@ export class PredictionSet extends AdvancedSQLModel {
   }
 
   /**
+   * Returns user's funding positions.
+   *
+   * @param id User ID.
+   * @param query User's query filter.
+   * @returns List of user's funding positions.
+   */
+  public async getUserFundingPositions(id: number, query: BaseQueryFilter): Promise<any> {
+    const defaultParams = {
+      id: null
+    };
+
+    const fieldMap = {
+      id: 'p.id',
+      fundedAmount: `SUM(IF(psft.type = ${FundingTransactionType.ADDED}, psft.collateralAmount, 0))`
+    };
+
+    const { params, filters } = getQueryParams(defaultParams, 'p', fieldMap, { ...query.serialize(), userId: id });
+    const sqlQuery = {
+      qSelect: `
+        SELECT 
+          ${new PredictionSet({}).generateSelectFields('p')},
+          SUM(IF(psft.type = ${FundingTransactionType.ADDED}, psft.collateralAmount, 0)) AS fundedAmount
+        `,
+      qFrom: `
+        FROM ${DbTables.PREDICTION_SET} p
+        LEFT JOIN ${DbTables.PREDICTION_SET_FUNDING_TRANSACTION} psft
+          ON psft.prediction_set_id = p.id
+          AND psft.user_id = @userId
+        WHERE p.status <> ${SqlModelStatus.DELETED}
+        AND psft.id IS NOT NULL
+        AND (@search IS NULL
+          OR p.question LIKE CONCAT('%', @search, '%')
+        )
+        `,
+      qGroup: `
+        GROUP BY p.id
+      `,
+      qFilter: `
+        ORDER BY ${filters.orderStr}
+        LIMIT ${filters.limit} OFFSET ${filters.offset};
+      `
+    };
+    return await selectAndCountQuery(this.getContext().mysql, sqlQuery, params, 'p.id');
+  }
+
+  /**
    * Returns prediction set list.
    *
    * @param query Prediction set query filter.
@@ -984,6 +1024,10 @@ export class PredictionSet extends AdvancedSQLModel {
 
     if (this.getContext()?.user?.id) {
       params.userId = this.getContext().user.id;
+    }
+
+    if (params.watchlist) {
+      params.category = null;
     }
 
     const sqlQuery = {
@@ -1047,7 +1091,7 @@ export class PredictionSet extends AdvancedSQLModel {
             GROUP BY outcome_id
           ) latest ON oc.outcome_id = latest.outcome_id AND oc.createTime = latest.latest_create_time
         ) oc ON oc.outcome_id = o.id
-        LEFT JOIN ${DbTables.USER_WATCHLIST} uw 
+        LEFT JOIN ${DbTables.USER_WATCHLIST} uw
           ON uw.prediction_set_id = p.id
           AND uw.user_id = @userId
         LEFT JOIN ${DbTables.PREDICTION_SET_CATEGORY} pc
@@ -1082,6 +1126,7 @@ export class PredictionSet extends AdvancedSQLModel {
         LIMIT ${filters.limit} OFFSET ${filters.offset};
       `
     };
+
     const res = await selectAndCountQuery(this.getContext().mysql, sqlQuery, params, 'p.id');
     if (res.items.length) {
       res.items = res?.items?.map((x: any) => ({

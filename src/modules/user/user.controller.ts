@@ -38,6 +38,13 @@ export class UserController {
     return await this.userService.getUserPredictions(id, query, context);
   }
 
+  @Get('/:id/funding-positions')
+  @Validation({ dto: BaseQueryFilter, validateFor: ValidateFor.QUERY })
+  @UseGuards(ValidationGuard)
+  async getUserFundingPositions(@Param('id', ParseIntPipe) id: number, @Query() query: BaseQueryFilter, @Ctx() context: Context) {
+    return await this.userService.getUserFundingPositions(id, query, context);
+  }
+
   @Post('wallet-login')
   @Validation({ dto: WalletLoginDto })
   @UseGuards(ValidationGuard)

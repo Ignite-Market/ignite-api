@@ -1,6 +1,9 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { verifyMessage } from 'ethers';
+import { nanoid } from 'nanoid';
+import { env } from '../../config/env';
 import {
+  AppEnvironment,
   BadRequestErrorCode,
   DefaultUserRole,
   EmailTemplateType,
@@ -10,20 +13,18 @@ import {
   ValidatorErrorCode
 } from '../../config/types';
 import { Context } from '../../context';
-import { CodeException, ModelValidationException, ValidationException } from '../../lib/exceptions/exceptions';
-import { User, UserEmailStatus } from './models/user.model';
-import { WalletLoginDto } from './dtos/wallet-login.dto';
-import { UserProfileDto } from './dtos/user-profile.dto';
-import { UserEmailDto } from './dtos/user-email.dto';
-import { PredictionSet } from '../prediction-set/models/prediction-set.model';
 import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
-import { nanoid } from 'nanoid';
+import { isTextSafe } from '../../lib/content-moderation';
+import { CodeException, ModelValidationException, ValidationException } from '../../lib/exceptions/exceptions';
+import { SMTPsendDefaultTemplate } from '../../lib/mailing/smtp-mailer';
+import { generateJwtToken, parseJwtToken } from '../../lib/utils';
+import { PredictionSet } from '../prediction-set/models/prediction-set.model';
 import { RewardType } from '../reward-points/models/reward-points.model';
 import { RewardPointsService } from '../reward-points/reward-points.service';
-import { isTextSafe } from '../../lib/content-moderation';
-import { generateJwtToken, parseJwtToken } from '../../lib/utils';
-import { SMTPsendDefaultTemplate } from '../../lib/mailing/smtp-mailer';
-import { env } from '../../config/env';
+import { UserEmailDto } from './dtos/user-email.dto';
+import { UserProfileDto } from './dtos/user-profile.dto';
+import { WalletLoginDto } from './dtos/wallet-login.dto';
+import { User, UserEmailStatus } from './models/user.model';
 
 @Injectable()
 export class UserService {
@@ -56,6 +57,18 @@ export class UserService {
    */
   public async getUserPredictions(id: number, query: BaseQueryFilter, context: Context) {
     return await new PredictionSet({}, context).getUserPredictions(id, query);
+  }
+
+  /**
+   * Returns users funding positions.
+   *
+   * @param id User id.
+   * @param query Query filter.
+   * @param context Application context.
+   * @returns User data.
+   */
+  public async getUserFundingPositions(id: number, query: BaseQueryFilter, context: Context) {
+    return await new PredictionSet({}, context).getUserFundingPositions(id, query);
   }
 
   /**
@@ -124,6 +137,7 @@ export class UserService {
         await user.insert(SerializeFor.INSERT_DB, conn);
         await user.addRole(DefaultUserRole.USER, conn);
 
+        // Check for referrals and award them.
         if (data?.referralId) {
           const referralUser = await new User({}, context).populateByUUID(data.referralId, 'referralId', conn);
           if (referralUser.exists()) {
@@ -240,7 +254,13 @@ export class UserService {
     }
   }
 
-  async registerEmailVerification(data: any, ctx: Context) {
+  /**
+   * Registers email verification.
+   * @param data Email data.
+   * @param context Application context.
+   * @returns Email verification token.
+   */
+  async registerEmailVerification(data: any, context: Context) {
     if (!data?.email) {
       throw new CodeException({
         code: ValidatorErrorCode.DEFAULT_VALIDATION_ERROR,
@@ -251,10 +271,10 @@ export class UserService {
 
     const token = generateJwtToken(JwtTokenType.EMAIL_VERIFICATION, {
       email: data.email,
-      id: ctx.user.id
+      id: context.user.id
     });
 
-    await SMTPsendDefaultTemplate(ctx, {
+    await SMTPsendDefaultTemplate(context, {
       templateName: EmailTemplateType.EMAIL_VERIFICATION,
       mailAddresses: [data.email],
       subject: 'Email verification',
@@ -263,10 +283,16 @@ export class UserService {
       }
     });
 
-    return env.APP_ENV === 'test' ? { token } : {};
+    return env.APP_ENV === AppEnvironment.TEST ? { token } : {};
   }
 
-  async changeEmail(data: any, ctx: Context) {
+  /**
+   * Changes user email.
+   * @param data Email data.
+   * @param context Application context.
+   * @returns User data.
+   */
+  async changeEmail(data: any, context: Context) {
     if (!data?.token) {
       throw new CodeException({
         code: ValidatorErrorCode.DEFAULT_VALIDATION_ERROR,
@@ -275,7 +301,7 @@ export class UserService {
       });
     }
 
-    let payload;
+    let payload: any;
     try {
       payload = parseJwtToken(JwtTokenType.EMAIL_VERIFICATION, data.token);
     } catch (error) {
@@ -288,12 +314,12 @@ export class UserService {
     }
 
     const { id, email } = payload;
-    const user = await new User({}, ctx).populateById(id);
+    const user = await new User({}, context).populateById(id);
     if (!user.exists()) {
       throw new CodeException({
         code: UnauthorizedErrorCode.INVALID_TOKEN,
         status: HttpStatus.UNAUTHORIZED,
-        errorCodes: UnauthorizedErrorCode,
+        errorCodes: UnauthorizedErrorCode
       });
     }
     user.email = email;
