@@ -8,8 +8,6 @@ import { env } from '../config/env';
  * @returns True if the content is safe, false otherwise.
  */
 export async function isTextSafe(content: string) {
-  return true; // TODO: Remove this once we have a proper moderation system - OpenAI is returning 429 for some reason.
-
   const openai = new OpenAI({
     apiKey: env.OPENAI_API_KEY
   });
