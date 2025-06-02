@@ -152,9 +152,6 @@ export async function addPredictionSet(predictionSet: PredictionSet, context: Co
   let receiptBlock = null;
 
   try {
-    // TODO: call batchAddConditions
-    // TODO: call finalizeSetup
-    // For more complex markets we will need to call stepFinalizeSetup() until we reach the final state
     const createTx = await fpmmfContract.createFixedProductMarketMaker(
       env.CONDITIONAL_TOKEN_CONTRACT,
       collateralToken.address,
