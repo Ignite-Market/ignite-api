@@ -24,8 +24,9 @@ export interface EmailData {
 
 /**
  * Send email via SMTP server
- * @param {MailOptions} mail
- * @returns {Promise<boolean>} - if email sent successfully
+ *
+ * @param {MailOptions} mail Email data.
+ * @returns {Promise<boolean>} Tells if email was sent successfully.
  */
 export async function SMTPsend(mail: MailOptions, context: Context): Promise<boolean> {
   await getEnvSecrets();
@@ -79,9 +80,10 @@ export async function SMTPsend(mail: MailOptions, context: Context): Promise<boo
 
 /**
  * Send email via SMTP server with template
- * @param context
- * @param {EmailData} emailData
- * @returns {Promise<boolean>} - if email sent successfully
+ *
+ * @param context Application context.
+ * @param {EmailData} emailData Email data.
+ * @returns {Promise<boolean>} Tells if email was sent successfully.
  */
 export async function SMTPsendTemplate(context: Context, emailData: EmailData): Promise<boolean> {
   const template = MailTemplates.getTemplate(emailData.templateName);
@@ -127,14 +129,16 @@ export async function SMTPsendTemplate(context: Context, emailData: EmailData): 
 
 /**
  * Send email via SMTP server with default template
- * @param context
- * @param {EmailData} emailData
- * @returns {Promise<boolean>} - if email sent successfully
+ *
+ * @param context Application context.
+ * @param {EmailData} emailData Email data.
+ * @returns {Promise<boolean>} Tells if email was sent successfully.
  */
 export async function SMTPsendDefaultTemplate(context: Context, emailData: EmailData): Promise<boolean> {
   const header = MailTemplates.getTemplate('head');
   const footer = MailTemplates.getTemplate('footer');
   const body = MailTemplates.getTemplate('body');
+
   handlebars.registerPartial('header', header({}));
   handlebars.registerPartial('footer', footer({}));
 

@@ -1,8 +1,8 @@
 import * as fs from 'fs';
 import * as handlebars from 'handlebars';
 import { env } from '../../config/env';
-import { writeLog } from '../logger';
 import { LogType } from '../../config/types';
+import { writeLog } from '../logger';
 
 export class MailTemplates {
   /**
@@ -25,7 +25,6 @@ export class MailTemplates {
     const templateDir = env.MAIL_TEMPLATE_PATH || `${__dirname}/templates`;
     if (!(templateName in this.templates)) {
       try {
-        // eslint-disable-next-line security/detect-non-literal-fs-filename
         const html = fs.readFileSync(`${templateDir}/${templateName}.html`, 'utf8');
         this.templates[templateName] = handlebars.compile(html);
       } catch (err) {

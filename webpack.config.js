@@ -68,6 +68,7 @@ module.exports = {
     new CopyPlugin({
       patterns: [
         { from: './src/res/keys/*.pem' },
+        { from: './src/lib/mailing/templates', to: 'src/lib/mailing/templates' }
       ]
     })
   ]
