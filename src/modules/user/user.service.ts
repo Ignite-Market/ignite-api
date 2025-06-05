@@ -181,7 +181,7 @@ export class UserService {
     try {
       await user.validate();
 
-      if (user.email !== data.email) {
+      if (!!data.email && user.email !== data.email) {
         await this.updateEmail(new UserEmailDto({ email: data.email }), context);
       }
     } catch (error) {
@@ -233,7 +233,7 @@ export class UserService {
     }
     await user.update(SerializeFor.UPDATE_DB);
     // Send email verification email.
-    // await this.registerEmailVerification({ email: user.email }, context);
+    await this.registerEmailVerification({ email: user.email }, context);
     return user.serialize(SerializeFor.USER);
   }
 
