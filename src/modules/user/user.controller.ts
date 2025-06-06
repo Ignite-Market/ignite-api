@@ -67,8 +67,8 @@ export class UserController {
   }
 
   @Post('email-verification')
-  async registerEmailVerification(@Body() data: any, @Ctx() context: Context) {
-    return await this.userService.registerEmailVerification(data, context);
+  async sendEmailVerification(@Body() data: any, @Ctx() context: Context) {
+    return await this.userService.sendEmailVerification(data, context);
   }
 
   @Patch('change-email')
