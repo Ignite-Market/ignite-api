@@ -142,7 +142,7 @@ export class User extends AdvancedSQLModel {
    * @param email Email.
    * @returns Populated user.
    */
-  async populateByEmail(email: string): Promise<User> {
+  async populateByEmail(email: string, conn?: PoolConnection): Promise<User> {
     if (!email) {
       throw new Error('Email should not be null');
     }
@@ -154,7 +154,8 @@ export class User extends AdvancedSQLModel {
       SELECT * FROM ${DbTables.USER} 
       WHERE email = @email
     `,
-      { email }
+      { email },
+      conn
     );
     return data?.length ? this.populate(data[0], PopulateFrom.DB) : this.reset();
   }

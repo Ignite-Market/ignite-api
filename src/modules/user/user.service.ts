@@ -9,6 +9,7 @@ import {
   EmailTemplateType,
   JwtTokenType,
   SerializeFor,
+  SystemErrorCode,
   UnauthorizedErrorCode,
   ValidatorErrorCode
 } from '../../config/types';
@@ -186,17 +187,38 @@ export class UserService {
       await user.update(SerializeFor.UPDATE_DB, conn);
     } catch (error) {
       await user.handle(error);
-      await context.mysql.rollback(conn);
 
       if (!user.isValid()) {
+        await context.mysql.rollback(conn);
         throw new ValidationException(error, ValidatorErrorCode);
       }
     }
-    if (!!data.email && user.email !== data.email) {
-      const result = await this.updateEmail(new UserEmailDto({ email: data.email }), context, conn);
-      user.email = result.email;
+
+    try {
+      if (!!data.email && user.email !== data.email) {
+        const result = await this.updateEmail(new UserEmailDto({ email: data.email }), context, conn);
+        user.email = result.email;
+      }
+    } catch (error) {
+      await context.mysql.rollback(conn);
+      throw error;
     }
-    await context.mysql.commit(conn);
+
+    try {
+      await context.mysql.commit(conn);
+    } catch (error) {
+      await context.mysql.rollback(conn);
+
+      throw new CodeException({
+        code: SystemErrorCode.SQL_SYSTEM_ERROR,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        errorCodes: SystemErrorCode,
+        errorMessage: 'Failed to update user profile.',
+        sourceFunction: `${this.constructor.name}/updateProfile`,
+        context
+      });
+    }
+
     return user.serialize(SerializeFor.USER);
   }
 
@@ -209,8 +231,8 @@ export class UserService {
    */
   public async updateEmail(data: UserEmailDto, context: Context, conn?: PoolConnection) {
     const user = context.user;
-    const existingEmail = await new User({}, context).populateByEmail(data.email);
 
+    const existingEmail = await new User({}, context).populateByEmail(data.email, conn);
     if (existingEmail.exists()) {
       if (existingEmail.id !== user.id) {
         throw new CodeException({
@@ -226,12 +248,6 @@ export class UserService {
       }
     }
 
-    let isSingleTrans = false;
-    if (!conn) {
-      isSingleTrans = true;
-      conn = await context.mysql.start();
-    }
-
     user.email = data.email;
     user.emailStatus = UserEmailStatus.PENDING;
     try {
@@ -243,18 +259,23 @@ export class UserService {
         throw new ValidationException(error, ValidatorErrorCode);
       }
     }
+
     try {
       await user.update(SerializeFor.UPDATE_DB, conn);
-      if (isSingleTrans) {
-        await context.mysql.commit(conn);
-      }
-    } catch (err) {
-      console.error('Error updating user email:', err);
-      await context.mysql.rollback(conn);
+
+      // Send email verification email.
+      await this.sendEmailVerification({ email: user.email }, context);
+    } catch (error) {
+      throw new CodeException({
+        code: SystemErrorCode.SQL_SYSTEM_ERROR,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        errorCodes: SystemErrorCode,
+        errorMessage: 'Failed to update user email.',
+        sourceFunction: `${this.constructor.name}/updateEmail`,
+        context
+      });
     }
 
-    // Send email verification email.
-    await this.registerEmailVerification({ email: user.email }, context);
     return user.serialize(SerializeFor.USER);
   }
 
@@ -276,12 +297,12 @@ export class UserService {
   }
 
   /**
-   * Registers email verification.
+   * Sends email verification.
    * @param data Email data.
    * @param context Application context.
    * @returns Email verification token.
    */
-  async registerEmailVerification(data: any, context: Context) {
+  async sendEmailVerification(data: any, context: Context) {
     if (!data?.email) {
       throw new CodeException({
         code: ValidatorErrorCode.DEFAULT_VALIDATION_ERROR,
