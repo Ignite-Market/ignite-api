@@ -25,6 +25,7 @@ import { UserEmailDto } from './dtos/user-email.dto';
 import { UserProfileDto } from './dtos/user-profile.dto';
 import { WalletLoginDto } from './dtos/wallet-login.dto';
 import { User, UserEmailStatus } from './models/user.model';
+import { PoolConnection } from 'mysql2/promise';
 
 @Injectable()
 export class UserService {
@@ -178,20 +179,24 @@ export class UserService {
       });
     }
 
+    const conn = await context.mysql.start();
     try {
       await user.validate();
 
-      if (!!data.email && user.email !== data.email) {
-        await this.updateEmail(new UserEmailDto({ email: data.email }), context);
-      }
+      await user.update(SerializeFor.UPDATE_DB, conn);
     } catch (error) {
       await user.handle(error);
+      await context.mysql.rollback(conn);
 
       if (!user.isValid()) {
         throw new ValidationException(error, ValidatorErrorCode);
       }
     }
-    await user.update(SerializeFor.UPDATE_DB);
+    if (!!data.email && user.email !== data.email) {
+      const result = await this.updateEmail(new UserEmailDto({ email: data.email }), context, conn);
+      user.email = result.email;
+    }
+    await context.mysql.commit(conn);
     return user.serialize(SerializeFor.USER);
   }
 
@@ -199,9 +204,10 @@ export class UserService {
    * Updates user email.
    * @param data Email data.
    * @param context Application context.
+   * @param conn
    * @returns User data.
    */
-  public async updateEmail(data: UserEmailDto, context: Context) {
+  public async updateEmail(data: UserEmailDto, context: Context, conn?: PoolConnection) {
     const user = context.user;
     const existingEmail = await new User({}, context).populateByEmail(data.email);
 
@@ -220,6 +226,12 @@ export class UserService {
       }
     }
 
+    let isSingleTrans = false;
+    if (!conn) {
+      isSingleTrans = true;
+      conn = await context.mysql.start();
+    }
+
     user.email = data.email;
     user.emailStatus = UserEmailStatus.PENDING;
     try {
@@ -231,7 +243,16 @@ export class UserService {
         throw new ValidationException(error, ValidatorErrorCode);
       }
     }
-    await user.update(SerializeFor.UPDATE_DB);
+    try {
+      await user.update(SerializeFor.UPDATE_DB, conn);
+      if (isSingleTrans) {
+        await context.mysql.commit(conn);
+      }
+    } catch (err) {
+      console.error('Error updating user email:', err);
+      await context.mysql.rollback(conn);
+    }
+
     // Send email verification email.
     await this.registerEmailVerification({ email: user.email }, context);
     return user.serialize(SerializeFor.USER);
