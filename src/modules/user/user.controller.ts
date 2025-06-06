@@ -67,6 +67,7 @@ export class UserController {
   }
 
   @Post('email-verification')
+  @UseGuards(AuthGuard)
   async sendEmailVerification(@Body() data: any, @Ctx() context: Context) {
     return await this.userService.sendEmailVerification(data, context);
   }

@@ -3,9 +3,10 @@ import { createContext } from '../../lib/utils';
 import { WorkerDefinition } from '../../lib/worker/serverless-workers';
 import { PredictionSetsFactoryParserWorker } from '../../workers/prediction-sets-factory-parser.worker';
 import { WorkerName } from '../../workers/worker-executor';
+import { FinalizeAutomaticPredictionSetWorker } from '../../workers/flare/finalize-automatic-prediction-sets.worker';
 
-const WORKER_NAME = WorkerName.PREDICTION_SETS_FACTORY_PARSER;
-const WorkerClass = PredictionSetsFactoryParserWorker;
+const WORKER_NAME = WorkerName.FINALIZE_AUTOMATIC_PREDICTION_SET;
+const WorkerClass = FinalizeAutomaticPredictionSetWorker;
 
 (async () => {
   const start = new Date();

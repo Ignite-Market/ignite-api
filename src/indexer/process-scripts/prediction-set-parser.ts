@@ -148,6 +148,7 @@ async function main() {
         }
       }
 
+      // TODO: Check if funded separately, and end it if funding was not reached in desired time.
       if (fundingEvents.length) {
         // Activate trading when the contract is funded.
         const canTrade = await fpmmContract.canTrade();

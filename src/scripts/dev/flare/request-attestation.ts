@@ -6,7 +6,7 @@ import { prepareAttestationRequest } from '../../../lib/flare/attestation';
 // const abi = `{"components": [{"internalType": "string", "name": "name", "type": "string"},{"internalType": "uint256", "name": "height", "type": "uint256"},{"internalType": "uint256", "name": "mass", "type": "uint256"},{"internalType": "uint256", "name": "numberOfFilms", "type": "uint256"},{"internalType": "uint256", "name": "uid", "type": "uint256"}],"name": "task","type": "tuple"}`;
 // const endpoint = 'https://mock-api.ignitemarket.xyz/api1';
 
-const endpoint = 'https://mock-api.ignitemarket.xyz/api3/1';
+const endpoint = 'https://mock-api.ignitemarket.xyz/api3/0';
 const jqQuery = `{ "outcomeIdx": .result }`;
 const abi = {
   'components': [
