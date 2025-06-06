@@ -31,9 +31,8 @@ export interface EmailData {
 export async function SMTPsend(mail: MailOptions, context: Context): Promise<boolean> {
   await getEnvSecrets();
 
-  // TODO: remove this
   if (env.APP_ENV === AppEnvironment.TEST) {
-    console.log('SMTPsend - skipping email sending in test environment');
+    console.log('SMTPsend - skipping email sending in test environment.');
     return true;
   }
 

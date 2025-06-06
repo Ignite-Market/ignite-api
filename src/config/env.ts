@@ -221,7 +221,7 @@ export let env: IEnv = {
   SMTP_USERNAME: process.env['SMTP_USERNAME'],
   SMTP_PASSWORD: process.env['SMTP_PASSWORD'],
 
-  MAIL_TEMPLATE_PATH: process.env['MAIL_TEMPLATE_PATH'],
+  MAIL_TEMPLATE_PATH: process.env['MAIL_TEMPLATE_PATH']
 };
 
 /**
