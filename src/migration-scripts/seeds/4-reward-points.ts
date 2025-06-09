@@ -47,7 +47,7 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
     },
     {
       name: 'User Referral',
-      description: "#POINTS points per referral + 10% of referred user's first month points",
+      description: '#POINTS points per referral',
       reason: 'Boosts user base and long-term engagement.',
       type: RewardType.USER_REFERRAL,
       value: 50
