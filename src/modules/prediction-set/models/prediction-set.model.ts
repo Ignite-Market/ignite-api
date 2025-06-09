@@ -921,7 +921,8 @@ export class PredictionSet extends AdvancedSQLModel {
       id: 'p.id',
       boughtAmount: `SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0))`,
       soldAmount: `SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0))`,
-      outcomeTokens: `SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.outcomeTokens, 0))`
+      outcomeTokens: `SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.outcomeTokens, 0))`,
+      claimedAmount: `IFNULL(ct.amount, 0)`
     };
 
     const { params, filters } = getQueryParams(defaultParams, 'p', fieldMap, { ...query.serialize(), userId: id });
@@ -929,11 +930,13 @@ export class PredictionSet extends AdvancedSQLModel {
       qSelect: `
         SELECT 
           ${new PredictionSet({}).generateSelectFields('p')},
+          o.id AS outcomeId,
           o.name AS outcomeName,
           o.imgUrl AS outcomeImg,
           SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)) AS boughtAmount,
           SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0)) AS soldAmount,
-          SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.outcomeTokens, 0)) AS outcomeTokens
+          SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.outcomeTokens, 0)) AS outcomeTokens,
+          IFNULL(ct.amount, 0) AS claimedAmount
         `,
       qFrom: `
         FROM ${DbTables.PREDICTION_SET} p
@@ -942,6 +945,10 @@ export class PredictionSet extends AdvancedSQLModel {
           AND ost.user_id = @userId
         LEFT JOIN ${DbTables.OUTCOME} o 
           ON o.id = ost.outcome_id
+        LEFT JOIN ${DbTables.CLAIM_TRANSACTION} ct
+          ON ct.prediction_set_id = p.id
+          AND ct.outcome_id = o.id
+          AND ct.user_id = @userId
         WHERE p.status <> ${SqlModelStatus.DELETED}
         AND ost.id IS NOT NULL
         AND (@search IS NULL
@@ -973,7 +980,8 @@ export class PredictionSet extends AdvancedSQLModel {
 
     const fieldMap = {
       id: 'p.id',
-      fundedAmount: `SUM(IF(psft.type = ${FundingTransactionType.ADDED}, psft.collateralAmount, 0))`
+      fundedAmount: `SUM(IF(psft.type = ${FundingTransactionType.ADDED}, psft.collateralAmount, 0))`,
+      removedAmount: `SUM(IF(psft.type = ${FundingTransactionType.REMOVED}, psft.collateralAmount, 0))`
     };
 
     const { params, filters } = getQueryParams(defaultParams, 'p', fieldMap, { ...query.serialize(), userId: id });
@@ -981,7 +989,8 @@ export class PredictionSet extends AdvancedSQLModel {
       qSelect: `
         SELECT 
           ${new PredictionSet({}).generateSelectFields('p')},
-          SUM(IF(psft.type = ${FundingTransactionType.ADDED}, psft.collateralAmount, 0)) AS fundedAmount
+          SUM(IF(psft.type = ${FundingTransactionType.ADDED}, psft.collateralAmount, 0)) AS fundedAmount,
+          SUM(IF(psft.type = ${FundingTransactionType.REMOVED}, psft.collateralAmount, 0)) AS removedAmount
         `,
       qFrom: `
         FROM ${DbTables.PREDICTION_SET} p
