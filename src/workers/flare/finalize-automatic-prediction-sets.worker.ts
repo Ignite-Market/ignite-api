@@ -1,18 +1,19 @@
 import { randomUUID } from 'crypto';
-import { DbTables, SqlModelStatus } from '../config/types';
-import { finalizePredictionSetResults, PredictionSetBcStatus, verifyPredictionSetResults } from '../lib/blockchain';
-import { WorkerLogStatus } from '../lib/worker/logger';
-import { BaseSingleThreadWorker, SingleThreadWorkerAlertType } from '../lib/worker/serverless-workers/base-single-thread-worker';
-import { Job } from '../modules/job/job.model';
-import { Outcome } from '../modules/prediction-set/models/outcome.model';
-import { PredictionSetAttestation } from '../modules/prediction-set/models/prediction-set-attestation.model';
-import { PredictionSet, PredictionSetStatus, ResolutionType } from '../modules/prediction-set/models/prediction-set.model';
-import { sendSlackWebhook } from '../lib/slack-webhook';
+import { DbTables, SqlModelStatus } from '../../config/types';
+import { finalizePredictionSetResults, PredictionSetBcStatus } from '../../lib/blockchain';
+import { verifyProof } from '../../lib/flare/attestation';
+import { convertProofsToNamedObjects } from '../../lib/flare/utils';
+import { sendSlackWebhook } from '../../lib/slack-webhook';
+import { WorkerLogStatus } from '../../lib/worker/logger';
+import { BaseSingleThreadWorker, SingleThreadWorkerAlertType } from '../../lib/worker/serverless-workers/base-single-thread-worker';
+import { Job } from '../../modules/job/job.model';
+import { Outcome } from '../../modules/prediction-set/models/outcome.model';
+import { PredictionSet, PredictionSetStatus, ResolutionType } from '../../modules/prediction-set/models/prediction-set.model';
 
 /**
- * Finalize prediction set worker.
+ * Finalize automatic resolution prediction set worker.
  */
-export class FinalizePredictionSetWorker extends BaseSingleThreadWorker {
+export class FinalizeAutomaticPredictionSetWorker extends BaseSingleThreadWorker {
   /**
    * Runs worker executor.
    */
@@ -32,34 +33,14 @@ export class FinalizePredictionSetWorker extends BaseSingleThreadWorker {
     const predictionSets = await this.context.mysql.paramExecute(
       `
         SELECT 
-          ps.*, 
-          COALESCE(
-            CONCAT(
-              '[', 
-              GROUP_CONCAT(
-                JSON_OBJECT(
-                  'id', psa.id,
-                  'prediction_set_id', psa.prediction_set_id,
-                  'data_source_id', psa.data_source_id,
-                  'roundId', psa.roundId,
-                  'abiEncodedRequest', psa.abiEncodedRequest,
-                  'proof', psa.proof,
-                  'status', psa.status,
-                  'createTime', psa.createTime,
-                  'updateTime', psa.updateTime
-                )
-              ), 
-              ']'
-            ), 
-            '[]'
-          ) AS attestations
+          ps.*
         FROM ${DbTables.PREDICTION_SET} ps
-        LEFT JOIN ${DbTables.PREDICTION_SET_ATTESTATION} psa 
+        INNER JOIN ${DbTables.PREDICTION_SET_ATTESTATION} psa 
           ON ps.id = psa.prediction_set_id
         WHERE 
-          ps.resolutionTime >= NOW()
+          ps.resolutionTime <= NOW()
           AND ps.status = ${SqlModelStatus.ACTIVE}
-          AND ps.setStatus = ${PredictionSetStatus.FUNDED}
+          AND ps.setStatus = ${PredictionSetStatus.ACTIVE}
           AND ps.resolutionType = ${ResolutionType.AUTOMATIC}
         GROUP BY ps.id
       `,
@@ -68,7 +49,7 @@ export class FinalizePredictionSetWorker extends BaseSingleThreadWorker {
 
     for (const data of predictionSets) {
       const predictionSet = new PredictionSet(data, this.context);
-      const attestations: PredictionSetAttestation[] = JSON.parse(data.attestations).map((d: any) => new PredictionSetAttestation(d, this.context));
+      const attestations = await predictionSet.getAttestations();
       const dataSources = await predictionSet.getDataSources();
       const chainData = await predictionSet.getPredictionSetChainData();
 
@@ -82,17 +63,20 @@ export class FinalizePredictionSetWorker extends BaseSingleThreadWorker {
       }
 
       const validationResults = [];
+      const proofs = [];
+
       for (const attestation of attestations) {
         try {
-          const validationResult = await verifyPredictionSetResults(attestation.proof);
-          if (!validationResult) {
+          const { verified, proofData } = await verifyProof(attestation.proof);
+          if (!verified) {
             await this.writeLogToDb(WorkerLogStatus.INFO, `Prediction set results not verified: `, {
               predictionSetId: predictionSet.id,
               attestationId: attestation.id
             });
           }
 
-          validationResults.push(validationResult);
+          validationResults.push(verified);
+          proofs.push(proofData);
         } catch (error) {
           await this._logError(
             'Error while verifying prediction set.',
@@ -112,9 +96,8 @@ export class FinalizePredictionSetWorker extends BaseSingleThreadWorker {
       if (isVerified) {
         let finalizationResults = null;
         try {
-          const proofs = attestations.map((a) => a.proof);
-
-          finalizationResults = await finalizePredictionSetResults(chainData.questionId, proofs);
+          const parsedProofs = convertProofsToNamedObjects(proofs);
+          finalizationResults = await finalizePredictionSetResults(chainData.questionId, parsedProofs);
         } catch (error) {
           await this._logError(
             'Error while finalizing prediction set.',

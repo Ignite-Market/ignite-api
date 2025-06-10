@@ -1,9 +1,9 @@
 import { exit } from 'process';
+import { createContext } from '../../../lib/utils';
 import { WorkerDefinition } from '../../../lib/worker/serverless-workers';
 import { QueueWorkerType } from '../../../lib/worker/serverless-workers/base-queue-worker';
 import { PredictionSetParserWorker } from '../../../workers/prediction-set-parser.worker';
 import { WorkerName } from '../../../workers/worker-executor';
-import { createContext } from '../context';
 
 const PREDICTION_SET_ID = 39;
 

@@ -1,8 +1,41 @@
 import { ethers } from 'ethers';
 import { env } from '../../config/env';
-import { CONTRACT_REGISTRY_ABI, FDC_HUB_ABI, SYSTEM_MANAGER_ABI } from './abis';
-import { EncodedAttestationRequest } from './types';
-import { encodeAttestationData } from './utils';
+import { AttestationProof } from '../../modules/prediction-set/models/prediction-set-attestation.model';
+import { CONTRACT_REGISTRY_ABI } from './abis';
+import { ContractName, EncodedAttestationRequest, ProtocolIds } from './types';
+import { deepCloneAbiCoderResult, getABI, getProxyImplementationAddress, toUtf8HexString } from './utils';
+
+/**
+ * Inits provider and base Flare contracts.
+ *
+ * @returns Provider, signer and contract registry contract.
+ */
+export function init() {
+  const provider = new ethers.JsonRpcProvider(env.RPC_URL);
+  const signer = new ethers.Wallet(env.SIGNER_PRIVATE_KEY, provider);
+  const contractRegistry = new ethers.Contract(env.FLARE_CONTRACT_REGISTRY_ADDRESS, CONTRACT_REGISTRY_ABI, signer);
+
+  return { provider, signer, contractRegistry };
+}
+
+/**
+ * Gets contract from the Flare's contract registry.
+ *
+ * @param name Contract name.
+ * @param registry Contract registry.
+ * @param signer Signer.
+ * @returns Contract.
+ */
+export async function getContract(
+  name: ContractName,
+  registry: ethers.Contract,
+  signer: ethers.Wallet | ethers.JsonRpcProvider
+): Promise<ethers.Contract> {
+  const address = await registry.getContractAddressByName(name);
+  const abi = await getABI(address);
+
+  return new ethers.Contract(address, abi, signer);
+}
 
 /**
  * Prepares request for attestation.
@@ -10,23 +43,39 @@ import { encodeAttestationData } from './utils';
  * @param url API url for the data to attest.
  * @param jq JQ query to obtain data from API response.
  * @param abi ABI to encode/decode API response.
+ * @param httpMethod HTTP method to use.
+ * @param body Body to send to the API.
+ * @param headers Headers to send to the API.
+ * @param queryParams Query parameters to send to the API.
  * @returns Prepared attestation request.
  */
-export async function prepareAttestationRequest(url: string, jq: string, abi: any): Promise<EncodedAttestationRequest> {
+export async function prepareAttestationRequest(
+  url: string,
+  jq: string,
+  abi: any,
+  httpMethod: string = 'GET',
+  body: Object = {},
+  headers: Object = {},
+  queryParams: Object = {}
+): Promise<EncodedAttestationRequest> {
   const attestationRequest = {
-    attestationType: encodeAttestationData('JsonApi'),
-    sourceId: encodeAttestationData('WEB2'),
+    attestationType: toUtf8HexString('Web2Json'),
+    sourceId: toUtf8HexString('PublicWeb2'),
     requestBody: {
       url,
-      postprocessJq: jq,
-      abi_signature: JSON.stringify(abi)
+      postProcessJq: jq,
+      abiSignature: typeof abi === 'string' ? abi : JSON.stringify(abi),
+      httpMethod: httpMethod ? httpMethod : 'GET',
+      body: body ? JSON.stringify(body) : '{}',
+      headers: headers ? JSON.stringify(headers) : '{}',
+      queryParams: queryParams ? JSON.stringify(queryParams) : '{}'
     }
   };
 
-  const verifierResponse = await fetch(`${env.FLARE_ATTESTATION_PROVIDER_URL}/JsonApi/prepareRequest`, {
+  const verifierResponse = await fetch(`${env.FLARE_ATTESTATION_PROVIDER_URL}Web2Json/prepareRequest`, {
     method: 'POST',
     headers: {
-      'X-API-KEY': env.FLARE_ATTESTATION_PROVIDER_URL,
+      'X-API-KEY': env.FLARE_ATTESTATION_PROVIDER_API_KEY,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(attestationRequest)
@@ -43,31 +92,46 @@ export async function prepareAttestationRequest(url: string, jq: string, abi: an
  */
 
 export async function submitAttestationRequest(request: EncodedAttestationRequest): Promise<number> {
-  const provider = new ethers.JsonRpcProvider(env.RPC_URL);
-  const signer = new ethers.Wallet(env.SIGNER_PRIVATE_KEY, provider);
-  const contractRegistry = new ethers.Contract(env.FLARE_CONTRACT_REGISTRY_ADDRESS, CONTRACT_REGISTRY_ABI, provider);
+  const { provider, signer, contractRegistry } = init();
 
-  // Flare system manager contract.
-  const systemManagerAddress = await contractRegistry.getContractAddressByName('FlareSystemsManager');
-  const systemManager = new ethers.Contract(systemManagerAddress, SYSTEM_MANAGER_ABI, provider);
+  // Initialize contracts.
+  const systemManager = await getContract(ContractName.FLARE_SYSTEM_MANAGER, contractRegistry, signer);
+  const fdcHub = await getContract(ContractName.FDC_HUB, contractRegistry, signer);
+  const fdcFeeConfigurations = await getContract(ContractName.FDC_REQUEST_FEE_CONFIGURATIONS, contractRegistry, signer);
 
-  // Flare data connector HUB contract.
-  const fdcHubAddress = await contractRegistry.getContractAddressByName('FdcHub');
-  const fdcHub = new ethers.Contract(fdcHubAddress, FDC_HUB_ABI, provider);
+  // Get request fee.
+  const fee = await fdcFeeConfigurations.getRequestFee(request.abiEncodedRequest);
 
-  // Call to the FDC Hub protocol to provide attestation.
-  const tx = await fdcHub.requestAttestation(request.abiEncodedRequest);
+  // Call to the FDC Hub to request attestation.
+  const tx = await fdcHub.requestAttestation(request.abiEncodedRequest, {
+    value: fee
+  });
   const receipt = await tx.wait();
 
-  // Get block number of the block containing contract call
+  // Get block number of the block containing contract call.
   const blockNumber = receipt.blockNumber;
   const block = await provider.getBlock(blockNumber);
-  const votingOffset = Number(await systemManager.firstVotingRoundStartTs());
-  const votingDuration = Number(await systemManager.votingEpochDurationSeconds());
+
+  const blockTimestamp = BigInt(block.timestamp);
+  const votingOffset = BigInt(await systemManager.firstVotingRoundStartTs());
+  const votingDuration = BigInt(await systemManager.votingEpochDurationSeconds());
 
   // Calculate roundId
-  const roundId = Math.floor((block.timestamp - votingOffset) / votingDuration);
+  const roundId = Number((blockTimestamp - votingOffset) / votingDuration);
   return roundId;
+}
+
+/**
+ * Checks if voting round is finalized.
+ *
+ * @param roundId Round ID.
+ * @returns Boolean.
+ */
+export async function isRoundFinalized(roundId: number): Promise<boolean> {
+  const { provider, contractRegistry } = init();
+
+  const relay = await getContract(ContractName.RELAY, contractRegistry, provider);
+  return await relay.isFinalized(ProtocolIds.FDC, roundId);
 }
 
 /**
@@ -76,8 +140,8 @@ export async function submitAttestationRequest(request: EncodedAttestationReques
  * @param abiEncodedRequest ABI encoded request.
  * @returns Attestation proof.
  */
-export async function getAttestationProof(roundId: number, abiEncodedRequest: string) {
-  const proofAndData = await fetch(`${env.FLARE_DATA_AVAILABILITY_URL}api/v0/fdc/get-proof-round-id-bytes`, {
+export async function getAttestationProof(roundId: number, abiEncodedRequest: string): Promise<AttestationProof> {
+  const proofAndData = await fetch(`${env.FLARE_DATA_AVAILABILITY_URL}api/v1/fdc/proof-by-request-round-raw`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -88,5 +152,39 @@ export async function getAttestationProof(roundId: number, abiEncodedRequest: st
       requestBytes: abiEncodedRequest
     })
   });
+
   return await proofAndData.json();
+}
+
+/**
+ * Verifies attestation proof.
+ *
+ * @param attestationProof Results proof data.
+ * @returns Boolean & proof data.
+ */
+export async function verifyProof(attestationProof: AttestationProof): Promise<{ verified: boolean; proofData: any }> {
+  const { signer, provider, contractRegistry } = init();
+
+  const verifierProxy = await getContract(ContractName.FDC_VERIFICATION, contractRegistry, signer);
+  const verifierProxyAddress = await verifierProxy.getAddress();
+
+  const verifierAddress = await getProxyImplementationAddress(provider, verifierProxyAddress);
+  const verifierAbi = await getABI(verifierAddress);
+
+  // Create verifier contract with proxy address and verifier ABI.
+  const verifier = new ethers.Contract(verifierProxyAddress, verifierAbi, signer);
+
+  const functionAbi = verifierAbi.find((el: any) => el.name === 'verifyJsonApi');
+  const responseType = functionAbi.inputs[0].components[1];
+  const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+  const decodedResponse = abiCoder.decode([responseType], attestationProof.response_hex)[0];
+
+  const proofData = {
+    merkleProof: attestationProof.proof,
+    data: deepCloneAbiCoderResult(decodedResponse)
+  };
+
+  const verified = await verifier.verifyJsonApi(proofData);
+
+  return { verified, proofData };
 }

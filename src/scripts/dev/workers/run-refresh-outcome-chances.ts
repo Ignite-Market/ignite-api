@@ -1,11 +1,11 @@
 import { exit } from 'process';
+import { createContext } from '../../../lib/utils';
 import { WorkerDefinition } from '../../../lib/worker/serverless-workers';
 import { QueueWorkerType } from '../../../lib/worker/serverless-workers/base-queue-worker';
 import { RefreshOutcomeChancesWorker } from '../../../workers/refresh-outcome-chances.worker';
 import { WorkerName } from '../../../workers/worker-executor';
-import { createContext } from '../context';
 
-const PREDICTION_SET_ID = 36;
+const PREDICTION_SET_ID = 30;
 
 (async () => {
   const start = new Date();

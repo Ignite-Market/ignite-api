@@ -5,13 +5,17 @@ import { MySql } from '../lib/database/mysql';
 import { WorkerLogStatus, writeWorkerLog } from '../lib/worker/logger';
 import { ServiceDefinition, ServiceDefinitionType, WorkerDefinition } from '../lib/worker/serverless-workers';
 import { QueueWorkerType } from '../lib/worker/serverless-workers/base-queue-worker';
+import { ClaimsParserWorker } from './claims-parser.worker';
+import { CollateralTokenUsdPriceWorker } from './collateral-token-usd-price.worker';
 import { CreatePredictionSetWorker } from './create-prediction-set.worker';
-import { FinalizePredictionSetWorker } from './finalize-prediction-set.worker';
+import { FinalizeManualPredictionSetWorker } from './finalize-manual-prediction-sets.worker';
+import { FinalizeProposalRoundsWorker } from './finalize-proposal-rounds.worker';
+import { FinalizeAutomaticPredictionSetWorker } from './flare/finalize-automatic-prediction-sets.worker';
+import { RequestAttestationProofWorker } from './flare/request-attestation-proof.worker';
+import { RequestAttestationWorker } from './flare/request-attestation.worker';
 import { PredictionSetParserWorker } from './prediction-set-parser.worker';
-import { PredictionSetsParserWorker } from './prediction-sets-parser.worker';
+import { PredictionSetsFactoryParserWorker } from './prediction-sets-factory-parser.worker';
 import { RefreshOutcomeChancesWorker } from './refresh-outcome-chances.worker';
-import { RequestAttestationProofWorker } from './request-attestation-proof.worker';
-import { RequestAttestationWorker } from './request-attestation.worker';
 import { Scheduler } from './scheduler';
 import { VotingParserWorker } from './voting-parser.worker';
 
@@ -21,13 +25,17 @@ import { VotingParserWorker } from './voting-parser.worker';
 export enum WorkerName {
   SCHEDULER = 'Scheduler',
   CREATE_PREDICTION_SET = 'CreatePredictionSet',
-  FINALIZE_PREDICTION_SET = 'FinalizePredictionSet',
+  FINALIZE_MANUAL_PREDICTION_SET = 'FinalizeManualPredictionSet',
+  FINALIZE_AUTOMATIC_PREDICTION_SET = 'FinalizeAutomaticPredictionSet',
   PREDICTION_SET_PARSER = 'PredictionSetParser',
-  PREDICTION_SETS_PARSER = 'PredictionSetsParser',
+  PREDICTION_SETS_FACTORY_PARSER = 'PredictionSetsFactoryParser',
   REFRESH_OUTCOME_CHANCES = 'RefreshOutcomeChances',
   REQUEST_ATTESTATION_PROOF = 'RequestAttestationProof',
   REQUEST_ATTESTATION = 'RequestAttestation',
-  VOTING_PARSER = 'VotingParser'
+  VOTING_PARSER = 'VotingParser',
+  FINALIZE_PROPOSAL_ROUNDS = 'FinalizeProposalRounds',
+  CLAIMS_PARSER = 'ClaimsParser',
+  COLLATERAL_TOKEN_USD_PRICE = 'CollateralTokenUsdPrice'
 }
 
 /**
@@ -102,16 +110,20 @@ export async function handleLambdaEvent(event: any, context: Context, serviceDef
       await new CreatePredictionSetWorker(workerDefinition, context).run();
       break;
 
-    case WorkerName.FINALIZE_PREDICTION_SET:
-      await new FinalizePredictionSetWorker(workerDefinition, context).run();
+    case WorkerName.FINALIZE_AUTOMATIC_PREDICTION_SET:
+      await new FinalizeAutomaticPredictionSetWorker(workerDefinition, context).run();
+      break;
+
+    case WorkerName.FINALIZE_MANUAL_PREDICTION_SET:
+      await new FinalizeManualPredictionSetWorker(workerDefinition, context).run();
       break;
 
     case WorkerName.PREDICTION_SET_PARSER:
       await new PredictionSetParserWorker(workerDefinition, context, QueueWorkerType.PLANNER).run();
       break;
 
-    case WorkerName.PREDICTION_SETS_PARSER:
-      await new PredictionSetsParserWorker(workerDefinition, context).run();
+    case WorkerName.PREDICTION_SETS_FACTORY_PARSER:
+      await new PredictionSetsFactoryParserWorker(workerDefinition, context).run();
       break;
 
     case WorkerName.REFRESH_OUTCOME_CHANCES:
@@ -128,6 +140,18 @@ export async function handleLambdaEvent(event: any, context: Context, serviceDef
 
     case WorkerName.VOTING_PARSER:
       await new VotingParserWorker(workerDefinition, context).run();
+      break;
+
+    case WorkerName.FINALIZE_PROPOSAL_ROUNDS:
+      await new FinalizeProposalRoundsWorker(workerDefinition, context).run();
+      break;
+
+    case WorkerName.CLAIMS_PARSER:
+      await new ClaimsParserWorker(workerDefinition, context).run();
+      break;
+
+    case WorkerName.COLLATERAL_TOKEN_USD_PRICE:
+      await new CollateralTokenUsdPriceWorker(workerDefinition, context).run();
       break;
 
     default:
@@ -182,8 +206,14 @@ export async function handleSqsMessages(event: any, context: Context, serviceDef
           });
           break;
 
-        case WorkerName.FINALIZE_PREDICTION_SET:
-          await new FinalizePredictionSetWorker(workerDefinition, context).run({
+        case WorkerName.FINALIZE_AUTOMATIC_PREDICTION_SET:
+          await new FinalizeAutomaticPredictionSetWorker(workerDefinition, context).run({
+            executeArg: message?.body
+          });
+          break;
+
+        case WorkerName.FINALIZE_MANUAL_PREDICTION_SET:
+          await new FinalizeManualPredictionSetWorker(workerDefinition, context).run({
             executeArg: message?.body
           });
           break;
@@ -194,8 +224,8 @@ export async function handleSqsMessages(event: any, context: Context, serviceDef
           });
           break;
 
-        case WorkerName.PREDICTION_SETS_PARSER:
-          await new PredictionSetsParserWorker(workerDefinition, context).run({
+        case WorkerName.PREDICTION_SETS_FACTORY_PARSER:
+          await new PredictionSetsFactoryParserWorker(workerDefinition, context).run({
             executeArg: message?.body
           });
           break;
@@ -220,6 +250,24 @@ export async function handleSqsMessages(event: any, context: Context, serviceDef
 
         case WorkerName.VOTING_PARSER:
           await new VotingParserWorker(workerDefinition, context).run({
+            executeArg: message?.body
+          });
+          break;
+
+        case WorkerName.FINALIZE_PROPOSAL_ROUNDS:
+          await new FinalizeProposalRoundsWorker(workerDefinition, context).run({
+            executeArg: message?.body
+          });
+          break;
+
+        case WorkerName.CLAIMS_PARSER:
+          await new ClaimsParserWorker(workerDefinition, context).run({
+            executeArg: message?.body
+          });
+          break;
+
+        case WorkerName.COLLATERAL_TOKEN_USD_PRICE:
+          await new CollateralTokenUsdPriceWorker(workerDefinition, context).run({
             executeArg: message?.body
           });
           break;

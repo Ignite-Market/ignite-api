@@ -40,4 +40,11 @@ export class WalletLoginDto extends ModelBase {
     ]
   })
   public timestamp: number;
+
+  @prop({
+    parser: { resolver: stringParser() },
+    populatable: [PopulateFrom.USER],
+    validators: []
+  })
+  public referralId: string;
 }

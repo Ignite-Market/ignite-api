@@ -1,11 +1,11 @@
-import { DbTables } from '../config/types';
-import { prepareAttestationRequest, submitAttestationRequest } from '../lib/flare/attestation';
-import { AttestationVerifierStatus } from '../lib/flare/types';
-import { WorkerLogStatus } from '../lib/worker/logger';
-import { BaseSingleThreadWorker, SingleThreadWorkerAlertType } from '../lib/worker/serverless-workers/base-single-thread-worker';
-import { Job } from '../modules/job/job.model';
-import { PredictionSetAttestation } from '../modules/prediction-set/models/prediction-set-attestation.model';
-import { PredictionSet, PredictionSetStatus, ResolutionType } from '../modules/prediction-set/models/prediction-set.model';
+import { DbTables, SqlModelStatus } from '../../config/types';
+import { prepareAttestationRequest, submitAttestationRequest } from '../../lib/flare/attestation';
+import { AttestationVerifierStatus } from '../../lib/flare/types';
+import { WorkerLogStatus } from '../../lib/worker/logger';
+import { BaseSingleThreadWorker, SingleThreadWorkerAlertType } from '../../lib/worker/serverless-workers/base-single-thread-worker';
+import { Job } from '../../modules/job/job.model';
+import { PredictionSetAttestation } from '../../modules/prediction-set/models/prediction-set-attestation.model';
+import { PredictionSet, PredictionSetStatus, ResolutionType } from '../../modules/prediction-set/models/prediction-set.model';
 
 /**
  * Request prediction set attestation worker.
@@ -27,15 +27,21 @@ export class RequestAttestationWorker extends BaseSingleThreadWorker {
    * Handles creation of prediction set attestations for prediction sets that ended.
    */
   public async requestPredictionSetAttestations(): Promise<void> {
-    // TODO: Test resolution time.
+    /**
+     * We take prediction sets that:
+     * - ended,
+     * - are still in resolution timeframe,
+     * - don't have attestation data.
+     */
     const predictionSets = await this.context.mysql.paramExecute(
       `
-        SELECT *
+        SELECT ps.*
         FROM ${DbTables.PREDICTION_SET} ps
         LEFT JOIN ${DbTables.PREDICTION_SET_ATTESTATION} a 
           ON ps.id = a.prediction_set_id
         WHERE 
-          ps.status = ${PredictionSetStatus.ACTIVE}
+          ps.status = ${SqlModelStatus.ACTIVE}
+          AND ps.setStatus = ${PredictionSetStatus.ACTIVE}
           AND ps.resolutionType = ${ResolutionType.AUTOMATIC}
           AND ps.endTime <= NOW()
           AND ps.resolutionTime >= NOW() 

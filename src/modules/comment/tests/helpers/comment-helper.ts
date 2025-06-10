@@ -2,11 +2,21 @@ import { Context } from '../../../../context';
 import { User } from '../../../user/models/user.model';
 import { CommentService } from '../../comment.service';
 import { CommentCreateDto } from '../../dtos/comment-create.dto';
+import { CommentEntityTypes } from '../../models/comment.model';
 
-export const createComment = async (context: Context, predictionSetId: number, userId: number, parentCommentId?: number) => {
+export const createComment = async (
+  context: Context,
+  entityId: number,
+  entityType: CommentEntityTypes,
+  userId: number,
+  parentCommentId?: number,
+  replyUserId?: number
+) => {
   const body = {
-    prediction_set_id: predictionSetId,
+    entity_id: entityId,
+    entityType,
     parent_comment_id: parentCommentId,
+    reply_user_id: replyUserId,
     content: `Test comment ${Date.now()}`
   };
   context.user = new User({ id: userId }, context);
@@ -14,10 +24,10 @@ export const createComment = async (context: Context, predictionSetId: number, u
   return await new CommentService().createComment(comment, context);
 };
 
-export const createComments = async (count: number, context: Context, predictionSetId: number, userId?: number) => {
+export const createComments = async (count: number, context: Context, entityId: number, entityType: CommentEntityTypes, userId?: number) => {
   const comments = [];
   for (let i = 0; i < count; i++) {
-    comments.push(await createComment(context, predictionSetId, userId));
+    comments.push(await createComment(context, entityId, entityType, userId));
   }
   return comments;
 };

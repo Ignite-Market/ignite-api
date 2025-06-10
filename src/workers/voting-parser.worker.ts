@@ -103,11 +103,13 @@ export class VotingParserWorker extends BaseSingleThreadWorker {
         // Check if prediction set is finalized and finalize it.
         const question = await oracleContract.question(questionId);
         if (Number(question.status) === PredictionSetBcStatus.FINALIZED) {
-          const outcome = await new Outcome({}, this.context).populateByIndexAndPredictionSetId(question.winnerIdx, predictionSet.id);
+          const winnerIdx = Number(question.winnerIdx);
+
+          const outcome = await new Outcome({}, this.context).populateByIndexAndPredictionSetId(winnerIdx, predictionSet.id);
           if (!outcome.exists()) {
-            await this.writeLogToDb(WorkerLogStatus.ERROR, `Outcome for given outcome index: ${question.winnerIdx} not found.`, {
+            await this.writeLogToDb(WorkerLogStatus.ERROR, `Outcome for given outcome index: ${winnerIdx} not found.`, {
               predictionSetId: predictionSet.id,
-              winnerIdx: question.winnerIdx,
+              winnerIdx,
               questionId
             });
 
@@ -126,8 +128,8 @@ export class VotingParserWorker extends BaseSingleThreadWorker {
         await new OutcomeVotingTransaction(
           {
             prediction_set_id: predictionSet.id,
-            outcome_id: outcome.id,
-            user_id: user.id,
+            outcome_id: outcome?.id,
+            user_id: user?.id,
             wallet: voterAddress,
             txHash,
             questionId,

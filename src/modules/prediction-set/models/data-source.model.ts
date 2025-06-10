@@ -1,6 +1,7 @@
 import { prop } from '@rawmodel/core';
 import { stringParser } from '@rawmodel/parsers';
-import { DbTables, PopulateFrom, SerializeFor } from '../../../config/types';
+import { presenceValidator } from '@rawmodel/validators';
+import { DbTables, PopulateFrom, SerializeFor, ValidatorErrorCode } from '../../../config/types';
 import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
 import { JSONParser } from '../../../lib/parsers';
 
@@ -14,30 +15,6 @@ export class DataSource extends AdvancedSQLModel {
   public tableName = DbTables.DATA_SOURCE;
 
   /**
-   * Name - Name of the data source.
-   */
-  @prop({
-    parser: {
-      resolver: stringParser()
-    },
-    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
-    populatable: [PopulateFrom.DB, PopulateFrom.USER]
-  })
-  name: string;
-
-  /**
-   * Description - Description of the data source.
-   */
-  @prop({
-    parser: {
-      resolver: stringParser()
-    },
-    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
-    populatable: [PopulateFrom.DB, PopulateFrom.USER]
-  })
-  description: string;
-
-  /**
    * API endpoint - Data source endpoint.
    */
   @prop({
@@ -45,7 +22,13 @@ export class DataSource extends AdvancedSQLModel {
       resolver: stringParser()
     },
     serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
-    populatable: [PopulateFrom.DB, PopulateFrom.USER]
+    populatable: [PopulateFrom.DB, PopulateFrom.USER],
+    validators: [
+      {
+        resolver: presenceValidator(),
+        code: ValidatorErrorCode.DATA_SOURCE_ENDPOINT_NOT_PRESENT
+      }
+    ]
   })
   endpoint: string;
 
@@ -57,7 +40,13 @@ export class DataSource extends AdvancedSQLModel {
       resolver: stringParser()
     },
     serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
-    populatable: [PopulateFrom.DB, PopulateFrom.USER]
+    populatable: [PopulateFrom.DB, PopulateFrom.USER],
+    validators: [
+      {
+        resolver: presenceValidator(),
+        code: ValidatorErrorCode.DATA_SOURCE_JQ_QUERY_NOT_PRESENT
+      }
+    ]
   })
   jqQuery: string;
 
@@ -69,7 +58,61 @@ export class DataSource extends AdvancedSQLModel {
       resolver: JSONParser()
     },
     serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
-    populatable: [PopulateFrom.DB, PopulateFrom.USER]
+    populatable: [PopulateFrom.DB, PopulateFrom.USER],
+    validators: [
+      {
+        resolver: presenceValidator(),
+        code: ValidatorErrorCode.DATA_SOURCE_ABI_NOT_PRESENT
+      }
+    ]
   })
   abi: any;
+
+  /**
+   * HTTP method for the API request.
+   */
+  @prop({
+    parser: {
+      resolver: stringParser()
+    },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER]
+  })
+  httpMethod: string;
+
+  /**
+   * Body for the API request.
+   */
+  @prop({
+    parser: {
+      resolver: JSONParser()
+    },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER]
+  })
+  body: any;
+
+  /**
+   * Headers for the API request.
+   */
+  @prop({
+    parser: {
+      resolver: JSONParser()
+    },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER]
+  })
+  headers: any;
+
+  /**
+   * Query parameters for the API request.
+   */
+  @prop({
+    parser: {
+      resolver: JSONParser()
+    },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER]
+  })
+  queryParams: any;
 }

@@ -53,4 +53,4 @@ bin/deploy/env/env.yml
 tmp/
 .serverless/
 
-bin/deploy/env/env.dev.yml
+bin/deploy/env/env.dev*

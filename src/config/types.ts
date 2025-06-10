@@ -1,3 +1,6 @@
+import { ShareTransactionType } from '../modules/prediction-set/models/transactions/outcome-share-transaction.model';
+import { FundingTransactionType } from '../modules/prediction-set/models/transactions/prediction-set-funding-transaction.model';
+
 /**
  * Application environment types.
  */
@@ -21,6 +24,7 @@ export enum DbTables {
   PREDICTION_SET = 'prediction_set',
   PREDICTION_SET_CHAIN_DATA = 'prediction_set_chain_data',
   PREDICTION_SET_FUNDING_TRANSACTION = 'prediction_set_funding_transaction',
+  CLAIM_TRANSACTION = 'claim_transaction',
   DATA_SOURCE = 'data_source',
   PREDICTION_SET_DATA_SOURCE = 'prediction_set_data_source',
   OUTCOME = 'outcome',
@@ -29,7 +33,16 @@ export enum DbTables {
   COMMENT = 'comment',
   PREDICTION_SET_ATTESTATION = 'prediction_set_attestation',
   CONTRACT = 'contract',
-  OUTCOME_VOTING_TRANSACTION = 'outcome_voting_transaction'
+  OUTCOME_VOTING_TRANSACTION = 'outcome_voting_transaction',
+  USER_WATCHLIST = 'user_watchlist',
+  BANNER = 'banner',
+  PREDICTION_SET_CATEGORY = 'prediction_set_category',
+  PROPOSAL = 'proposal',
+  PROPOSAL_ROUND = 'proposal_round',
+  PROPOSAL_VOTE = 'proposal_vote',
+  REWARD_POINTS = 'reward_points',
+  REWARD_POINTS_TRANSACTION = 'reward_points_transaction',
+  COLLATERAL_TOKEN = 'collateral_token'
 }
 /**
  * Validation error codes - 422_00_000.
@@ -55,13 +68,24 @@ export enum ValidatorErrorCode {
   PREDICTION_SET_DTO_PREDICTION_OUTCOMES_NOT_PRESENT = 422_00_017,
   PREDICTION_SET_DTO_PREDICTION_OUTCOMES_NOT_VALID = 422_00_018,
   OUTCOME_NAME_NOT_PRESENT = 422_00_019,
-  COMMENT_PREDICTION_SET_ID_NOT_PRESENT = 422_00_020,
-  COMMENT_CONTENT_NOT_PRESENT = 422_00_021,
-  USER_PROFILE_DTO_USERNAME_NOT_PRESENT = 422_00_022,
-  USER_EMAIL_NOT_VALID = 422_00_023,
-  USER_EMAIL_NOT_PRESENT = 422_00_024,
-  USER_EMAIL_ALREADY_TAKEN = 422_00_025,
-  PREDICTION_SET_CONSENSUS_THRESHOLD_NOT_PRESENT_OR_VALID = 422_00_026
+  COMMENT_ENTITY_ID_NOT_PRESENT = 422_00_020,
+  COMMENT_ENTITY_TYPE_NOT_PRESENT = 422_00_021,
+  COMMENT_CONTENT_NOT_PRESENT = 422_00_022,
+  USER_PROFILE_DTO_USERNAME_NOT_PRESENT = 422_00_023,
+  USER_EMAIL_NOT_VALID = 422_00_024,
+  USER_EMAIL_NOT_PRESENT = 422_00_025,
+  USER_EMAIL_ALREADY_TAKEN = 422_00_026,
+  PREDICTION_SET_CONSENSUS_THRESHOLD_NOT_PRESENT_OR_VALID = 422_00_027,
+  PREDICTION_SET_CHANCE_HISTORY_RANGE_NOT_VALID = 422_00_028,
+  PROPOSAL_QUESTION_NOT_PRESENT = 422_00_029,
+  PROPOSAL_GENERAL_RESOLUTION_NOT_PRESENT = 422_00_030,
+  PROPOSAL_OUTCOME_RESOLUTION_NOT_PRESENT = 422_00_031,
+  PROPOSAL_VOTE_TYPE_NOT_VALID = 422_00_032,
+  COMMENT_ENTITY_TYPE_NOT_VALID = 422_00_033,
+  TOP_USERS_QUERY_FILTER_COLLATERAL_TOKEN_ID_NOT_PRESENT = 422_00_034,
+  DATA_SOURCE_ENDPOINT_NOT_PRESENT = 422_00_035,
+  DATA_SOURCE_JQ_QUERY_NOT_PRESENT = 422_00_036,
+  DATA_SOURCE_ABI_NOT_PRESENT = 422_00_037
 }
 
 /**
@@ -83,7 +107,13 @@ export enum ResourceNotFoundErrorCode {
   USER_DOES_NOT_EXISTS = 404_00_001,
   DATA_SOURCE_DOES_NOT_EXISTS = 404_00_002,
   PREDICTION_SET_DOES_NOT_EXISTS = 404_00_003,
-  COMMENT_DOES_NOT_EXISTS = 404_00_004
+  COMMENT_DOES_NOT_EXISTS = 404_00_004,
+  PREDICTION_SET_PROPOSAL_DOES_NOT_EXISTS = 404_00_005,
+  PREDICTION_SET_PROPOSAL_ROUND_DOES_NOT_EXISTS = 404_00_006,
+  PREDICTION_SET_PROPOSAL_ACTIVE_ROUND_DOES_NOT_EXISTS = 404_00_007,
+  REWARD_POINTS_DOES_NOT_EXISTS = 404_00_008,
+  COLLATERAL_TOKEN_DOES_NOT_EXISTS = 404_00_009,
+  TEMPLATE_NOT_FOUND = 404_010
 }
 
 /**
@@ -99,7 +129,12 @@ export enum ConflictErrorCode {
 export enum BadRequestErrorCode {
   DEFAULT_BAD_REQUEST_ERROR = 400_00_000,
   INVALID_PREDICTION_SET_STATUS = 400_00_001,
-  INVALID_NUMBER_OF_PREDICTION_SET_DATA_SOURCES = 400_00_002
+  INVALID_NUMBER_OF_PREDICTION_SET_DATA_SOURCES = 400_00_002,
+  PROPOSAL_ROUND_NOT_ACTIVE = 400_00_003,
+  PROPOSAL_AUTHOR_CANNOT_VOTE = 400_00_004,
+  DAILY_REWARD_ALREADY_CLAIMED = 400_00_005,
+  PROPOSAL_CANNOT_BE_UPDATED = 400_00_006,
+  TEXT_CONTENT_NOT_SAFE = 400_00_007
 }
 
 /**
@@ -111,7 +146,8 @@ export enum SystemErrorCode {
   SQL_SYSTEM_ERROR = 500_00_002,
   AWS_SYSTEM_ERROR = 500_00_003,
   MICROSERVICE_SYSTEM_ERROR = 500_00_004,
-  BLOCKCHAIN_SYSTEM_ERROR = 500_00_005
+  BLOCKCHAIN_SYSTEM_ERROR = 500_00_005,
+  ERROR_SENDING_EMAIL = 500_006
 }
 
 /**
@@ -229,5 +265,45 @@ export enum CacheKeyTTL {
  * JWT Token signing types.
  */
 export enum JwtTokenType {
-  USER_LOGIN = 'user-login'
+  USER_LOGIN = 'user-login',
+  EMAIL_VERIFICATION = 'email-verification'
+}
+
+/**
+ * Time range filter.
+ */
+export enum TimeRange {
+  ONE_DAY = '1D',
+  ONE_WEEK = '1W',
+  ONE_MONTH = '1M',
+  ALL = 'ALL'
+}
+
+/**
+ * Funding event definition.
+ */
+export interface FundingEvent {
+  type: FundingTransactionType;
+  txHash: string;
+  wallet: string;
+  amounts: string;
+  shares: string;
+  collateralRemovedFromFeePool?: string;
+}
+
+/**
+ * Transaction event definition.
+ */
+export interface TransactionEvent {
+  type: ShareTransactionType;
+  txHash: string;
+  wallet: string;
+  amount: string;
+  feeAmount: string;
+  outcomeIndex: number;
+  outcomeTokens: string;
+}
+
+export enum EmailTemplateType {
+  EMAIL_VERIFICATION = 'email-verification'
 }

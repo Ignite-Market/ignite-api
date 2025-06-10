@@ -14,7 +14,7 @@ import { WorkerLogStatus } from '../lib/worker/logger';
 /**
  * Parses the creation of the prediction set on chain.
  */
-export class PredictionSetsParserWorker extends BaseSingleThreadWorker {
+export class PredictionSetsFactoryParserWorker extends BaseSingleThreadWorker {
   /**
    * Runs worker executor.
    */
@@ -109,15 +109,20 @@ export class PredictionSetsParserWorker extends BaseSingleThreadWorker {
         });
         await chainData.update(SerializeFor.UPDATE_DB, conn);
 
-        // Update prediction set to active.
-        predictionSet.setStatus = PredictionSetStatus.ACTIVE;
+        // Update prediction set to funding.
+        predictionSet.setStatus = PredictionSetStatus.FUNDING;
         await predictionSet.update(SerializeFor.UPDATE_DB, conn);
 
+        // Finalize FPMM setup - For more complex markets we will need to call stepFinalizeSetup() until we reach the final state
+        const signer = new ethers.Wallet(env.SIGNER_PRIVATE_KEY, provider);
+        const fpmmContract = new ethers.Contract(chainData.contractAddress, FPMM_ABI, signer);
+
+        const finalizeTx = await fpmmContract.finalizeSetup();
+        await finalizeTx.wait();
+
         // Obtain and update outcome position IDs.
-        const fpmmContract = new ethers.Contract(chainData.contractAddress, FPMM_ABI, provider);
         for (const outcome of predictionSet.outcomes) {
           const positionId = await fpmmContract.positionIds(outcome.outcomeIndex);
-
           outcome.positionId = BigInt(positionId).toString();
           await outcome.update(SerializeFor.UPDATE_DB, conn);
         }

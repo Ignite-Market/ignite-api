@@ -1,15 +1,16 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, Query } from '@nestjs/common';
-import { Comment } from './models/comment.model';
-import { AuthGuard } from '../../guards/auth.guard';
-import { Ctx } from '../../decorators/context.decorator';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { ValidateFor } from '../../config/types';
 import { Context } from '../../context';
-import { CommentService } from './comment.service';
-import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
-import { ValidationGuard } from '../../guards/validation.guard';
+import { Ctx } from '../../decorators/context.decorator';
 import { Validation } from '../../decorators/validation.decorator';
-import { SerializeFor, ValidateFor } from '../../config/types';
+import { AuthGuard } from '../../guards/auth.guard';
+import { ValidationGuard } from '../../guards/validation.guard';
+import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
+import { CommentService } from './comment.service';
 import { CommentCreateDto } from './dtos/comment-create.dto';
 import { CommentUpdateDto } from './dtos/comment-update.dto';
+import { Comment } from './models/comment.model';
+import { CommentsQueryFilter } from './dtos/comments-query-filter';
 
 @Controller('comments')
 export class CommentController {
@@ -19,18 +20,14 @@ export class CommentController {
   @Validation({ dto: CommentCreateDto })
   @UseGuards(AuthGuard, ValidationGuard)
   async create(@Body() data: CommentCreateDto, @Ctx() context: Context): Promise<any> {
-    return (await this.commentService.createComment(data, context)).serialize(SerializeFor.USER);
+    return await this.commentService.createComment(data, context);
   }
 
-  @Get('prediction-set/:predictionSetId')
-  @Validation({ dto: BaseQueryFilter, validateFor: ValidateFor.QUERY })
-  @UseGuards(AuthGuard, ValidationGuard)
-  async getByPredictionSetId(
-    @Param('predictionSetId') predictionSetId: number,
-    @Query() query: BaseQueryFilter,
-    @Ctx() context: Context
-  ): Promise<Comment[]> {
-    return this.commentService.getCommentsByPredictionSetId(predictionSetId, query, context);
+  @Get()
+  @Validation({ dto: CommentsQueryFilter, validateFor: ValidateFor.QUERY })
+  @UseGuards(ValidationGuard)
+  async getComments(@Query() query: CommentsQueryFilter, @Ctx() context: Context): Promise<Comment[]> {
+    return this.commentService.getComments(query, context);
   }
 
   @Put(':id')
@@ -42,7 +39,7 @@ export class CommentController {
 
   @Delete(':id')
   @UseGuards(AuthGuard)
-  async delete(@Param('id') id: number, @Ctx() context: Context): Promise<void> {
+  async delete(@Param('id') id: number, @Ctx() context: Context): Promise<any> {
     return this.commentService.deleteComment(id, context);
   }
 }
