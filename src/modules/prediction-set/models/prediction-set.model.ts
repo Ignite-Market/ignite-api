@@ -483,22 +483,23 @@ export class PredictionSet extends AdvancedSQLModel {
       return [];
     }
 
-    const positions = await this.db().paramExecute(
+    // Get all transactions ordered by time ASC (oldest first)
+    const transactions = await this.db().paramExecute(
       `
-        SELECT
+        SELECT 
           o.id AS outcomeId,
           o.name AS outcomeName,
           o.outcomeIndex AS outcomeIndex,
-          SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0)) AS collateralAmount,
-          SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.outcomeTokens, 0)) AS sharesAmount,
-          SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)) / NULLIF(SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)), 0) AS avgBuyPrice
+          ost.type,
+          ost.amount,
+          ost.outcomeTokens,
+          ost.createTime
         FROM ${DbTables.OUTCOME_SHARE_TRANSACTION} ost
         LEFT JOIN ${DbTables.OUTCOME} o
           ON o.id = ost.outcome_id
         WHERE ost.prediction_set_id = @predictionSetId
           AND ost.user_id = @userId
-        GROUP BY o.id
-        ORDER BY o.id
+        ORDER BY ost.createTime ASC
       `,
       {
         predictionSetId: this.id,
@@ -506,6 +507,70 @@ export class PredictionSet extends AdvancedSQLModel {
       },
       conn
     );
+
+    // Group transactions by outcome
+    const outcomeGroups = transactions.reduce((acc, tx) => {
+      if (!acc[tx.outcomeId]) {
+        acc[tx.outcomeId] = {
+          outcomeId: tx.outcomeId,
+          outcomeName: tx.outcomeName,
+          outcomeIndex: tx.outcomeIndex,
+          transactions: []
+        };
+      }
+      acc[tx.outcomeId].transactions.push(tx);
+      return acc;
+    }, {});
+
+    // Calculate position details for each outcome
+    const positions = Object.values(outcomeGroups).map((group: any) => {
+      // First pass: calculate final position and track buys
+      let remainingShares = 0;
+      let collateralAmount = 0;
+      const buys = [];
+
+      group.transactions.forEach((tx: any) => {
+        const shareChange = tx.type === ShareTransactionType.BUY ? Number(tx.outcomeTokens) : -Number(tx.outcomeTokens);
+        const amountChange = tx.type === ShareTransactionType.BUY ? Number(tx.amount) : -Number(tx.amount);
+
+        remainingShares += shareChange;
+        collateralAmount += amountChange;
+
+        if (tx.type === ShareTransactionType.BUY) {
+          buys.push({
+            shares: Number(tx.outcomeTokens),
+            amount: Number(tx.amount),
+            pricePerShare: Number(tx.amount) / Number(tx.outcomeTokens)
+          });
+        }
+      });
+
+      // Second pass: calculate weighted average
+      // Needs to only account for shares that are not yet sold
+      let weightedAmount = 0;
+      let totalShares = 0;
+      let sharesToAccount = remainingShares;
+
+      // Process buys in reverse order (newest first)
+      for (let i = buys.length - 1; i >= 0 && sharesToAccount > 0; i--) {
+        const buy = buys[i];
+        const sharesFromThisBuy = Math.min(buy.shares, sharesToAccount);
+        const amountFromThisBuy = sharesFromThisBuy * buy.pricePerShare;
+
+        weightedAmount += amountFromThisBuy;
+        totalShares += sharesFromThisBuy;
+        sharesToAccount -= sharesFromThisBuy;
+      }
+
+      return {
+        outcomeId: group.outcomeId,
+        outcomeName: group.outcomeName,
+        outcomeIndex: group.outcomeIndex,
+        avgBuyPrice: totalShares > 0 ? weightedAmount / totalShares : 0,
+        collateralAmount,
+        sharesAmount: remainingShares
+      };
+    });
 
     return positions;
   }
