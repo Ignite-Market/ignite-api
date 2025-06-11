@@ -321,7 +321,7 @@ export class UserService {
       mailAddresses: [data.email],
       subject: 'Email verification',
       templateData: {
-        actionUrl: `${env.APP_URL}/confirm-email?token=${token}`
+        actionUrl: `${env.APP_URL}/confirm-email/?token=${token}`
       }
     });
 
