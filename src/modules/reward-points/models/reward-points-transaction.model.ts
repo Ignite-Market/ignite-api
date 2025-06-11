@@ -61,10 +61,12 @@ export class RewardPointsTransaction extends AdvancedSQLModel {
    * @param conn Pool connection.
    * @returns Total reward points.
    */
-  public async getUserPoints(userId: number, conn?: PoolConnection): Promise<number> {
+  public async getUserPoints(userId: number, conn?: PoolConnection): Promise<{ totalPoints: number; referralCount: number; referralPoints: number }> {
     const rows = await this.db().paramExecute(
       `
-        SELECT SUM(value) totalPoints
+        SELECT IFNULL(SUM(value), 0) totalPoints,
+        IFNULL(COUNT(CASE WHEN type = ${RewardType.USER_REFERRAL} THEN 1 ELSE NULL END), 0) referralCount,
+        IFNULL(SUM(CASE WHEN type = ${RewardType.USER_REFERRAL} THEN value ELSE 0 END), 0) referralPoints
         FROM ${DbTables.REWARD_POINTS_TRANSACTION}
         WHERE user_id = @userId
           AND status <> ${SqlModelStatus.DELETED}
@@ -73,7 +75,7 @@ export class RewardPointsTransaction extends AdvancedSQLModel {
       conn
     );
 
-    return rows.length && rows[0].totalPoints ? rows[0].totalPoints : 0;
+    return rows.length ? rows[0] : { totalPoints: 0, referralCount: 0, referralPoints: 0 };
   }
 
   /**
