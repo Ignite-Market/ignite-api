@@ -65,8 +65,14 @@ export class RewardPointsTransaction extends AdvancedSQLModel {
     const rows = await this.db().paramExecute(
       `
         SELECT IFNULL(SUM(value), 0) totalPoints,
-        IFNULL(COUNT(CASE WHEN type = ${RewardType.USER_REFERRAL} THEN 1 ELSE NULL END), 0) referralCount,
-        IFNULL(SUM(CASE WHEN type = ${RewardType.USER_REFERRAL} THEN value ELSE 0 END), 0) referralPoints
+        IFNULL(SUM(CASE WHEN type = ${RewardType.BUYING_SHARES} THEN value ELSE 0 END), 0) buyingSharesPoints,
+        IFNULL(SUM(CASE WHEN type = ${RewardType.SELLING_SHARES} THEN value ELSE 0 END), 0) sellingSharesPoints,
+        IFNULL(SUM(CASE WHEN type = ${RewardType.MARKET_WINNER} THEN value ELSE 0 END), 0) marketWinnerPoints,
+        IFNULL(SUM(CASE WHEN type = ${RewardType.PROPOSAL_WINNER} THEN value ELSE 0 END), 0) proposalWinnerPoints,
+        IFNULL(SUM(CASE WHEN type = ${RewardType.PROPOSAL_VOTE} THEN value ELSE 0 END), 0) proposalVotePoints,
+        IFNULL(SUM(CASE WHEN type = ${RewardType.DAILY_LOGIN} THEN value ELSE 0 END), 0) dailyLoginPoints,
+        IFNULL(SUM(CASE WHEN type = ${RewardType.USER_REFERRAL} THEN value ELSE 0 END), 0) referralPoints,
+        IFNULL(COUNT(CASE WHEN type = ${RewardType.USER_REFERRAL} THEN 1 ELSE NULL END), 0) referralCount
         FROM ${DbTables.REWARD_POINTS_TRANSACTION}
         WHERE user_id = @userId
           AND status <> ${SqlModelStatus.DELETED}
