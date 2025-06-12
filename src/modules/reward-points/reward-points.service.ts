@@ -107,7 +107,10 @@ export class RewardPointsService {
    * @param context Context.
    * @returns User reward points.
    */
-  public static async getUserRewardPoints(userId: number, context: Context): Promise<number> {
+  public static async getUserRewardPoints(
+    userId: number,
+    context: Context
+  ): Promise<{ totalPoints: number; referralCount: number; referralPoints: number }> {
     return await new RewardPointsTransaction({}, context).getUserPoints(userId);
   }
 }
