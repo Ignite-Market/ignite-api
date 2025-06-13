@@ -228,6 +228,13 @@ export const FPMM_ABI = [
   },
   {
     'inputs': [],
+    'name': 'currentLiquidity',
+    'outputs': [{ 'internalType': 'uint256', 'name': '', 'type': 'uint256' }],
+    'stateMutability': 'view',
+    'type': 'function'
+  },
+  {
+    'inputs': [],
     'name': 'decimals',
     'outputs': [{ 'internalType': 'uint8', 'name': '', 'type': 'uint8' }],
     'stateMutability': 'view',
@@ -291,6 +298,13 @@ export const FPMM_ABI = [
     'name': 'initializeBase',
     'outputs': [],
     'stateMutability': 'nonpayable',
+    'type': 'function'
+  },
+  {
+    'inputs': [],
+    'name': 'isFunded',
+    'outputs': [{ 'internalType': 'bool', 'name': '', 'type': 'bool' }],
+    'stateMutability': 'view',
     'type': 'function'
   },
   {
