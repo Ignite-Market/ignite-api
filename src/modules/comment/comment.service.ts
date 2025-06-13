@@ -1,25 +1,50 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { Comment } from './models/comment.model';
+import {
+  AuthorizationErrorCode,
+  BadRequestErrorCode,
+  DefaultUserRole,
+  ResourceNotFoundErrorCode,
+  SerializeFor,
+  SqlModelStatus,
+  ValidatorErrorCode
+} from '../../config/types';
 import { Context } from '../../context';
-import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
+import { CodeException, ValidationException } from '../../lib/exceptions/exceptions';
+import { Proposal } from '../proposal/models/proposal.model';
+import { PredictionSet } from '../prediction-set/models/prediction-set.model';
+import { User } from '../user/models/user.model';
 import { CommentCreateDto } from './dtos/comment-create.dto';
 import { CommentUpdateDto } from './dtos/comment-update.dto';
-import { AuthorizationErrorCode, DefaultUserRole, ResourceNotFoundErrorCode, SqlModelStatus, ValidatorErrorCode } from '../../config/types';
-import { CodeException, ValidationException } from '../../lib/exceptions/exceptions';
-import { PredictionSet } from '../prediction-set/models/prediction-set.model';
+import { CommentsQueryFilter } from './dtos/comments-query-filter';
+import { Comment, CommentEntityTypes, DELETED_COMMENT_CONTENT } from './models/comment.model';
+import { isTextSafe } from '../../lib/content-moderation';
 
 @Injectable()
 export class CommentService {
   /**
    * Creates a new comment.
    */
-  async createComment(data: CommentCreateDto, context: Context): Promise<Comment> {
+  async createComment(data: CommentCreateDto, context: Context): Promise<any> {
     const comment = new Comment(data.serialize(), context);
     comment.user_id = context.user.id;
 
+    // Check if content is safe
+    const isSafe = await isTextSafe(comment.content);
+    if (!isSafe) {
+      throw new CodeException({
+        code: BadRequestErrorCode.TEXT_CONTENT_NOT_SAFE,
+        errorCodes: BadRequestErrorCode,
+        status: HttpStatus.BAD_REQUEST,
+        sourceFunction: `${this.constructor.name}/createComment`,
+        context
+      });
+    }
+
     if (comment.parent_comment_id) {
-      const parentComment = await new Comment({}, context).populateById(comment.parent_comment_id);
-      if (!parentComment.exists() || !parentComment.isEnabled()) {
+      const parentComment = await new Comment({}, context).populateByIdAllowDeleted(comment.parent_comment_id);
+
+      // Parent comment can be deleted, since we can still post in thread.
+      if (!parentComment.exists()) {
         throw new CodeException({
           code: ResourceNotFoundErrorCode.COMMENT_DOES_NOT_EXISTS,
           errorCodes: ResourceNotFoundErrorCode,
@@ -30,15 +55,32 @@ export class CommentService {
       }
     }
 
-    const predictionSet = await new PredictionSet({}, context).populateById(comment.prediction_set_id);
-    if (!predictionSet.exists() || !predictionSet.isEnabled()) {
-      throw new CodeException({
-        code: ResourceNotFoundErrorCode.PREDICTION_SET_DOES_NOT_EXISTS,
-        errorCodes: ResourceNotFoundErrorCode,
-        status: HttpStatus.NOT_FOUND,
-        sourceFunction: `${this.constructor.name}/createComment`,
-        context
-      });
+    switch (comment.entityType) {
+      case CommentEntityTypes.PREDICTION_SET:
+        const predictionSet = await new PredictionSet({}, context).populateById(comment.entity_id);
+        if (!predictionSet.exists() || !predictionSet.isEnabled()) {
+          throw new CodeException({
+            code: ResourceNotFoundErrorCode.PREDICTION_SET_DOES_NOT_EXISTS,
+            errorCodes: ResourceNotFoundErrorCode,
+            status: HttpStatus.NOT_FOUND,
+            sourceFunction: `${this.constructor.name}/createComment`,
+            context
+          });
+        }
+        break;
+
+      case CommentEntityTypes.PROPOSAL:
+        const proposal = await new Proposal({}, context).populateById(comment.entity_id);
+        if (!proposal.exists() || !proposal.isEnabled()) {
+          throw new CodeException({
+            code: ResourceNotFoundErrorCode.PREDICTION_SET_PROPOSAL_DOES_NOT_EXISTS,
+            errorCodes: ResourceNotFoundErrorCode,
+            status: HttpStatus.NOT_FOUND,
+            sourceFunction: `${this.constructor.name}/createComment`,
+            context
+          });
+        }
+        break;
     }
 
     try {
@@ -50,16 +92,27 @@ export class CommentService {
         throw new ValidationException(error, ValidatorErrorCode);
       }
     }
-
     await comment.insert();
-    return comment;
+
+    const returnComment = {
+      ...comment.serialize(SerializeFor.USER),
+      username: context.user.username,
+      walletAddress: context.user.walletAddress
+    };
+
+    if (comment.reply_user_id) {
+      const taggedUser = await new User({}, context).populateById(comment.reply_user_id);
+      returnComment['taggedUserUsername'] = taggedUser.username;
+    }
+
+    return returnComment;
   }
 
   /**
-   * Gets all comments for a prediction set.
+   * Gets all comments for an entity.
    */
-  async getCommentsByPredictionSetId(predictionSetId: number, query: BaseQueryFilter, context: Context): Promise<Comment[]> {
-    return await new Comment({}, context).getList(predictionSetId, query);
+  async getComments(query: CommentsQueryFilter, context: Context): Promise<Comment[]> {
+    return await new Comment({}, context).getList(query);
   }
 
   /**
@@ -87,8 +140,19 @@ export class CommentService {
         context
       });
     }
-
     comment.content = data.content;
+
+    // Check if content is safe
+    const isSafe = await isTextSafe(comment.content);
+    if (!isSafe) {
+      throw new CodeException({
+        code: BadRequestErrorCode.TEXT_CONTENT_NOT_SAFE,
+        errorCodes: BadRequestErrorCode,
+        status: HttpStatus.BAD_REQUEST,
+        sourceFunction: `${this.constructor.name}/updateComment`,
+        context
+      });
+    }
 
     try {
       await comment.validate();
@@ -105,9 +169,12 @@ export class CommentService {
   }
 
   /**
-   * Soft deletes a comment.
+   * Deletes a comment.
+   * @param id Comment ID.
+   * @param context Application context.
+   * @returns Deleted comment.
    */
-  async deleteComment(id: number, context: Context): Promise<void> {
+  async deleteComment(id: number, context: Context): Promise<any> {
     const comment = await new Comment({}, context).populateById(id);
 
     if (!comment.exists() || !comment.isEnabled()) {
@@ -132,5 +199,8 @@ export class CommentService {
 
     comment.status = SqlModelStatus.DELETED;
     await comment.update();
+
+    comment.content = DELETED_COMMENT_CONTENT;
+    return comment.serialize(SerializeFor.USER);
   }
 }

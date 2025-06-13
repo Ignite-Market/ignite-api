@@ -42,7 +42,7 @@ export function uniqueFieldValue(sqlTableName: string, fieldName: string, allowS
       ${allowStatuses.length ? `AND NOT FIND_IN_SET(status, @allowStatuses)` : ''}`,
         { value, id: this?.id || null, allowStatuses }
       )
-      .then((rows) => rows[0].Count);
+      .then((rows: any) => rows[0].Count);
 
     return count === 0;
   };
@@ -63,6 +63,9 @@ export function anyPresenceValidator(fields: string[]) {
   };
 }
 
+/**
+ * Validates the length of an array.
+ */
 export function arrayLengthValidator() {
   return function (this: ModelBase, value: any): boolean {
     return value?.length > 0;
@@ -84,6 +87,9 @@ export function conditionalPresenceValidator(fieldName: string, condition: (fiel
   };
 }
 
+/**
+ * Validates a URL.
+ */
 export function urlValidator() {
   return function (this: ModelBase, value: string): boolean {
     const urlPattern = new RegExp(
@@ -100,6 +106,9 @@ export function urlValidator() {
   };
 }
 
+/**
+ * Validates a URL domain.
+ */
 export function urlDomainValidator(validDomains: string[]) {
   return function (this: ModelBase, value: string): boolean {
     const urlPattern = new RegExp(
@@ -116,6 +125,9 @@ export function urlDomainValidator(validDomains: string[]) {
   };
 }
 
+/**
+ * Validates a date in the future.
+ */
 export function minutesInFutureValidator(minutesInFuture: number) {
   return (value?: any) => {
     if (!(value instanceof Date)) {

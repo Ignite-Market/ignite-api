@@ -11,7 +11,7 @@ import { isPresent } from '@rawmodel/utils';
  */
 export function dataSourceIdsPresenceValidator() {
   return function (this: PredictionSetDto, value: number) {
-    if (this.resolutionType === ResolutionType.VOTING) {
+    if (this.resolutionType === ResolutionType.MANUAL) {
       return true;
     }
 

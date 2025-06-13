@@ -1,12 +1,12 @@
 import { env } from '../../config/env';
 import { DbTables } from '../../config/types';
+import { createContext } from '../../lib/utils';
 import { Contract, ContractId } from '../../modules/contract/models/contract.model';
-import { createContext } from './context';
 
-const contractId = ContractId.FPMM_FACTORY;
-const contractAddress = '0x88436658f14A7cA6CE18C514A7af605Bb6329Bb7';
-const deployedBlock = 20542481;
-const parseBlocks = env.FPMM_FACTORY_PARSE_BLOCK_SIZE;
+const contractId = ContractId.CONDITIONAL_TOKENS;
+const contractAddress = '0x3c1947f48BAA623B264e86cF1ac85AE3FCd09904';
+const deployedBlock = 15666307;
+const parseBlocks = env.CONDITIONAL_TOKENS_PARSE_BLOCK_SIZE;
 
 const addContract = async () => {
   const context = await createContext();

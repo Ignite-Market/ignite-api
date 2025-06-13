@@ -1,0 +1,7 @@
+/**
+ * Process name definitions.
+ */
+export enum ProcessName {
+  PREDICTION_SET_PARSER_PLANNER = 'PREDICTION_SET_PARSER_PLANNER',
+  PREDICTION_SET_PARSER = 'PREDICTION_SET_PARSER'
+}

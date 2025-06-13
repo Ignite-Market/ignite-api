@@ -1,41 +1,21 @@
 import { ethers } from 'ethers';
 import { env } from '../config/env';
-import { DbTables, SerializeFor, SqlModelStatus } from '../config/types';
+import { DbTables, SerializeFor, SqlModelStatus, FundingEvent, TransactionEvent } from '../config/types';
 import { setup } from '../lib/blockchain';
 import { WorkerLogStatus } from '../lib/worker/logger';
 import { BaseQueueWorker } from '../lib/worker/serverless-workers/base-queue-worker';
-import { OutcomeShareTransaction, ShareTransactionType } from '../modules/prediction-set/models/outcome-share-transaction.model';
+import { OutcomeShareTransaction, ShareTransactionType } from '../modules/prediction-set/models/transactions/outcome-share-transaction.model';
 import { Outcome } from '../modules/prediction-set/models/outcome.model';
-import { FundingTransactionType, PredictionSetFundingTransaction } from '../modules/prediction-set/models/prediction-set-funding-transaction.model';
+import {
+  FundingTransactionType,
+  PredictionSetFundingTransaction
+} from '../modules/prediction-set/models/transactions/prediction-set-funding-transaction.model';
 import { PredictionSet, PredictionSetStatus } from '../modules/prediction-set/models/prediction-set.model';
 import { User } from '../modules/user/models/user.model';
 import { sendToWorkerQueue } from '../lib/aws/aws-sqs';
 import { WorkerName } from './worker-executor';
-
-/**
- * Funding event definition.
- */
-interface FundingEvent {
-  type: FundingTransactionType;
-  txHash: string;
-  wallet: string;
-  amounts: string;
-  shares: string;
-  collateralRemovedFromFeePool?: string;
-}
-
-/**
- * Transaction event definition.
- */
-interface TransactionEvent {
-  type: ShareTransactionType;
-  txHash: string;
-  wallet: string;
-  amount: string;
-  feeAmount: string;
-  outcomeIndex: number;
-  outcomeTokens: string;
-}
+import { RewardPointsService } from '../modules/reward-points/reward-points.service';
+import { RewardType } from '../modules/reward-points/models/reward-points.model';
 
 /**
  * Parses prediction set contracts.
@@ -53,7 +33,7 @@ export class PredictionSetParserWorker extends BaseQueueWorker {
         INNER JOIN ${DbTables.PREDICTION_SET_CHAIN_DATA} cd
           ON ps.id = cd.prediction_set_id
         WHERE 
-          ps.setStatus = ${PredictionSetStatus.ACTIVE}
+          ps.setStatus IN (${PredictionSetStatus.ACTIVE}, ${PredictionSetStatus.FUNDING})
           AND ps.status = ${SqlModelStatus.ACTIVE}
           AND cd.status = ${SqlModelStatus.ACTIVE}
           AND cd.contractAddress IS NOT NULL
@@ -142,20 +122,31 @@ export class PredictionSetParserWorker extends BaseQueueWorker {
 
       // Insert funding events.
       for (const fundingEvent of fundingEvents) {
-        const user = await new User({}, this.context).populateByWalletAddress(fundingEvent.wallet, conn); // TODO: Should we let parse it without user ID?
+        const user = await new User({}, this.context).populateByWalletAddress(fundingEvent.wallet, conn);
+
+        let collateralAmount = null;
+        if (fundingEvent.type === FundingTransactionType.ADDED) {
+          collateralAmount = Math.max(...fundingEvent.amounts.split(',').map(Number));
+        }
 
         await new PredictionSetFundingTransaction(
           {
             ...fundingEvent,
-            user_id: user.id,
-            prediction_set_id: predictionSet.id
+            user_id: user?.id,
+            prediction_set_id: predictionSet.id,
+            collateralAmount
           },
           this.context
         ).insert(SerializeFor.INSERT_DB, conn);
       }
 
       if (fundingEvents.length) {
-        // TODO: Check if prediction set is funded on the contract and update status.
+        // Activate trading when the contract is funded.
+        const canTrade = await fpmmContract.canTrade();
+        if (canTrade && predictionSet.setStatus !== PredictionSetStatus.ACTIVE) {
+          predictionSet.setStatus = PredictionSetStatus.ACTIVE;
+          await predictionSet.update(SerializeFor.UPDATE_DB, conn);
+        }
       }
 
       /**
@@ -195,7 +186,7 @@ export class PredictionSetParserWorker extends BaseQueueWorker {
 
       // Insert transaction events.
       for (const transactionEvent of transactionEvents) {
-        const user = await new User({}, this.context).populateByWalletAddress(transactionEvent.wallet, conn); // TODO: Should we let parse it without user ID?
+        const user = await new User({}, this.context).populateByWalletAddress(transactionEvent.wallet, conn);
         const outcome = await new Outcome({}, this.context).populateByIndexAndPredictionSetId(transactionEvent.outcomeIndex, predictionSet.id, conn);
         if (!outcome.exists()) {
           await this.writeLogToDb(WorkerLogStatus.ERROR, 'Outcome does not exists: ', {
@@ -210,17 +201,19 @@ export class PredictionSetParserWorker extends BaseQueueWorker {
         await new OutcomeShareTransaction(
           {
             ...transactionEvent,
-            user_id: user.id,
+            user_id: user?.id,
             outcome_id: outcome.id,
             prediction_set_id: predictionSet.id
           },
           this.context
         ).insert(SerializeFor.INSERT_DB, conn);
+
+        // TODO: award points.
       }
 
       // Refresh chances if any of the events happened.
       if (fundingEvents.length || transactionEvents.length) {
-        await sendToWorkerQueue(WorkerName.REFRESH_OUTCOME_CHANCES, [predictionSetId], this.context); // TODO: Check if this is OK.
+        await sendToWorkerQueue(WorkerName.REFRESH_OUTCOME_CHANCES, [predictionSetId], this.context);
       }
 
       // Update blocks.

@@ -1,0 +1,22 @@
+FROM public.ecr.aws/sam/build-nodejs20.x
+
+# Create app directory
+WORKDIR /app
+
+# Install PM2 globally
+RUN npm install pm2 -g
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN npm run build-indexer
+
+# Command to run the indexer with PM2
+CMD ["pm2-runtime", "dist/indexer/main.js"]

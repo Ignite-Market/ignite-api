@@ -7,7 +7,7 @@ import { releaseStage } from '../../../../test/setup-context-and-sql';
 import { DbTables, SqlModelStatus } from '../../../config/types';
 import { AUTHORIZATION_HEADER } from '../../../middlewares/authentication.middleware';
 import { createPredictionSet } from '../../prediction-set/tests/helpers/prediction-helper';
-import { Comment } from '../models/comment.model';
+import { Comment, CommentEntityTypes, DELETED_COMMENT_CONTENT } from '../models/comment.model';
 import { createComment, createComments } from './helpers/comment-helper';
 
 describe('Comment e2e tests', () => {
@@ -35,7 +35,8 @@ describe('Comment e2e tests', () => {
     describe('POST /comments - Create comment tests', () => {
       it('Should create a new comment', async () => {
         const body = {
-          prediction_set_id: predictionSetId,
+          entity_id: predictionSetId,
+          entityType: CommentEntityTypes.PREDICTION_SET,
           content: 'Test comment 😍'
         };
 
@@ -48,14 +49,16 @@ describe('Comment e2e tests', () => {
           .expect(HttpStatus.CREATED);
 
         expect(res.body.data.content).toBe(body.content);
-        expect(res.body.data.prediction_set_id).toBe(body.prediction_set_id);
+        expect(res.body.data.entity_id).toBe(body.entity_id);
+        expect(res.body.data.entityType).toBe(body.entityType);
         expect(res.body.data.user_id).toBe(cred.user.id);
       });
 
       it('Should create a reply comment', async () => {
-        const parentComment = await createComment(stage.context, predictionSetId, cred.user.id);
+        const parentComment = await createComment(stage.context, predictionSetId, CommentEntityTypes.PREDICTION_SET, cred.user.id);
         const body = {
-          prediction_set_id: predictionSetId,
+          entity_id: predictionSetId,
+          entityType: CommentEntityTypes.PREDICTION_SET,
           parent_comment_id: parentComment.id,
           content: 'Test reply'
         };
@@ -73,11 +76,15 @@ describe('Comment e2e tests', () => {
       });
     });
 
-    describe('GET /comments/prediction-set/:id - Get comments tests', () => {
+    describe('GET /comments - Get comments tests', () => {
       it('Should get comments', async () => {
-        const comments = await createComments(3, stage.context, predictionSetId, cred.user.id);
+        const comments = await createComments(3, stage.context, predictionSetId, CommentEntityTypes.PREDICTION_SET, cred.user.id);
         const res = await request(stage.http)
-          .get(`/comments/prediction-set/${predictionSetId}`)
+          .get('/comments')
+          .query({
+            entityId: predictionSetId,
+            entityType: CommentEntityTypes.PREDICTION_SET
+          })
           .set('Accept', 'application/json')
           .set(AUTHORIZATION_HEADER, cred.userToken)
           .expect(HttpStatus.OK);
@@ -90,10 +97,14 @@ describe('Comment e2e tests', () => {
       });
 
       it('Should not display deleted comments', async () => {
-        const comments = await createComments(3, stage.context, predictionSetId, cred.user.id);
+        const comments = await createComments(3, stage.context, predictionSetId, CommentEntityTypes.PREDICTION_SET, cred.user.id);
         await new Comment({ ...comments[0], status: SqlModelStatus.DELETED }, stage.context).update();
         const res = await request(stage.http)
-          .get(`/comments/prediction-set/${predictionSetId}`)
+          .get('/comments')
+          .query({
+            entityId: predictionSetId,
+            entityType: CommentEntityTypes.PREDICTION_SET
+          })
           .set('Accept', 'application/json')
           .set(AUTHORIZATION_HEADER, cred.userToken)
           .expect(HttpStatus.OK);
@@ -101,16 +112,18 @@ describe('Comment e2e tests', () => {
         expect(res.body.data.total).toBe(3);
         expect(res.body.data.items).toHaveLength(3);
         expect(res.body.data.items[0].content).not.toBe(comments[0].content);
-        expect(res.body.data.items[0].content).toBe('This comment has been deleted');
+        expect(res.body.data.items[0].content).toBe(DELETED_COMMENT_CONTENT);
         expect(res.body.data.items[1].content).toBe(comments[1].content);
         expect(res.body.data.items[2].content).toBe(comments[2].content);
       });
 
       it('Should get comments with query', async () => {
-        const comments = await createComments(3, stage.context, predictionSetId, cred.user.id);
+        const comments = await createComments(3, stage.context, predictionSetId, CommentEntityTypes.PREDICTION_SET, cred.user.id);
         const res = await request(stage.http)
-          .get(`/comments/prediction-set/${predictionSetId}`)
+          .get('/comments')
           .query({
+            entityId: predictionSetId,
+            entityType: CommentEntityTypes.PREDICTION_SET,
             limit: 2,
             page: 1
           })
@@ -127,7 +140,7 @@ describe('Comment e2e tests', () => {
 
     describe('PUT /comments/:id - Update comment tests', () => {
       it('Should update comment', async () => {
-        const comment = await createComment(stage.context, predictionSetId, cred.user.id);
+        const comment = await createComment(stage.context, predictionSetId, CommentEntityTypes.PREDICTION_SET, cred.user.id);
         const body = {
           content: 'Updated content'
         };
@@ -145,7 +158,7 @@ describe('Comment e2e tests', () => {
       });
 
       it('Should not update comment if user is not the owner', async () => {
-        const comment = await createComment(stage.context, predictionSetId, cred.user.id);
+        const comment = await createComment(stage.context, predictionSetId, CommentEntityTypes.PREDICTION_SET, cred.user.id);
 
         const body = {
           content: 'Updated content'
@@ -163,7 +176,7 @@ describe('Comment e2e tests', () => {
 
     describe('DELETE /comments/:id - Delete comment tests', () => {
       it('Should delete comment', async () => {
-        const comment = await createComment(stage.context, predictionSetId, cred.user.id);
+        const comment = await createComment(stage.context, predictionSetId, CommentEntityTypes.PREDICTION_SET, cred.user.id);
         await request(stage.http)
           .delete(`/comments/${comment.id}`)
           .set('Accept', 'application/json')
@@ -182,7 +195,7 @@ describe('Comment e2e tests', () => {
       });
 
       it('Should not delete comment if user is not the owner', async () => {
-        const comment = await createComment(stage.context, predictionSetId, cred.user.id);
+        const comment = await createComment(stage.context, predictionSetId, CommentEntityTypes.PREDICTION_SET, cred.user.id);
         await request(stage.http)
           .delete(`/comments/${comment.id}`)
           .set('Accept', 'application/json')
@@ -191,7 +204,7 @@ describe('Comment e2e tests', () => {
       });
 
       it('Should delete comment if user is admin', async () => {
-        const comment = await createComment(stage.context, predictionSetId, cred.user.id);
+        const comment = await createComment(stage.context, predictionSetId, CommentEntityTypes.PREDICTION_SET, cred.user.id);
         await request(stage.http)
           .delete(`/comments/${comment.id}`)
           .set('Accept', 'application/json')

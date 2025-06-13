@@ -1,20 +1,27 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
+import { env } from '../../config/env';
 import { BadRequestErrorCode, PopulateFrom, ResourceNotFoundErrorCode, SerializeFor, SqlModelStatus, SystemErrorCode } from '../../config/types';
 import { Context } from '../../context';
 import { sendToWorkerQueue } from '../../lib/aws/aws-sqs';
-import { BaseQueryFilter } from '../../lib/base-models/base-query-filter.model';
 import { CodeException } from '../../lib/exceptions/exceptions';
 import { WorkerName } from '../../workers/worker-executor';
+import { ActivityQueryFilter } from './dtos/activity-query-filter';
+import { HoldersQueryFilter } from './dtos/holders-query-filter';
+import { PredictionSetChanceHistoryQueryFilter } from './dtos/prediction-set-chance-history-query-filter';
+import { PredictionSetQueryFilter } from './dtos/prediction-set-query-filter';
 import { PredictionSetDto } from './dtos/prediction-set.dto';
+import { Banner } from './models/banner';
 import { DataSource } from './models/data-source.model';
 import { Outcome } from './models/outcome.model';
 import { PredictionSet, PredictionSetStatus, ResolutionType } from './models/prediction-set.model';
-import { env } from '../../config/env';
+import { UserWatchlist } from './models/user-watchlist';
+import { CollateralToken } from '../collateral-token/models/collateral-token.model';
 
 @Injectable()
 export class PredictionSetService {
   /**
    * Process prediction set.
+   *
    * @param predictionSetId Prediction set ID.
    * @param context Application context.
    * @returns Prediction set.
@@ -68,12 +75,24 @@ export class PredictionSetService {
 
   /**
    * Create prediction set.
+   *
    * @param predictionSet Prediction set.
    * @param dataSourceIds Data source IDs.
    * @param context Application context.
    */
   public async createPredictionSet(predictionSet: PredictionSet, dataSourceIds: number[], context: Context): Promise<PredictionSet> {
     const conn = await context.mysql.start();
+
+    const collateralToken = await new CollateralToken({}, context).populateById(predictionSet.collateral_token_id);
+    if (!collateralToken.exists() || !collateralToken.isEnabled()) {
+      throw new CodeException({
+        code: ResourceNotFoundErrorCode.COLLATERAL_TOKEN_DOES_NOT_EXISTS,
+        errorCodes: ResourceNotFoundErrorCode,
+        status: HttpStatus.NOT_FOUND,
+        sourceFunction: `${this.constructor.name}/createPredictionSet`,
+        context
+      });
+    }
 
     // Create prediction set.
     predictionSet.setId = this._generatePredictionSetId(predictionSet);
@@ -112,6 +131,8 @@ export class PredictionSetService {
 
       // Add data sources to the prediction set.
       for (const dataSourceId of dataSourceIds) {
+        // TODO: Do a check if data sources can be used for attestation!
+
         const dataSource = await new DataSource({}, context).populateById(dataSourceId, conn);
         if (!dataSource.exists() || !dataSource.isEnabled()) {
           await context.mysql.rollback(conn);
@@ -183,6 +204,7 @@ export class PredictionSetService {
 
   /**
    * Update prediction set.
+   *
    * @param predictionSetId Prediction set ID.
    * @param predictionSetData Prediction set data.
    * @param context Application context.
@@ -193,9 +215,9 @@ export class PredictionSetService {
     const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId, conn);
     if (!predictionSet.exists() || !predictionSet.isEnabled()) {
       throw new CodeException({
-        code: SystemErrorCode.SQL_SYSTEM_ERROR,
-        errorCodes: SystemErrorCode,
-        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        code: ResourceNotFoundErrorCode.PREDICTION_SET_DOES_NOT_EXISTS,
+        errorCodes: ResourceNotFoundErrorCode,
+        status: HttpStatus.NOT_FOUND,
         sourceFunction: `${this.constructor.name}/updatePredictionSet`,
         context
       });
@@ -304,48 +326,127 @@ export class PredictionSetService {
 
   /**
    * Returns listing of prediction.
+   *
    * @param query Filtering query.
    * @param context Application context.
    * @returns Prediction group.
    */
-  public async getPredictions(query: BaseQueryFilter, context: Context) {
+  public async getPredictionSets(query: PredictionSetQueryFilter, context: Context) {
     return await new PredictionSet({}, context).getList(query);
   }
 
   /**
-   * Cancel prediction set on CHAIN.
-   * @param predictionSet Prediction set.
+   * Get prediction set by ID.
+   *
+   * @param id Prediction set ID.
    * @param context Application context.
+   * @returns Prediction set.
    */
-  public async cancelPredictionSet(predictionSetId: number, context: Context) {
-    const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId);
+  public async getPredictionById(id: number, context: Context) {
+    const predictionSet = await new PredictionSet({}, context).populateById(id, null, false, {
+      outcomes: true,
+      chainData: true,
+      isWatched: true,
+      volume: true,
+      positions: true, // TODO: Remove positions from the response.
+      fundingPositions: true
+    });
 
-    // Only delete if processed/pending
-    if (![PredictionSetStatus.PENDING, PredictionSetStatus.ACTIVE].includes(predictionSet.setStatus)) {
+    if (!predictionSet.exists() || !predictionSet.isEnabled()) {
       throw new CodeException({
-        code: SystemErrorCode.SQL_SYSTEM_ERROR,
-        errorCodes: SystemErrorCode,
-        status: HttpStatus.INTERNAL_SERVER_ERROR,
-        sourceFunction: `${this.constructor.name}/cancelPredictionSet`,
+        code: ResourceNotFoundErrorCode.PREDICTION_SET_DOES_NOT_EXISTS,
+        errorCodes: ResourceNotFoundErrorCode,
+        status: HttpStatus.NOT_FOUND,
+        sourceFunction: `${this.constructor.name}/getPredictionById`,
         context
       });
     }
 
-    predictionSet.setStatus = PredictionSetStatus.INITIALIZED;
-    await predictionSet.update();
+    return predictionSet.serialize(SerializeFor.USER);
+  }
 
-    // TODO: Cancel on blockchain
+  /**
+   * Get prediction set positions.
+   *
+   * @param id Prediction set ID.
+   * @param context Application context.
+   * @returns Prediction set positions.
+   */
+  public async getPredictionSetPositions(id: number, context: Context) {
+    const predictionSet = await new PredictionSet({}, context).populateById(id, null, false, {
+      positions: true
+    });
+
+    if (!predictionSet.exists() || !predictionSet.isEnabled()) {
+      throw new CodeException({
+        code: ResourceNotFoundErrorCode.PREDICTION_SET_DOES_NOT_EXISTS,
+        errorCodes: ResourceNotFoundErrorCode,
+        status: HttpStatus.NOT_FOUND,
+        sourceFunction: `${this.constructor.name}/getPredictionSetPositions`,
+        context
+      });
+    }
+
+    return predictionSet.positions;
+  }
+
+  /**
+   * Get prediction set funding positions.
+   *
+   * @param id Prediction set ID.
+   * @param context Application context.
+   * @returns Prediction set funding positions.
+   */
+  public async getPredictionSetFundingPositions(id: number, context: Context) {
+    const predictionSet = await new PredictionSet({}, context).populateById(id, null, false, {
+      fundingPositions: true
+    });
+
+    if (!predictionSet.exists() || !predictionSet.isEnabled()) {
+      throw new CodeException({
+        code: ResourceNotFoundErrorCode.PREDICTION_SET_DOES_NOT_EXISTS,
+        errorCodes: ResourceNotFoundErrorCode,
+        status: HttpStatus.NOT_FOUND,
+        sourceFunction: `${this.constructor.name}/getPredictionSetFundingPositions`,
+        context
+      });
+    }
+
+    return predictionSet.fundingPositions;
+  }
+
+  /**
+   * Get prediction set activity.
+   *
+   * @param query Filtering query.
+   * @param context Application context.
+   * @returns Prediction set activity.
+   */
+  public async getPredictionSetActivity(query: ActivityQueryFilter, context: Context) {
+    return await new PredictionSet({}, context).getActivityList(query);
+  }
+
+  /**
+   * Get prediction set holders.
+   *
+   * @param query Filtering query.
+   * @param context Application context.
+   * @returns Prediction set holders.
+   */
+  public async getPredictionSetHolders(query: HoldersQueryFilter, context: Context) {
+    return await new PredictionSet({}, context).getHoldersList(query);
   }
 
   /**
    * Delete prediction set.
+   *
    * @param predictionSet Prediction set.
    * @param context Application context.
    */
   public async deletePredictionSet(predictionSetId: number, context: Context) {
     const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId);
 
-    // Only delete if not processed/pending
+    // Only delete if not processed/pending.
     if (![PredictionSetStatus.INITIALIZED, PredictionSetStatus.ERROR].includes(predictionSet.setStatus)) {
       throw new CodeException({
         code: SystemErrorCode.SQL_SYSTEM_ERROR,
@@ -361,7 +462,80 @@ export class PredictionSetService {
   }
 
   /**
-   * Get prediction set ID.
+   * Get prediction chance history.
+   *
+   * @param predictionSetId Prediction set ID.
+   * @param query Query filter.
+   * @param context Application context.
+   * @returns Prediction chance history.
+   */
+  public async getPredictionChanceHistory(predictionSetId: number, query: PredictionSetChanceHistoryQueryFilter, context: Context) {
+    const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId);
+    if (!predictionSet.exists() || !predictionSet.isEnabled()) {
+      throw new CodeException({
+        code: ResourceNotFoundErrorCode.PREDICTION_SET_DOES_NOT_EXISTS,
+        errorCodes: ResourceNotFoundErrorCode,
+        status: HttpStatus.NOT_FOUND,
+        sourceFunction: `${this.constructor.name}/getPredictionChanceHistory`,
+        context
+      });
+    }
+
+    return await predictionSet.getChanceHistory(query);
+  }
+
+  /**
+   * Add user watchlist.
+   *
+   * @param predictionSetId Prediction set ID.
+   * @param context Application context.
+   * @returns True if user watchlist added, false otherwise.
+   */
+  public async addUserWatchlist(predictionSetId: number, context: Context) {
+    const existingWatchlist = await new UserWatchlist({}, context).populateByUserAndPredictionSetId(context.user.id, predictionSetId);
+    if (existingWatchlist.exists()) {
+      return true;
+    }
+
+    const watchlist = new UserWatchlist({}, context).populate({
+      prediction_set_id: predictionSetId,
+      user_id: context.user.id
+    });
+
+    await watchlist.insert();
+
+    return true;
+  }
+
+  /**
+   * Remove user watchlist.
+   *
+   * @param predictionSetId Prediction set ID.
+   * @param context Application context.
+   * @returns True if user watchlist removed, false otherwise.
+   */
+  public async removeUserWatchlist(predictionSetId: number, context: Context) {
+    const existingWatchlist = await new UserWatchlist({}, context).populateByUserAndPredictionSetId(context.user.id, predictionSetId);
+
+    if (existingWatchlist.exists()) {
+      await existingWatchlist.delete();
+    }
+
+    return true;
+  }
+
+  /**
+   * Get active banners.
+   *
+   * @param context Application context.
+   * @returns Active banners.
+   */
+  public async getBanners(context: Context) {
+    return await new Banner({}, context).getActive();
+  }
+
+  /**
+   * Generate prediction set ID.
    *
    * @param predictionSet Prediction set.
    * @returns Prediction set ID.

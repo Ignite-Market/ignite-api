@@ -22,7 +22,10 @@ export class Scheduler extends WorkerScheduler {
       //   `${job.name} scheduled to run`,
       //   job,
       // );
-      defs.push(new WorkerDefinition(this.workerDefinition.serviceDefinition, job.name, job.getWorkerDefinition()));
+
+      if (job.name) {
+        defs.push(new WorkerDefinition(this.workerDefinition.serviceDefinition, job.name, job.getWorkerDefinition()));
+      }
     }
 
     return defs;

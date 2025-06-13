@@ -9,15 +9,26 @@
   "javascript.preferences.importModuleSpecifier": "relative",
   "typescript.preferences.importModuleSpecifier": "relative",
   "cSpell.words": [
+    "autorestart",
+    "awscli",
+    "Contabo",
     "coston",
     "CURDATE",
     "flarenetwork",
     "FPMM",
     "FPMMF",
     "funder",
+    "FXRP",
+    "getabi",
     "hexlify",
     "leaderboard",
+    "moderations",
     "psds",
-    "SUBDATE"
+    "psft",
+    "slsw",
+    "SUBDATE",
+    "UNIXTIME",
+    "uscd",
+    "Watchlist"
   ]
 }

@@ -1,0 +1,22 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - apt-get update -y
+      - apt-get install -y awscli docker.io
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+
+  build:
+    commands:
+      - docker build -f Dockerfile.indexer -t ignite-market-indexer .
+      - docker tag ignite-market-indexer:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME:ignite-market-indexer-$ENV
+
+  post_build:
+    commands:
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME:ignite-market-indexer-$ENV
+
+      - echo $VPS_DEPLOY_KEY_B64 | base64 -d > deploy_key.pem
+      - chmod 600 deploy_key.pem
+
+      - ssh -o StrictHostKeyChecking=no -i deploy_key.pem $VPS_USER@$VPS_HOST 'bash ~/deploy.sh'

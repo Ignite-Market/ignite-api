@@ -1,9 +1,16 @@
 # Ignite Market - Backend
 
-Ignite Market is a decentralized prediction market platform, designed to enable users to trade on the outcomes of real-world events. The initial implementation leverages the Gnosis FPMM (Fixed Product Market Maker) and conditional tokens, ensuring a robust and transparent trading mechanism. To power its resolution process, Ignite Market integrates Flare FDC (Flare Data Connector), ensuring accurate and trustless event resolution.
+| Stage | Status | URL | 
+| ----- | ------ | ---- |
+| DEV | ![Build dev](https://codebuild.us-east-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiczBEdFN2NGtSVUZDQjlzYjg0aHk3WmFSSFlwazN3RkVPaDVnR1NvMis0S0c2eHBqVnBLRG8ySEpqY1pGcU9hWit0SU9vRUxmQy9ad1hjZWszdXNLeUZZPSIsIml2UGFyYW1ldGVyU3BlYyI6IjBWRDZ3dG1aUjlKYkpWSjYiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=develop) | https://api-dev.ignitemarket.xyz/ |
+| PROD | ![Build prod](https://codebuild.us-east-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiczBEdFN2NGtSVUZDQjlzYjg0aHk3WmFSSFlwazN3RkVPaDVnR1NvMis0S0c2eHBqVnBLRG8ySEpqY1pGcU9hWit0SU9vRUxmQy9ad1hjZWszdXNLeUZZPSIsIml2UGFyYW1ldGVyU3BlYyI6IjBWRDZ3dG1aUjlKYkpWSjYiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=main) | https://api.ignitemarket.xyz/ |
 
+Ignite Market is a decentralized prediction market platform, designed to enable users to trade on the outcomes of real-world events. 
+
+The detailed product description can be found [here](https://github.com/kalmiallc/ignite-market-contracts/blob/main/ProductDescription.md).
 
 This repository contains a backend application to support the creation of prediction markets, worker automatons and other admin tasks that are required for the performance of the marketplace.
+
 
 ## Features:
 * Create and manage new prediction markets
@@ -44,8 +51,6 @@ REDIS_URL=
 AWS_REGION=
 AWS_SECRETS_ID=
 AWS_KEY=
-AWS_BUCKET=
-AWS_ENDPOINT=
 AWS_SECRET=
 AWS_WORKER_LAMBDA_NAME=
 AWS_WORKER_SQS_URL=
@@ -60,11 +65,8 @@ MYSQL_PASSWORD_TEST=
 MYSQL_PORT_TEST=
 MYSQL_USER_TEST=
 PREDICTION_SET_MINIMAL_DATA_SOURCES=
-PREDICTION_CONTRACT=
 SLACK_WEBHOOK_URL=
 ORACLE_CONTRACT=
-JSON_VERIFIER_CONTRACT=
-COLLATERAL_TOKEN_CONTRACT=
 CONDITIONAL_TOKEN_CONTRACT=
 FPMM_FACTORY_CONTRACT=
 SIGNER_PRIVATE_KEY=
@@ -73,7 +75,6 @@ FPMM_FACTORY_PARSE_BLOCK_SIZE=
 FPMM_BLOCK_CONFIRMATIONS=
 FPMM_FACTORY_BLOCK_CONFIRMATIONS=
 RPC_URL=
-FLARE_NETWORK=
 FLARE_DATA_AVAILABILITY_URL=
 FLARE_DATA_AVAILABILITY_API_KEY=
 FLARE_CONTRACT_REGISTRY_ADDRESS=

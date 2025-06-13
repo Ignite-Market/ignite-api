@@ -2,27 +2,46 @@ import { env, getEnvSecrets } from '../config/env';
 import { AppEnvironment } from '../config/types';
 import { Context } from '../context';
 import { MySql } from '../lib/database/mysql';
-
 import { WorkerLogStatus, writeWorkerLog } from '../lib/worker/logger';
 import { ServiceDefinition, ServiceDefinitionType, WorkerDefinition } from '../lib/worker/serverless-workers';
-
+import { QueueWorkerType } from '../lib/worker/serverless-workers/base-queue-worker';
+import { ClaimsParserWorker } from './claims-parser.worker';
+import { CollateralTokenUsdPriceWorker } from './collateral-token-usd-price.worker';
+import { CreatePredictionSetWorker } from './create-prediction-set.worker';
+import { FinalizeManualPredictionSetWorker } from './finalize-manual-prediction-sets.worker';
+import { FinalizeProposalRoundsWorker } from './finalize-proposal-rounds.worker';
+import { FinalizeAutomaticPredictionSetWorker } from './flare/finalize-automatic-prediction-sets.worker';
+import { RequestAttestationProofWorker } from './flare/request-attestation-proof.worker';
+import { RequestAttestationWorker } from './flare/request-attestation.worker';
+import { PredictionSetParserWorker } from './prediction-set-parser.worker';
+import { PredictionSetsFactoryParserWorker } from './prediction-sets-factory-parser.worker';
+import { RefreshOutcomeChancesWorker } from './refresh-outcome-chances.worker';
 import { Scheduler } from './scheduler';
+import { VotingParserWorker } from './voting-parser.worker';
 
 /**
- *
+ * Worker names definition.
  */
 export enum WorkerName {
-  SCHEDULER = 'scheduler',
-  CREATE_PREDICTION_SET = 'create_prediction_set',
-  PREDICTION_SETS_PARSER = 'prediction_sets_parser',
-  REFRESH_OUTCOME_CHANCES = 'refresh_outcome_chances',
-  PREDICTION_SET_PARSER = 'prediction_set_parser'
+  SCHEDULER = 'Scheduler',
+  CREATE_PREDICTION_SET = 'CreatePredictionSet',
+  FINALIZE_MANUAL_PREDICTION_SET = 'FinalizeManualPredictionSet',
+  FINALIZE_AUTOMATIC_PREDICTION_SET = 'FinalizeAutomaticPredictionSet',
+  PREDICTION_SET_PARSER = 'PredictionSetParser',
+  PREDICTION_SETS_FACTORY_PARSER = 'PredictionSetsFactoryParser',
+  REFRESH_OUTCOME_CHANCES = 'RefreshOutcomeChances',
+  REQUEST_ATTESTATION_PROOF = 'RequestAttestationProof',
+  REQUEST_ATTESTATION = 'RequestAttestation',
+  VOTING_PARSER = 'VotingParser',
+  FINALIZE_PROPOSAL_ROUNDS = 'FinalizeProposalRounds',
+  CLAIMS_PARSER = 'ClaimsParser',
+  COLLATERAL_TOKEN_USD_PRICE = 'CollateralTokenUsdPrice'
 }
 
 /**
+ * Worker event handler.
  *
- * @param event
- * @returns
+ * @param event Worker event.
  */
 export async function handler(event: any) {
   await getEnvSecrets();
@@ -46,33 +65,36 @@ export async function handler(event: any) {
     params: { FunctionName: env.AWS_WORKER_LAMBDA_NAME }
   };
 
-  console.info(`EVENT: ${JSON.stringify(event)}`);
+  console.log('WORKER EVENT: ', event);
+  console.log('WORKER MESSAGE JSON: ', JSON.stringify(event));
 
   try {
-    let resp;
+    let response: any;
     if (event.Records) {
-      resp = await handleSqsMessages(event, context, serviceDef);
+      response = await handleSqsMessages(event, context, serviceDef);
     } else {
-      resp = await handleLambdaEvent(event, context, serviceDef);
+      response = await handleLambdaEvent(event, context, serviceDef);
     }
     await context.mysql.close();
-    return resp;
-  } catch (e) {
+
+    return response;
+  } catch (error) {
     console.error('ERROR HANDLING LAMBDA!');
-    console.error(e.message);
+    console.error(error.message);
+
     await context.mysql.close();
-    throw e;
+    throw error;
   }
 }
 
 /**
- * Handles lambda invocation event
- * @param event Lambda invocation event
- * @param context App context
- * @param serviceDef Service definition
+ * Handles lambda invocation event.
+ * @param event Lambda invocation event.
+ * @param context Application context.
+ * @param serviceDef Service definition.
  */
 export async function handleLambdaEvent(event: any, context: Context, serviceDef: ServiceDefinition) {
-  let workerDefinition;
+  let workerDefinition: WorkerDefinition;
   if (event.workerName) {
     workerDefinition = new WorkerDefinition(serviceDef, event.workerName, event);
   } else {
@@ -81,8 +103,55 @@ export async function handleLambdaEvent(event: any, context: Context, serviceDef
 
   switch (workerDefinition.workerName) {
     case WorkerName.SCHEDULER:
-      const scheduler = new Scheduler(serviceDef, context);
-      await scheduler.run();
+      await new Scheduler(serviceDef, context).run();
+      break;
+
+    case WorkerName.CREATE_PREDICTION_SET:
+      await new CreatePredictionSetWorker(workerDefinition, context).run();
+      break;
+
+    case WorkerName.FINALIZE_AUTOMATIC_PREDICTION_SET:
+      await new FinalizeAutomaticPredictionSetWorker(workerDefinition, context).run();
+      break;
+
+    case WorkerName.FINALIZE_MANUAL_PREDICTION_SET:
+      await new FinalizeManualPredictionSetWorker(workerDefinition, context).run();
+      break;
+
+    case WorkerName.PREDICTION_SET_PARSER:
+      await new PredictionSetParserWorker(workerDefinition, context, QueueWorkerType.PLANNER).run();
+      break;
+
+    case WorkerName.PREDICTION_SETS_FACTORY_PARSER:
+      await new PredictionSetsFactoryParserWorker(workerDefinition, context).run();
+      break;
+
+    case WorkerName.REFRESH_OUTCOME_CHANCES:
+      await new RefreshOutcomeChancesWorker(workerDefinition, context, QueueWorkerType.PLANNER).run();
+      break;
+
+    case WorkerName.REQUEST_ATTESTATION_PROOF:
+      await new RequestAttestationProofWorker(workerDefinition, context).run();
+      break;
+
+    case WorkerName.REQUEST_ATTESTATION:
+      await new RequestAttestationWorker(workerDefinition, context).run();
+      break;
+
+    case WorkerName.VOTING_PARSER:
+      await new VotingParserWorker(workerDefinition, context).run();
+      break;
+
+    case WorkerName.FINALIZE_PROPOSAL_ROUNDS:
+      await new FinalizeProposalRoundsWorker(workerDefinition, context).run();
+      break;
+
+    case WorkerName.CLAIMS_PARSER:
+      await new ClaimsParserWorker(workerDefinition, context).run();
+      break;
+
+    case WorkerName.COLLATERAL_TOKEN_USD_PRICE:
+      await new CollateralTokenUsdPriceWorker(workerDefinition, context).run();
       break;
 
     default:
@@ -98,14 +167,16 @@ export async function handleLambdaEvent(event: any, context: Context, serviceDef
 }
 
 /**
- * Handles SQS event messages
- * @param event SQS event
- * @param context App context
- * @param serviceDef service definitions
+ * Handles SQS event messages.
+ *
+ * @param event SQS event.
+ * @param context Application context.
+ * @param serviceDef service definitions.
  */
 export async function handleSqsMessages(event: any, context: Context, serviceDef: ServiceDefinition) {
   console.info('handle sqs message. event.Records: ', event.Records);
   const response = { batchItemFailures: [] };
+
   for (const message of event.Records) {
     try {
       let parameters: any;
@@ -120,8 +191,7 @@ export async function handleSqsMessages(event: any, context: Context, serviceDef
 
       let workerName = message?.messageAttributes?.workerName?.stringValue;
       if (!workerName) {
-        //Worker name is not present in messageAttributes
-        console.info('worker name not present in message.messageAttributes');
+        console.info('Worker name not present in message.messageAttributes!');
       }
 
       const workerDefinition = new WorkerDefinition(serviceDef, workerName, {
@@ -129,18 +199,79 @@ export async function handleSqsMessages(event: any, context: Context, serviceDef
         parameters
       });
 
-      // eslint-disable-next-line sonarjs/no-small-switch
       switch (workerName) {
-        // case WorkerName.PASSIVE_EARNING:
-        //   const worker = new PassiveEarningWorker(
-        //     workerDefinition,
-        //     context,
-        //     QueueWorkerType.EXECUTOR
-        //   );
-        //   await worker.run({
-        //     executeArg: message?.body,
-        //   });
-        //   break;
+        case WorkerName.CREATE_PREDICTION_SET:
+          await new CreatePredictionSetWorker(workerDefinition, context).run({
+            executeArg: message?.body
+          });
+          break;
+
+        case WorkerName.FINALIZE_AUTOMATIC_PREDICTION_SET:
+          await new FinalizeAutomaticPredictionSetWorker(workerDefinition, context).run({
+            executeArg: message?.body
+          });
+          break;
+
+        case WorkerName.FINALIZE_MANUAL_PREDICTION_SET:
+          await new FinalizeManualPredictionSetWorker(workerDefinition, context).run({
+            executeArg: message?.body
+          });
+          break;
+
+        case WorkerName.PREDICTION_SET_PARSER:
+          await new PredictionSetParserWorker(workerDefinition, context, QueueWorkerType.EXECUTOR).run({
+            executeArg: message?.body
+          });
+          break;
+
+        case WorkerName.PREDICTION_SETS_FACTORY_PARSER:
+          await new PredictionSetsFactoryParserWorker(workerDefinition, context).run({
+            executeArg: message?.body
+          });
+          break;
+
+        case WorkerName.REFRESH_OUTCOME_CHANCES:
+          await new RefreshOutcomeChancesWorker(workerDefinition, context, QueueWorkerType.EXECUTOR).run({
+            executeArg: message?.body
+          });
+          break;
+
+        case WorkerName.REQUEST_ATTESTATION_PROOF:
+          await new RequestAttestationProofWorker(workerDefinition, context).run({
+            executeArg: message?.body
+          });
+          break;
+
+        case WorkerName.REQUEST_ATTESTATION:
+          await new RequestAttestationWorker(workerDefinition, context).run({
+            executeArg: message?.body
+          });
+          break;
+
+        case WorkerName.VOTING_PARSER:
+          await new VotingParserWorker(workerDefinition, context).run({
+            executeArg: message?.body
+          });
+          break;
+
+        case WorkerName.FINALIZE_PROPOSAL_ROUNDS:
+          await new FinalizeProposalRoundsWorker(workerDefinition, context).run({
+            executeArg: message?.body
+          });
+          break;
+
+        case WorkerName.CLAIMS_PARSER:
+          await new ClaimsParserWorker(workerDefinition, context).run({
+            executeArg: message?.body
+          });
+          break;
+
+        case WorkerName.COLLATERAL_TOKEN_USD_PRICE:
+          await new CollateralTokenUsdPriceWorker(workerDefinition, context).run({
+            executeArg: message?.body
+          });
+          break;
+
         default:
           console.log(`ERROR - INVALID WORKER NAME: ${message?.messageAttributes?.workerName}`);
       }

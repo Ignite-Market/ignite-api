@@ -38,7 +38,7 @@ export class User extends AdvancedSQLModel {
    */
   @prop({
     parser: { resolver: stringParser() },
-    serializable: [SerializeFor.USER, SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB],
     populatable: [PopulateFrom.DB],
     validators: [
       {
@@ -71,6 +71,18 @@ export class User extends AdvancedSQLModel {
     populatable: [PopulateFrom.DB]
   })
   walletAddress: string;
+
+  /**
+   * User's referral id.
+   */
+  @prop({
+    parser: {
+      resolver: stringParser()
+    },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB],
+    populatable: [PopulateFrom.DB]
+  })
+  referralId: string;
 
   /**
    * User's authentication token.
@@ -130,7 +142,7 @@ export class User extends AdvancedSQLModel {
    * @param email Email.
    * @returns Populated user.
    */
-  async populateByEmail(email: string): Promise<User> {
+  async populateByEmail(email: string, conn?: PoolConnection): Promise<User> {
     if (!email) {
       throw new Error('Email should not be null');
     }
@@ -142,7 +154,8 @@ export class User extends AdvancedSQLModel {
       SELECT * FROM ${DbTables.USER} 
       WHERE email = @email
     `,
-      { email }
+      { email },
+      conn
     );
     return data?.length ? this.populate(data[0], PopulateFrom.DB) : this.reset();
   }

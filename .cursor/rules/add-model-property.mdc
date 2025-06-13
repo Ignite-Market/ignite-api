@@ -1,0 +1,154 @@
+---
+description: How to add new properties to models in our project
+globs: 
+alwaysApply: false
+---
+# Adding New Properties to Models
+
+## 1. Model Property Definition
+
+When adding a new property to a model, follow this template:
+
+```typescript
+@prop({
+  parser: {
+    resolver: <typeParser>(), // Choose appropriate parser based on type
+  },
+  serializable: [
+    SerializeFor.USER,
+    SerializeFor.SELECT_DB,
+    SerializeFor.INSERT_DB,
+    SerializeFor.UPDATE_DB,
+  ],
+  populatable: [
+    PopulateFrom.DB,
+    PopulateFrom.USER_INSERT,
+    PopulateFrom.USER_UPDATE,
+  ],
+  validators: [
+    {
+      resolver: presenceValidator(),
+      code: ValidationErrorCode.<PROPERTY_NAME>_NOT_PRESENT,
+    },
+  ],
+  fakeValue: () => getFaker().<appropriateFakerFunction>(),
+})
+public <propertyName>: <type>;
+```
+
+### Property Type Guidelines:
+- `string`: Use `stringParser()`
+- `number`: Use `integerParser()` for integers, `floatParser()` for decimals
+- `Date`: Use `dateParser()`
+- `boolean`: Use `booleanParser()`
+- `JSON`: Use `JSONParser()`
+
+### Faker Function Guidelines:
+- Strings: `getFaker().string.alphanumeric()`, `getFaker().commerce.productName()`
+- Numbers: `getFaker().number.int()`, `getFaker().commerce.price()`
+- Dates: `getFaker().date.future()`, `getFaker().date.past()`
+- Booleans: `getFaker().datatype.boolean()`
+
+### Access Control:
+- If property should be read-only: Remove `SerializeFor.INSERT_DB` and `SerializeFor.UPDATE_DB`
+- If property should be write-only: Remove `SerializeFor.USER` and `SerializeFor.SELECT_DB`
+- If property should be admin-only: Add `SerializeFor.ADMIN` and remove `SerializeFor.USER`
+
+## 2. Migration Script Creation
+
+### Important Notes:
+- The database column name should match exactly the property name as requested (can be camelCase, snake_case, or any other case)
+- You can either create a new migration file or add the field to the last existing migration for that model if requested
+
+Create a new migration file in `/src/migration-scripts/migrations/` with the following naming convention:
+`<next-number-in-sequence>-alter-<model-table-name>.ts`
+
+Example template:
+```typescript
+import { DbTables } from '../../config/types';
+
+export const upgrade = async (
+  queryFn: (query: string, values?: any[]) => Promise<any[]>,
+): Promise<void> => {
+  await queryFn(`
+    ALTER TABLE \`${DbTables.<TABLE_NAME>}\` 
+    ADD COLUMN \`<column_name>\` <column_type> <nullability> <default_value>;
+  `);
+};
+
+export const downgrade = async (
+  queryFn: (query: string, values?: any[]) => Promise<any[]>,
+): Promise<void> => {
+  await queryFn(`
+    ALTER TABLE \`${DbTables.<TABLE_NAME>}\` 
+    DROP COLUMN \`<column_name>\`;
+  `);
+};
+```
+
+### Column Type Guidelines:
+- String: `VARCHAR(255)` or appropriate length
+- Number: `INT` for integers, `DECIMAL(12,2)` for decimals
+- Date: `DATETIME`
+- Boolean: `TINYINT(1)`
+- JSON: `JSON`
+
+### Nullability:
+- Required: `NOT NULL`
+- Optional: `NULL`
+
+### Default Values:
+- Add `DEFAULT <value>` if needed
+- For dates: `DEFAULT CURRENT_TIMESTAMP`
+- For booleans: `DEFAULT 0` or `DEFAULT 1`
+
+## Example Usage
+
+Let's say we want to add a `notes` field to the Auction model:
+
+1. Add to model:
+```typescript
+@prop({
+  parser: {
+    resolver: stringParser(),
+  },
+  serializable: [
+    SerializeFor.USER,
+    SerializeFor.SELECT_DB,
+    SerializeFor.INSERT_DB,
+    SerializeFor.UPDATE_DB,
+  ],
+  populatable: [
+    PopulateFrom.DB,
+    PopulateFrom.USER_INSERT,
+    PopulateFrom.USER_UPDATE,
+  ],
+  fakeValue: () => getFaker().lorem.paragraph(),
+})
+public notes: string;
+```
+
+2. Create migration file `17-alter-auction.ts` (or add to existing migration):
+```typescript
+import { DbTables } from '../../config/types';
+
+export const upgrade = async (
+  queryFn: (query: string, values?: any[]) => Promise<any[]>,
+): Promise<void> => {
+  await queryFn(`
+    ALTER TABLE \`${DbTables.AUCTION}\` 
+    ADD COLUMN \`notes\` TEXT NULL;  /* Column name matches exactly the property name */
+  `);
+};
+
+export const downgrade = async (
+  queryFn: (query: string, values?: any[]) => Promise<any[]>,
+): Promise<void> => {
+  await queryFn(`
+    ALTER TABLE \`${DbTables.AUCTION}\` 
+    DROP COLUMN \`notes\`;
+  `);
+};
+```
+
+This rule ensures consistent property addition across the codebase while maintaining proper type safety, validation, and database schema changes. 

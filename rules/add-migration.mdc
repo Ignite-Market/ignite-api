@@ -1,0 +1,121 @@
+---
+description: Guidelines for creating database migration files
+globs: 
+alwaysApply: false
+---
+# Database Migration Guidelines
+
+This document outlines how to create migration files for new database tables.
+
+## Required Base Fields
+
+Every table should include these base fields unless explicitly requested otherwise:
+
+```sql
+`id` INT NOT NULL AUTO_INCREMENT,
+`status` INT NOT NULL DEFAULT 1,
+`createUser` INT NULL,
+`createTime` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+`updateUser` INT NULL,
+`updateTime` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+```
+
+## Migration File Structure
+
+1. File naming: `XX-table-name.ts` where XX is the next migration number
+2. Each migration must export `upgrade` and `downgrade` functions
+3. Use the `DbTables` enum for table names
+
+Example structure:
+```typescript
+import { DbTables, SqlModelStatus } from '../../config/types';
+
+export const upgrade = async (
+  queryFn: (query: string, values?: any[]) => Promise<any[]>,
+): Promise<void> => {
+  await queryFn(`CREATE TABLE...`);
+};
+
+export const downgrade = async (
+  queryFn: (query: string, values?: any[]) => Promise<any[]>,
+): Promise<void> => {
+  await queryFn(`DROP TABLE...`);
+};
+```
+
+## Field Type Guidelines
+
+Common field types to use when not specified:
+
+1. Text fields: `VARCHAR(255)` for short text, `TEXT` for long text
+2. Numbers: 
+   - IDs/counts: `INT`
+   - Money/decimal: `DECIMAL(10,2)`
+   - Small numbers: `TINYINT`
+3. Dates: `DATETIME` or `DATE`
+4. Boolean: `TINYINT(1)`
+
+## Foreign Keys
+
+When a field ends with `_id`, it should be treated as a foreign key:
+
+```sql
+`other_table_id` INT NOT NULL,
+INDEX `fk_current_other_1_idx` (`other_table_id` ASC) VISIBLE,
+CONSTRAINT `fk_current_other_1`
+  FOREIGN KEY (`other_table_id`)
+  REFERENCES `other_table` (`id`)
+  ON DELETE CASCADE
+  ON UPDATE RESTRICT
+```
+
+## Complete Example
+
+Here's a complete example for creating an auto bidding table:
+
+```typescript
+import { DbTables, SqlModelStatus } from '../../config/types';
+
+export const upgrade = async (
+  queryFn: (query: string, values?: any[]) => Promise<any[]>,
+): Promise<void> => {
+  await queryFn(`
+  CREATE TABLE IF NOT EXISTS \`${DbTables.AUTO_BIDDING}\` (
+    \`id\` INT NOT NULL AUTO_INCREMENT,
+    \`auction_id\` INT NOT NULL,
+    \`status\` INT NOT NULL DEFAULT ${SqlModelStatus.ACTIVE},
+    \`participant_id\` INT NOT NULL,
+    \`maxAmount\` DECIMAL(10, 2) NOT NULL,
+    \`lastBidAmount\` DECIMAL(10, 2) NULL,
+    \`createUser\` INT NULL,
+    \`createTime\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    \`updateUser\` INT NULL,
+    \`updateTime\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (\`id\`),
+    INDEX \`fk_auto_bidding_auction1_idx\` (\`auction_id\` ASC) VISIBLE,
+    CONSTRAINT \`fk_auto_bidding_auction1\`
+      FOREIGN KEY (\`auction_id\`)
+      REFERENCES \`${DbTables.AUCTION}\` (\`id\`)
+      ON DELETE CASCADE
+      ON UPDATE RESTRICT
+  );
+  `);
+};
+
+export const downgrade = async (
+  queryFn: (query: string, values?: any[]) => Promise<any[]>,
+): Promise<void> => {
+  await queryFn(`DROP TABLE IF EXISTS \`${DbTables.AUTO_BIDDING}\`;`);
+};
+```
+
+## Usage Instructions
+
+1. Determine required fields for your table
+2. Include all base fields unless explicitly not needed
+3. For each field ending with `_id`, add appropriate foreign key constraints
+4. Always implement both upgrade (CREATE TABLE) and downgrade (DROP TABLE) functions
+5. Use consistent naming conventions for constraints and indexes
+6. Always use backticks (\`) around table and column names
+7. Include IF NOT EXISTS in CREATE TABLE and IF EXISTS in DROP TABLE statements 
+

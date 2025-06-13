@@ -5,6 +5,15 @@ import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
 import { JSONParser } from '../../../lib/parsers';
 
 /**
+ * Attestation proof interface.
+ */
+export interface AttestationProof {
+  response_hex: string;
+  attestation_type: string;
+  proof: string[];
+}
+
+/**
  * Prediction set attestation.
  */
 export class PredictionSetAttestation extends AdvancedSQLModel {
@@ -69,5 +78,5 @@ export class PredictionSetAttestation extends AdvancedSQLModel {
     defaultValue: () => null,
     emptyValue: () => null
   })
-  proof: any;
+  proof: AttestationProof;
 }
