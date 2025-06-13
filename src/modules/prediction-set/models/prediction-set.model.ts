@@ -617,7 +617,7 @@ export class PredictionSet extends AdvancedSQLModel {
       `
         SELECT
           (
-            SELECT IFNULL(SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)), 0)
+            SELECT IFNULL(SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount - ost.feeAmount, 0)), 0)
             - IFNULL(SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0)), 0)
             FROM ${DbTables.OUTCOME_SHARE_TRANSACTION} ost
             WHERE ost.prediction_set_id = @predictionSetId
@@ -650,7 +650,7 @@ export class PredictionSet extends AdvancedSQLModel {
         SELECT 
           o.*, 
           oc.chance as latestChance,
-          SUM(CASE WHEN ost.type = ${ShareTransactionType.BUY} THEN ost.amount ELSE 0 END) - SUM(CASE WHEN ost.type = ${ShareTransactionType.SELL} THEN ost.amount ELSE 0 END) AS volume
+          SUM(CASE WHEN ost.type = ${ShareTransactionType.BUY} THEN ost.amount - ost.feeAmount ELSE 0 END) - SUM(CASE WHEN ost.type = ${ShareTransactionType.SELL} THEN ost.amount ELSE 0 END) AS volume
         FROM ${DbTables.OUTCOME} o
         LEFT JOIN (
           SELECT oc.*
@@ -925,7 +925,7 @@ export class PredictionSet extends AdvancedSQLModel {
       userAmount: 'ost.amount',
       userId: 'u.id',
       userWallet: 'u.walletAddress',
-      boughtAmount: `SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0))`,
+      boughtAmount: `SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount - ost.feeAmount, 0))`,
       soldAmount: `SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0))`,
       outcomeTokens: `SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.outcomeTokens, 0))`
     };
@@ -940,7 +940,7 @@ export class PredictionSet extends AdvancedSQLModel {
           u.walletAddress as userWallet,
           o.name AS outcomeName,
           p.collateral_token_id AS collateral_token_id,
-          SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)) AS boughtAmount,
+          SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount - ost.feeAmount, 0)) AS boughtAmount,
           SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0)) AS soldAmount,
           SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.outcomeTokens, 0)) AS outcomeTokens
         `,
@@ -984,7 +984,7 @@ export class PredictionSet extends AdvancedSQLModel {
 
     const fieldMap = {
       id: 'p.id',
-      boughtAmount: `SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0))`,
+      boughtAmount: `SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount - ost.feeAmount, 0))`,
       soldAmount: `SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0))`,
       outcomeTokens: `SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.outcomeTokens, 0))`,
       claimedAmount: `IFNULL(ct.amount, 0)`
@@ -998,7 +998,7 @@ export class PredictionSet extends AdvancedSQLModel {
           o.id AS outcomeId,
           o.name AS outcomeName,
           o.imgUrl AS outcomeImg,
-          SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)) AS boughtAmount,
+          SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount - ost.feeAmount, 0)) AS boughtAmount,
           SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0)) AS soldAmount,
           SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.outcomeTokens, 0)) AS outcomeTokens,
           IFNULL(ct.amount, 0) AS claimedAmount
@@ -1137,7 +1137,7 @@ export class PredictionSet extends AdvancedSQLModel {
             ps.id AS prediction_set_id,
             (
               COALESCE((
-                SELECT SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount, 0)) - 
+                SELECT SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount - ost.feeAmount, 0)) - 
                        SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0))
                 FROM ${DbTables.OUTCOME_SHARE_TRANSACTION} ost
                 WHERE ost.prediction_set_id = ps.id
