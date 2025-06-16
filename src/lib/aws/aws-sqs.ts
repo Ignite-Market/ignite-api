@@ -4,7 +4,6 @@ import { env } from '../../config/env';
 import { AppEnvironment } from '../../config/types';
 import { Context } from '../../context';
 import { WorkerName } from '../../workers/worker-executor';
-import { testSendToWorkerQueue } from './aws-test';
 
 /**
  * Creates an SQS client.
