@@ -633,7 +633,7 @@ export class PredictionSet extends AdvancedSQLModel {
     );
 
     return {
-      transactionsVolume: volumeData[0].transactionsVolume,
+      transactionsVolume: volumeData[0].transactionsVolume > 0 ? volumeData[0].transactionsVolume : 0,
       fundingVolume: volumeData[0].fundingVolume
     };
   }
@@ -673,7 +673,15 @@ export class PredictionSet extends AdvancedSQLModel {
     );
 
     const context = this.getContext();
-    return rows.map((r) => new Outcome(r, context));
+    return rows.map((r) => {
+      return new Outcome(
+        {
+          ...r,
+          volume: r.volume > 0 ? r.volume : 0
+        },
+        context
+      );
+    });
   }
 
   /**
