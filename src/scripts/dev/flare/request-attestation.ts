@@ -20,8 +20,8 @@ const abi = {
 };
 
 const httpMethod = 'GET';
-const body = {};
-const queryParams = {};
+const body = null;
+const queryParams = null;
 
 (async () => {
   const attestationRequest = await prepareAttestationRequest(endpoint, jqQuery, abi, httpMethod, body, queryParams);
