@@ -79,7 +79,7 @@ export class PredictionSetsFactoryParserWorker extends BaseSingleThreadWorker {
             null
           );
 
-          continue;
+          throw new Error(`Prediction set chain data  with ID: ${chainData.id} does not exists.`);
         }
 
         const predictionSet = await new PredictionSet({}, this.context).populateById(chainData.prediction_set_id, conn, false, { outcomes: true });
@@ -98,7 +98,7 @@ export class PredictionSetsFactoryParserWorker extends BaseSingleThreadWorker {
             null
           );
 
-          continue;
+          throw new Error(`Prediction set with ID: ${predictionSet.id} does not exists.`);
         }
 
         // Update prediction set chain data.
