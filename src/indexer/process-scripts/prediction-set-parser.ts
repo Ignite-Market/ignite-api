@@ -133,6 +133,50 @@ async function main() {
           context
         ).insert(SerializeFor.INSERT_DB, conn);
 
+        // Insert share transactions if funding active prediction set.
+        if (fundingEvent.type === FundingTransactionType.ADDED) {
+          const amounts = fundingEvent.amounts.split(',').map(Number);
+          // Check all amounts are not equal. (collateral amount = max amount)
+          if (collateralAmount !== Math.min(...amounts)) {
+            for (const [index, amount] of amounts.entries()) {
+              if (amount === collateralAmount) {
+                break;
+              }
+
+              const outcome = await new Outcome({}, context).populateByIndexAndPredictionSetId(index, predictionSet.id, conn);
+              if (!outcome.exists()) {
+                await workerProcess.writeLogToDb(WorkerLogStatus.ERROR, 'Outcome does not exists: ', {
+                  predictionSetId,
+                  outcomeIndex: index
+                });
+
+                Logger.error(
+                  `ROLLING BACK: Outcome with outcome index from funding event ${fundingEvent} for prediction set ID ${predictionSet.id} does not exists.`,
+                  'prediction-set-parser.ts/main'
+                );
+                await context.mysql.rollback(conn);
+                return;
+              }
+
+              await new OutcomeShareTransaction(
+                {
+                  type: ShareTransactionType.FUND,
+                  txHash: fundingEvent.txHash,
+                  wallet: fundingEvent.wallet,
+                  amount: (collateralAmount - Number(fundingEvent.shares)).toString(),
+                  feeAmount: '0',
+                  outcomeIndex: index,
+                  outcomeTokens: (collateralAmount - amount).toString(),
+                  user_id: user?.id,
+                  outcome_id: outcome.id,
+                  prediction_set_id: predictionSet.id
+                },
+                context
+              ).insert(SerializeFor.INSERT_DB, conn);
+            }
+          }
+        }
+
         // Award points per each 100 USD funded.
         if (user?.id && fundingEvent.type === FundingTransactionType.ADDED) {
           const collateralToken = await new CollateralToken({}, context).populateById(predictionSet.collateral_token_id, conn);

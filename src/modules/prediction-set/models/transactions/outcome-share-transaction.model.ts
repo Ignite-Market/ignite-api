@@ -8,7 +8,8 @@ import { AdvancedSQLModel } from '../../../../lib/base-models/advanced-sql.model
  */
 export enum ShareTransactionType {
   BUY = 1,
-  SELL = 2
+  SELL = 2,
+  FUND = 3
 }
 
 /**
