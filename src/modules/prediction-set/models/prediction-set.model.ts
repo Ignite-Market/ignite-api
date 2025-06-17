@@ -530,13 +530,13 @@ export class PredictionSet extends AdvancedSQLModel {
       const buys = [];
 
       group.transactions.forEach((tx: any) => {
-        const shareChange = tx.type === ShareTransactionType.BUY ? Number(tx.outcomeTokens) : -Number(tx.outcomeTokens);
-        const amountChange = tx.type === ShareTransactionType.BUY ? Number(tx.amount) : -Number(tx.amount);
+        const shareChange = tx.type === ShareTransactionType.SELL ? -Number(tx.outcomeTokens) : Number(tx.outcomeTokens);
+        const amountChange = tx.type === ShareTransactionType.SELL ? -Number(tx.amount) : Number(tx.amount);
 
         remainingShares += shareChange;
         collateralAmount += amountChange;
 
-        if (tx.type === ShareTransactionType.BUY) {
+        if (tx.type === ShareTransactionType.BUY || tx.type === ShareTransactionType.FUND) {
           buys.push({
             shares: Number(tx.outcomeTokens),
             amount: Number(tx.amount),
