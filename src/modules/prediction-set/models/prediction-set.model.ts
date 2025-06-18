@@ -349,23 +349,23 @@ export class PredictionSet extends AdvancedSQLModel {
    * Prediction set's liquidity (funding) volume.
    */
   @prop({
-    parser: { resolver: integerParser() },
+    parser: { resolver: stringParser() },
     serializable: [SerializeFor.USER],
     populatable: [PopulateFrom.USER],
-    defaultValue: () => 0
+    defaultValue: () => '0'
   })
-  public fundingVolume: number;
+  public fundingVolume: string;
 
   /**
    * Prediction set's transactions volume.
    */
   @prop({
-    parser: { resolver: integerParser() },
+    parser: { resolver: stringParser() },
     serializable: [SerializeFor.USER],
     populatable: [PopulateFrom.USER],
-    defaultValue: () => 0
+    defaultValue: () => '0'
   })
-  public transactionsVolume: number;
+  public transactionsVolume: string;
 
   /**
    * User's open positions.
@@ -382,12 +382,13 @@ export class PredictionSet extends AdvancedSQLModel {
    * User's open funding positions.
    */
   @prop({
+    parser: { resolver: stringParser() },
     serializable: [SerializeFor.USER],
     populatable: [PopulateFrom.USER],
     defaultValue: () => 0,
     emptyValue: () => 0
   })
-  public fundingPositions: number;
+  public fundingPositions: string;
 
   /**
    * Populate prediction set by ID.
@@ -427,8 +428,8 @@ export class PredictionSet extends AdvancedSQLModel {
 
     if (populate?.volume) {
       const volume = await this.getVolume(conn);
-      this.fundingVolume = volume?.fundingVolume | 0;
-      this.transactionsVolume = volume?.transactionsVolume | 0;
+      this.fundingVolume = volume?.fundingVolume || '0';
+      this.transactionsVolume = volume?.transactionsVolume || '0';
     }
 
     if (populate?.positions) {
@@ -581,11 +582,11 @@ export class PredictionSet extends AdvancedSQLModel {
    * @param conn Pool connection.
    * @returns Sum of collateral amount.
    */
-  public async getOpenFundingPositions(conn?: PoolConnection): Promise<number> {
+  public async getOpenFundingPositions(conn?: PoolConnection): Promise<string> {
     const context = this.getContext();
 
     if (!context.user) {
-      return 0;
+      return '0';
     }
 
     const result = await this.db().paramExecute(
@@ -603,7 +604,7 @@ export class PredictionSet extends AdvancedSQLModel {
       conn
     );
 
-    return result[0]?.collateralAmount || 0;
+    return result[0]?.collateralAmount.toString() || '0';
   }
 
   /**
@@ -612,7 +613,7 @@ export class PredictionSet extends AdvancedSQLModel {
    * @param conn Pool connection.
    * @returns Volume object with share, funding and total volumes.
    */
-  public async getVolume(conn?: PoolConnection): Promise<{ transactionsVolume: number; fundingVolume: number }> {
+  public async getVolume(conn?: PoolConnection): Promise<{ transactionsVolume: string; fundingVolume: string }> {
     const volumeData = await this.db().paramExecute(
       `
         SELECT
@@ -633,8 +634,8 @@ export class PredictionSet extends AdvancedSQLModel {
     );
 
     return {
-      transactionsVolume: volumeData[0].transactionsVolume > 0 ? volumeData[0].transactionsVolume : 0,
-      fundingVolume: volumeData[0].fundingVolume
+      transactionsVolume: volumeData[0].transactionsVolume.toString(),
+      fundingVolume: volumeData[0].fundingVolume.toString()
     };
   }
 
