@@ -820,7 +820,7 @@ export class PredictionSet extends AdvancedSQLModel {
           o.name AS outcomeName,
           t.id as transactionId,
           t.amount AS userAmount,
-          t.type,
+          IF(t.type = ${ShareTransactionType.FUND}, 6, t.type) as type,
           t.outcomeTokens,
           t.txHash,
           t.createTime AS transactionTime
