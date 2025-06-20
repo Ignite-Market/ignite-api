@@ -118,3 +118,34 @@ export async function sendToQueue(
 
   return { errCount, errMsgs };
 }
+
+/**
+ * Triggers a worker via a simple queue.
+ * @param workerName The name of the worker.
+ * @param data The data to send.
+ * @param delay The number of seconds to delay the message.
+ * @returns The message.
+ */
+export async function triggerWorkerSimpleQueue(workerName: WorkerName, data: any, delay?: number) {
+  if (env.APP_ENV === AppEnvironment.TEST || env.APP_ENV === AppEnvironment.LOCAL_DEV) {
+    return;
+  }
+
+  const sqs = createSqsClient();
+
+  const message: SendMessageCommandInput = {
+    MessageAttributes: {
+      workerName: {
+        DataType: 'String',
+        StringValue: workerName
+      }
+    },
+    MessageBody: JSON.stringify(data),
+    QueueUrl: env.AWS_WORKER_SQS_URL,
+    DelaySeconds: delay
+  };
+
+  const command = new SendMessageCommand(message);
+
+  return await sqs.send(command);
+}

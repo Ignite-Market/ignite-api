@@ -119,4 +119,10 @@ export class PredictionSetController {
   async removeUserWatchlist(@Param('id', ParseIntPipe) id: number, @Ctx() context: Context) {
     return await this.predictionSetService.removeUserWatchlist(id, context);
   }
+
+  @Post('/:id/removed-funding')
+  @UseGuards(AuthGuard)
+  async triggerFinalizedWorker(@Param('id', ParseIntPipe) id: number, @Ctx() context: Context) {
+    return await this.predictionSetService.triggerFinalizedWorker(id, context);
+  }
 }

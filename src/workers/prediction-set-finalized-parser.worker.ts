@@ -20,17 +20,26 @@ export class PredictionSetFinalizedParserWorker extends BaseQueueWorker {
    * @returns Array of prediction set IDs.
    */
   public async runPlanner(): Promise<number[]> {
+    // Only prediction sets with finalized status and funding shares remaining
     const predictionSetIds = await this.context.mysql.paramExecute(
       `
         SELECT ps.id
         FROM ${DbTables.PREDICTION_SET} ps
         INNER JOIN ${DbTables.PREDICTION_SET_CHAIN_DATA} cd
           ON ps.id = cd.prediction_set_id
+        LEFT JOIN (
+          SELECT prediction_set_id, SUM(IF(type = ${FundingTransactionType.ADDED}, shares, -shares)) AS fundingAmount
+          FROM ${DbTables.PREDICTION_SET_FUNDING_TRANSACTION}
+          GROUP BY prediction_set_id
+        ) psft
+          ON ps.id = psft.prediction_set_id
         WHERE 
           ps.setStatus = ${PredictionSetStatus.FINALIZED}
           AND ps.status = ${SqlModelStatus.ACTIVE}
           AND cd.status = ${SqlModelStatus.ACTIVE}
           AND cd.contractAddress IS NOT NULL
+          AND psft.fundingAmount > 0
+        GROUP BY ps.id
         `,
       {}
     );

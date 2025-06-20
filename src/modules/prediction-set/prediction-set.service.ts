@@ -2,7 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { env } from '../../config/env';
 import { BadRequestErrorCode, PopulateFrom, ResourceNotFoundErrorCode, SerializeFor, SqlModelStatus, SystemErrorCode } from '../../config/types';
 import { Context } from '../../context';
-import { sendToWorkerQueue } from '../../lib/aws/aws-sqs';
+import { sendToWorkerQueue, triggerWorkerSimpleQueue } from '../../lib/aws/aws-sqs';
 import { CodeException } from '../../lib/exceptions/exceptions';
 import { WorkerName } from '../../workers/worker-executor';
 import { ActivityQueryFilter } from './dtos/activity-query-filter';
@@ -532,6 +532,38 @@ export class PredictionSetService {
    */
   public async getBanners(context: Context) {
     return await new Banner({}, context).getActive();
+  }
+
+  /**
+   * Trigger finalized worker.
+   *
+   * @param predictionSetId Prediction set ID.
+   * @param context Application context.
+   * @returns True if worker triggered, false otherwise.
+   */
+  public async triggerFinalizedWorker(predictionSetId: number, context: Context) {
+    const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId);
+    if (!predictionSet.exists() || !predictionSet.isEnabled()) {
+      throw new CodeException({
+        code: ResourceNotFoundErrorCode.PREDICTION_SET_DOES_NOT_EXISTS,
+        errorCodes: ResourceNotFoundErrorCode,
+        status: HttpStatus.NOT_FOUND,
+        sourceFunction: `${this.constructor.name}/triggerFinalizedWorker`,
+        context
+      });
+    }
+
+    if (predictionSet.setStatus !== PredictionSetStatus.FINALIZED) {
+      throw new CodeException({
+        code: BadRequestErrorCode.INVALID_PREDICTION_SET_STATUS,
+        errorCodes: BadRequestErrorCode,
+        status: HttpStatus.BAD_REQUEST,
+        sourceFunction: `${this.constructor.name}/triggerFinalizedWorker`,
+        context
+      });
+    }
+
+    await triggerWorkerSimpleQueue(WorkerName.PREDICTION_SET_FINALIZED_PARSER, predictionSetId);
   }
 
   /**
