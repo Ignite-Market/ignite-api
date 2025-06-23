@@ -592,7 +592,7 @@ export class PredictionSet extends AdvancedSQLModel {
     const result = await this.db().paramExecute(
       `
         SELECT
-          SUM(psft.collateralAmount) AS collateralAmount
+          IFNULL(SUM(psft.collateralAmount), 0) AS collateralAmount
         FROM ${DbTables.PREDICTION_SET_FUNDING_TRANSACTION} psft
         WHERE psft.prediction_set_id = @predictionSetId
           AND psft.user_id = @userId
@@ -603,8 +603,7 @@ export class PredictionSet extends AdvancedSQLModel {
       },
       conn
     );
-
-    return result[0]?.collateralAmount.toString() || '0';
+    return result[0]?.collateralAmount?.toString() || '0';
   }
 
   /**

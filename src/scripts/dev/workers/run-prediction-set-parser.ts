@@ -2,7 +2,7 @@ import { exit } from 'process';
 import { createContext } from '../../../lib/utils';
 import { WorkerDefinition } from '../../../lib/worker/serverless-workers';
 import { QueueWorkerType } from '../../../lib/worker/serverless-workers/base-queue-worker';
-import { PredictionSetParserWorker } from '../../../workers/prediction-set-parser.worker';
+import { PredictionSetFinalizedParserWorker } from '../../../workers/prediction-set-finalized-parser.worker';
 import { WorkerName } from '../../../workers/worker-executor';
 
 const PREDICTION_SET_ID = 39;
@@ -11,8 +11,8 @@ const PREDICTION_SET_ID = 39;
   const start = new Date();
   const context = await createContext();
 
-  const wd = new WorkerDefinition(null, WorkerName.PREDICTION_SET_PARSER);
-  const workerExecute = new PredictionSetParserWorker(wd, context, QueueWorkerType.EXECUTOR);
+  const wd = new WorkerDefinition(null, WorkerName.PREDICTION_SET_FINALIZED_PARSER);
+  const workerExecute = new PredictionSetFinalizedParserWorker(wd, context, QueueWorkerType.EXECUTOR);
   await workerExecute.runExecutor(PREDICTION_SET_ID);
 
   const end = new Date();
