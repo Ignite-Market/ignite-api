@@ -65,6 +65,7 @@ export class RewardPointsTransaction extends AdvancedSQLModel {
     const rows = await this.db().paramExecute(
       `
         SELECT IFNULL(SUM(value), 0) totalPoints,
+        IFNULL(SUM(CASE WHEN type = ${RewardType.MARKET_FUNDING} THEN value ELSE 0 END), 0) marketFundingPoints,
         IFNULL(SUM(CASE WHEN type = ${RewardType.BUYING_SHARES} THEN value ELSE 0 END), 0) buyingSharesPoints,
         IFNULL(SUM(CASE WHEN type = ${RewardType.SELLING_SHARES} THEN value ELSE 0 END), 0) sellingSharesPoints,
         IFNULL(SUM(CASE WHEN type = ${RewardType.MARKET_WINNER} THEN value ELSE 0 END), 0) marketWinnerPoints,
