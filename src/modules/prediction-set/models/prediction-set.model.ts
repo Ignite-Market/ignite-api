@@ -851,7 +851,7 @@ export class PredictionSet extends AdvancedSQLModel {
           u.walletAddress as userWallet,
           NULL AS outcomeName,
           t.id as transactionId,
-          t.collateralAmount AS userAmount,
+          IFNULL(t.collateralAmount, t.collateralRemovedFromFeePool) AS userAmount,
           t.type + 2 as type,
           NULL AS outcomeTokens,
           t.txHash,
