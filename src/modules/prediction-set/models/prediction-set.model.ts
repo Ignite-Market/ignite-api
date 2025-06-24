@@ -851,7 +851,7 @@ export class PredictionSet extends AdvancedSQLModel {
           u.walletAddress as userWallet,
           NULL AS outcomeName,
           t.id as transactionId,
-          t.collateralAmount AS userAmount,
+          IFNULL(t.collateralAmount, t.collateralRemovedFromFeePool) AS userAmount,
           t.type + 2 as type,
           NULL AS outcomeTokens,
           t.txHash,
@@ -1063,7 +1063,7 @@ export class PredictionSet extends AdvancedSQLModel {
         SELECT 
           ${new PredictionSet({}).generateSelectFields('p')},
           SUM(IF(psft.type = ${FundingTransactionType.ADDED}, psft.collateralAmount, 0)) AS fundedAmount,
-          SUM(IF(psft.type = ${FundingTransactionType.REMOVED}, psft.collateralAmount, 0)) AS removedAmount
+          SUM(IF(psft.type = ${FundingTransactionType.ADDED}, psft.shares, -psft.shares)) AS remainingShares
         `,
       qFrom: `
         FROM ${DbTables.PREDICTION_SET} p
