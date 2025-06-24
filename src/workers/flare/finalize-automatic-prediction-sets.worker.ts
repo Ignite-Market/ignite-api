@@ -35,7 +35,7 @@ export class FinalizeAutomaticPredictionSetWorker extends BaseSingleThreadWorker
         SELECT 
           ps.*
         FROM ${DbTables.PREDICTION_SET} ps
-        INNER JOIN ${DbTables.PREDICTION_SET_ATTESTATION} psa 
+        INNER JOIN ${DbTables.PREDICTION_SET_ATTESTATION} psa
           ON ps.id = psa.prediction_set_id
         WHERE 
           ps.resolutionTime <= NOW()
