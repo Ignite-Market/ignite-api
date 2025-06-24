@@ -44,6 +44,7 @@ export class RequestAttestationWorker extends BaseSingleThreadWorker {
           AND ps.setStatus = ${PredictionSetStatus.ACTIVE}
           AND ps.resolutionType = ${ResolutionType.AUTOMATIC}
           AND ps.endTime <= NOW()
+          AND ps.attestationTime <= NOW()
           AND ps.resolutionTime >= NOW() 
           AND a.prediction_set_id IS NULL
         `,

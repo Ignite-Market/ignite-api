@@ -44,9 +44,7 @@ describe('Prediction set e2e tests', () => {
         const body = {
           question: 'Bitcoin all time high by January 31?',
           description: 'Bitcoin all time high prediction.',
-          generalResolutionDef: 'This market will resolve to "Yes" if Bitcoin reaches the all time high between December 30 and January 31.',
-          outcomeResolutionDef: `This market will resolve to "Yes" if any Binance 1 minute candle for BTCUSDT between 30 Dec '24 11:00 and 31 Jan '25 23:59 in the ET timezone has a final “high” price that is higher than any previous Binance 1 minute candle's "high" price on any prior date. Otherwise, this market will resolve to "No". The resolution source for this market is Binance, specifically the BTCUSDT "high" prices currently available at https://www.binance.com/en/trade/BTC_USDT with “1m” and “Candles” selected on the top bar. Please note that this market is about the price according to Binance BTCUSDT, not according to other sources or spot markets.`,
-          outcomePriceDef: 'The full outcome price always resolves to 100%.',
+          outcomeResolutionDef: `This market will resolve to "Yes" if any Binance 1 minute candle for BTCUSDT between 30 Dec '24 11:00 and 31 Jan '25 23:59 in the ET timezone has a final "high" price that is higher than any previous Binance 1 minute candle's "high" price on any prior date. Otherwise, this market will resolve to "No". The resolution source for this market is Binance, specifically the BTCUSDT "high" prices currently available at https://www.binance.com/en/trade/BTC_USDT with "1m" and "Candles" selected on the top bar. Please note that this market is about the price according to Binance BTCUSDT, not according to other sources or spot markets.`,
           startTime: new Date(),
           endTime: new Date(),
           resolutionTime: new Date(),
@@ -72,9 +70,7 @@ describe('Prediction set e2e tests', () => {
 
         expect(res.body.data.question).toBe(body.question);
         expect(res.body.data.description).toBe(body.description);
-        expect(res.body.data.generalResolutionDef).toBe(body.generalResolutionDef);
         expect(res.body.data.outcomeResolutionDef).toBe(body.outcomeResolutionDef);
-        expect(res.body.data.outcomePriceDef).toBe(body.outcomePriceDef);
         expect(new Date(res.body.data.resolutionTime).getTime()).toBe(new Date(body.resolutionTime).getTime());
         expect(res.body.data.outcomes[0].name).toBe(body.predictionOutcomes[0].name);
         expect(res.body.data.outcomes[1].name).toBe(body.predictionOutcomes[1].name);
@@ -90,9 +86,7 @@ describe('Prediction set e2e tests', () => {
         const body = {
           question: 'Bitcoin all time high by January 31?',
           description: 'Bitcoin all time high prediction.',
-          generalResolutionDef: 'This market will resolve to "Yes" if Bitcoin reaches the all time high between December 30 and January 31.',
-          outcomeResolutionDef: `This market will resolve to "Yes" if any Binance 1 minute candle for BTCUSDT between 30 Dec '24 11:00 and 31 Jan '25 23:59 in the ET timezone has a final “high” price that is higher than any previous Binance 1 minute candle's "high" price on any prior date. Otherwise, this market will resolve to "No". The resolution source for this market is Binance, specifically the BTCUSDT "high" prices currently available at https://www.binance.com/en/trade/BTC_USDT with “1m” and “Candles” selected on the top bar. Please note that this market is about the price according to Binance BTCUSDT, not according to other sources or spot markets.`,
-          outcomePriceDef: 'The full outcome price always resolves to 100%.',
+          outcomeResolutionDef: `This market will resolve to "Yes" if any Binance 1 minute candle for BTCUSDT between 30 Dec '24 11:00 and 31 Jan '25 23:59 in the ET timezone has a final "high" price that is higher than any previous Binance 1 minute candle's "high" price on any prior date. Otherwise, this market will resolve to "No". The resolution source for this market is Binance, specifically the BTCUSDT "high" prices currently available at https://www.binance.com/en/trade/BTC_USDT with "1m" and "Candles" selected on the top bar. Please note that this market is about the price according to Binance BTCUSDT, not according to other sources or spot markets.`,
           startTime: new Date(),
           endTime: new Date(),
           resolutionTime: new Date(),
@@ -168,9 +162,7 @@ describe('Prediction set e2e tests', () => {
         const body = {
           question: 'Bitcoin all time high by February 28?',
           description: 'Bitcoin all time high prediction.',
-          generalResolutionDef: 'This market will resolve to "Yes" if Bitcoin reaches the all time high between December 30 and February 28.',
-          outcomeResolutionDef: `This market will resolve to "Yes" if any Binance 1 minute candle for BTCUSDT between 30 Dec '24 11:00 and 28 Feb '25 23:59 in the ET timezone has a final “high” price that is higher than any previous Binance 1 minute candle's "high" price on any prior date. Otherwise, this market will resolve to "No". The resolution source for this market is Binance, specifically the BTCUSDT "high" prices currently available at https://www.binance.com/en/trade/BTC_USDT with “1m” and “Candles” selected on the top bar. Please note that this market is about the price according to Binance BTCUSDT, not according to other sources or spot markets.`,
-          outcomePriceDef: 'The full outcome price always resolves to 100%.',
+          outcomeResolutionDef: `This market will resolve to "Yes" if any Binance 1 minute candle for BTCUSDT between 30 Dec '24 11:00 and 28 Feb '25 23:59 in the ET timezone has a final "high" price that is higher than any previous Binance 1 minute candle's "high" price on any prior date. Otherwise, this market will resolve to "No". The resolution source for this market is Binance, specifically the BTCUSDT "high" prices currently available at https://www.binance.com/en/trade/BTC_USDT with "1m" and "Candles" selected on the top bar. Please note that this market is about the price according to Binance BTCUSDT, not according to other sources or spot markets.`,
           startTime: new Date(),
           endTime: new Date(),
           resolutionTime: moment('2025-02-28 23:59').toDate(),
@@ -196,9 +188,7 @@ describe('Prediction set e2e tests', () => {
         expect(res.body.data.id).toBe(prediction.id);
         expect(res.body.data.question).toBe(body.question);
         expect(res.body.data.description).toBe(body.description);
-        expect(res.body.data.generalResolutionDef).toBe(body.generalResolutionDef);
         expect(res.body.data.outcomeResolutionDef).toBe(body.outcomeResolutionDef);
-        expect(res.body.data.outcomePriceDef).toBe(body.outcomePriceDef);
         expect(new Date(res.body.data.resolutionTime).getTime()).toBe(new Date(body.resolutionTime).getTime());
         expect(res.body.data.outcomes[0].name).toBe(body.predictionOutcomes[0].name);
         expect(res.body.data.outcomes[1].name).toBe(body.predictionOutcomes[1].name);
@@ -215,9 +205,7 @@ describe('Prediction set e2e tests', () => {
         const body = {
           question: 'Bitcoin all time high by February 28?',
           description: 'Bitcoin all time high prediction.',
-          generalResolutionDef: 'This market will resolve to "Yes" if Bitcoin reaches the all time high between December 30 and February 28.',
-          outcomeResolutionDef: `This market will resolve to "Yes" if any Binance 1 minute candle for BTCUSDT between 30 Dec '24 11:00 and 28 Feb '25 23:59 in the ET timezone has a final “high” price that is higher than any previous Binance 1 minute candle's "high" price on any prior date. Otherwise, this market will resolve to "No". The resolution source for this market is Binance, specifically the BTCUSDT "high" prices currently available at https://www.binance.com/en/trade/BTC_USDT with “1m” and “Candles” selected on the top bar. Please note that this market is about the price according to Binance BTCUSDT, not according to other sources or spot markets.`,
-          outcomePriceDef: 'The full outcome price always resolves to 100%.',
+          outcomeResolutionDef: `This market will resolve to "Yes" if any Binance 1 minute candle for BTCUSDT between 30 Dec '24 11:00 and 28 Feb '25 23:59 in the ET timezone has a final "high" price that is higher than any previous Binance 1 minute candle's "high" price on any prior date. Otherwise, this market will resolve to "No". The resolution source for this market is Binance, specifically the BTCUSDT "high" prices currently available at https://www.binance.com/en/trade/BTC_USDT with "1m" and "Candles" selected on the top bar. Please note that this market is about the price according to Binance BTCUSDT, not according to other sources or spot markets.`,
           startTime: new Date(),
           endTime: new Date(),
           resolutionTime: moment('2025-02-28 23:59').toDate(),

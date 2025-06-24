@@ -9,7 +9,7 @@ import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
 import { BaseQueryFilter } from '../../../lib/base-models/base-query-filter.model';
 import { getQueryParams, selectAndCountQuery, unionSelectAndCountQuery } from '../../../lib/database/sql-utils';
 import { dateToSqlString } from '../../../lib/utils';
-import { enumInclusionValidator } from '../../../lib/validators';
+import { conditionalPresenceValidator, enumInclusionValidator } from '../../../lib/validators';
 import { ActivityQueryFilter } from '../dtos/activity-query-filter';
 import { HoldersQueryFilter } from '../dtos/holders-query-filter';
 import { PredictionSetChanceHistoryQueryFilter } from '../dtos/prediction-set-chance-history-query-filter';
@@ -88,18 +88,6 @@ export class PredictionSet extends AdvancedSQLModel {
   public collateral_token_id: number;
 
   /**
-   * Set ID - A distinct code that uniquely identifies each prediction set within the platform.
-   */
-  @prop({
-    parser: {
-      resolver: stringParser()
-    },
-    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB],
-    populatable: [PopulateFrom.DB]
-  })
-  setId: string;
-
-  /**
    * Question - The central query or event being predicted, clearly framed to avoid ambiguity.
    */
   @prop({
@@ -118,42 +106,6 @@ export class PredictionSet extends AdvancedSQLModel {
   question: string;
 
   /**
-   * Description - A detailed explanation of the event or context behind the prediction, ensuring users understand its background and significance.
-   */
-  @prop({
-    parser: {
-      resolver: stringParser()
-    },
-    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
-    populatable: [PopulateFrom.DB, PopulateFrom.USER],
-    validators: [
-      {
-        resolver: presenceValidator(),
-        code: ValidatorErrorCode.PREDICTION_SET_DESCRIPTION_NOT_PRESENT
-      }
-    ]
-  })
-  description: string;
-
-  /**
-   * General resolution definition - A high-level summary of how the prediction will be resolved, offering clarity on the expected evaluation process.
-   */
-  @prop({
-    parser: {
-      resolver: stringParser()
-    },
-    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
-    populatable: [PopulateFrom.DB, PopulateFrom.USER],
-    validators: [
-      {
-        resolver: presenceValidator(),
-        code: ValidatorErrorCode.PREDICTION_SET_GENERAL_RESOLUTION_NOT_PRESENT
-      }
-    ]
-  })
-  generalResolutionDef: string;
-
-  /**
    * Outcome resolution definition - Specific criteria and data sources that determine the official resolution of the prediction, ensuring transparency and accuracy.
    */
   @prop({
@@ -170,24 +122,6 @@ export class PredictionSet extends AdvancedSQLModel {
     ]
   })
   outcomeResolutionDef: string;
-
-  /**
-   * Outcome price definition -  A description of how outcome prices are calculated, including references to external price feeds or oracles like the Flare Price Oracle.
-   */
-  @prop({
-    parser: {
-      resolver: stringParser()
-    },
-    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
-    populatable: [PopulateFrom.DB, PopulateFrom.USER],
-    validators: [
-      {
-        resolver: presenceValidator(),
-        code: ValidatorErrorCode.PREDICTION_SET_OUTCOME_PRICE_NOT_PRESENT
-      }
-    ]
-  })
-  outcomePriceDef: string;
 
   /**
    * Start time - The official launch date and time when the prediction market opens for trading.
@@ -220,6 +154,22 @@ export class PredictionSet extends AdvancedSQLModel {
     ]
   })
   public endTime: Date;
+
+  /**
+   * Attestation time - The date and time after which the attestation is allowed.
+   */
+  @prop({
+    parser: { resolver: dateParser() },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER],
+    validators: [
+      {
+        resolver: conditionalPresenceValidator('resolutionType', (value) => value === ResolutionType.AUTOMATIC),
+        code: ValidatorErrorCode.PREDICTION_SET_ATTESTATION_TIME_NOT_PRESENT
+      }
+    ]
+  })
+  public attestationTime: Date;
 
   /**
    * Resolution time - The scheduled time when the market's outcome is finalized, based on pre-defined resolution criteria.

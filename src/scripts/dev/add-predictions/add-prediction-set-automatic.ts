@@ -1,10 +1,10 @@
-import { env } from '../../config/env';
-import { addPredictionSet } from '../../lib/blockchain';
-import { createContext } from '../../lib/utils';
-import { DataSource } from '../../modules/prediction-set/models/data-source.model';
-import { Outcome } from '../../modules/prediction-set/models/outcome.model';
-import { PredictionSet, ResolutionType } from '../../modules/prediction-set/models/prediction-set.model';
-import { PredictionSetService } from '../../modules/prediction-set/prediction-set.service';
+import { env } from '../../../config/env';
+import { addPredictionSet } from '../../../lib/blockchain';
+import { createContext } from '../../../lib/utils';
+import { DataSource } from '../../../modules/prediction-set/models/data-source.model';
+import { Outcome } from '../../../modules/prediction-set/models/outcome.model';
+import { PredictionSet, ResolutionType } from '../../../modules/prediction-set/models/prediction-set.model';
+import { PredictionSetService } from '../../../modules/prediction-set/prediction-set.service';
 
 const tenMinutes = 10 * 60 * 1000;
 const fifteenMinutes = 10 * 60 * 1000;

@@ -95,7 +95,6 @@ export class PredictionSetService {
     }
 
     // Create prediction set.
-    predictionSet.setId = this._generatePredictionSetId(predictionSet);
     try {
       await predictionSet.validate();
       await predictionSet.insert(SerializeFor.INSERT_DB, conn);
@@ -564,26 +563,5 @@ export class PredictionSetService {
     }
 
     await triggerWorkerSimpleQueue(WorkerName.PREDICTION_SET_FINALIZED_PARSER, predictionSetId);
-  }
-
-  /**
-   * Generate prediction set ID.
-   *
-   * @param predictionSet Prediction set.
-   * @returns Prediction set ID.
-   */
-  private _generatePredictionSetId(predictionSet: PredictionSet): string {
-    const eventCode = predictionSet.question
-      .split(/\s+/)
-      .filter((word) => word.match(/^[a-zA-Z0-9]+$/))
-      .map((word) => word[0].toUpperCase())
-      .join('');
-
-    const outcomeCode = predictionSet.outcomes.map((outcome) => outcome.name[0].toUpperCase()).join('');
-    const startTimeCode = predictionSet.startTime.toISOString().slice(0, 10).replace(/-/g, '');
-    const endTimeCode = predictionSet.endTime.toISOString().slice(0, 10).replace(/-/g, '');
-    const resolutionTimeCode = predictionSet.resolutionTime.toISOString().slice(0, 10).replace(/-/g, '');
-
-    return `${eventCode}_${outcomeCode}_S${startTimeCode}_E${endTimeCode}_RES${resolutionTimeCode}_ID${Number(new Date())}`;
   }
 }

@@ -102,6 +102,8 @@ export interface IEnv {
   SMTP_PASSWORD: string;
 
   MAIL_TEMPLATE_PATH: string;
+
+  RAPID_API_KEY: string;
 }
 
 dotenv.config();
@@ -221,7 +223,9 @@ export let env: IEnv = {
   SMTP_USERNAME: process.env['SMTP_USERNAME'],
   SMTP_PASSWORD: process.env['SMTP_PASSWORD'],
 
-  MAIL_TEMPLATE_PATH: process.env['MAIL_TEMPLATE_PATH']
+  MAIL_TEMPLATE_PATH: process.env['MAIL_TEMPLATE_PATH'],
+
+  RAPID_API_KEY: process.env['RAPID_API_KEY']
 };
 
 /**
