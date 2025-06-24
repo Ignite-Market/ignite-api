@@ -1086,6 +1086,13 @@ export const ORACLE_ABI = [
     'type': 'function'
   },
   {
+    'inputs': [{ 'internalType': 'bytes32', 'name': 'questionId', 'type': 'bytes32' }],
+    'name': 'forceVoting',
+    'outputs': [],
+    'stateMutability': 'nonpayable',
+    'type': 'function'
+  },
+  {
     'inputs': [{ 'internalType': 'bytes32', 'name': 'role', 'type': 'bytes32' }],
     'name': 'getRoleAdmin',
     'outputs': [{ 'internalType': 'bytes32', 'name': '', 'type': 'bytes32' }],

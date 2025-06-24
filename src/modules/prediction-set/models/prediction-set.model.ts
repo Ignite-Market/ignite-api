@@ -335,8 +335,8 @@ export class PredictionSet extends AdvancedSQLModel {
     parser: { resolver: stringParser() },
     serializable: [SerializeFor.USER],
     populatable: [PopulateFrom.USER],
-    defaultValue: () => 0,
-    emptyValue: () => 0
+    defaultValue: () => '0',
+    emptyValue: () => '0'
   })
   public fundingPositions: string;
 

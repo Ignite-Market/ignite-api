@@ -192,11 +192,10 @@ async function main() {
         }
       }
 
-      // TODO: Check if funded separately, and end it if funding was not reached in desired time.
+      // Activate trading when the contract is funded.
       if (fundingEvents.length) {
-        // Activate trading when the contract is funded.
-        const canTrade = await fpmmContract.canTrade();
-        if (canTrade && predictionSet.setStatus !== PredictionSetStatus.ACTIVE) {
+        const isFunded = await fpmmContract.isFunded();
+        if (isFunded && predictionSet.setStatus !== PredictionSetStatus.ACTIVE) {
           predictionSet.setStatus = PredictionSetStatus.ACTIVE;
           await predictionSet.update(SerializeFor.UPDATE_DB, conn);
         }
