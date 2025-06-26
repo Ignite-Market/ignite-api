@@ -1,9 +1,17 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { env } from '../../config/env';
-import { BadRequestErrorCode, PopulateFrom, ResourceNotFoundErrorCode, SerializeFor, SqlModelStatus, SystemErrorCode } from '../../config/types';
+import {
+  BadRequestErrorCode,
+  PopulateFrom,
+  ResourceNotFoundErrorCode,
+  SerializeFor,
+  SqlModelStatus,
+  SystemErrorCode,
+  ValidatorErrorCode
+} from '../../config/types';
 import { Context } from '../../context';
 import { sendToWorkerQueue, triggerWorkerSimpleQueue } from '../../lib/aws/aws-sqs';
-import { CodeException } from '../../lib/exceptions/exceptions';
+import { CodeException, ValidationException } from '../../lib/exceptions/exceptions';
 import { WorkerName } from '../../workers/worker-executor';
 import { ActivityQueryFilter } from './dtos/activity-query-filter';
 import { HoldersQueryFilter } from './dtos/holders-query-filter';
@@ -101,14 +109,19 @@ export class PredictionSetService {
     } catch (error) {
       await context.mysql.rollback(conn);
 
-      throw new CodeException({
-        code: SystemErrorCode.SQL_SYSTEM_ERROR,
-        errorCodes: SystemErrorCode,
-        status: HttpStatus.INTERNAL_SERVER_ERROR,
-        sourceFunction: `${this.constructor.name}/createPredictionSet`,
-        details: error,
-        context
-      });
+      await predictionSet.handle(error);
+      if (!predictionSet.isValid()) {
+        throw new ValidationException(error, ValidatorErrorCode);
+      } else {
+        throw new CodeException({
+          code: SystemErrorCode.SQL_SYSTEM_ERROR,
+          errorCodes: SystemErrorCode,
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          sourceFunction: `${this.constructor.name}/createPredictionSet`,
+          details: error,
+          context
+        });
+      }
     }
 
     /**

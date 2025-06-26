@@ -19,8 +19,8 @@ import { Outcome } from './outcome.model';
 import { PredictionSetAttestation } from './prediction-set-attestation.model';
 import { PredictionSetChainData } from './prediction-set-chain-data.model';
 import { ShareTransactionType } from './transactions/outcome-share-transaction.model';
-import { UserWatchlist } from './user-watchlist';
 import { FundingTransactionType } from './transactions/prediction-set-funding-transaction.model';
+import { UserWatchlist } from './user-watchlist';
 
 /**
  * Prediction set resolution type.
@@ -606,10 +606,18 @@ export class PredictionSet extends AdvancedSQLModel {
           SELECT oc.*
           FROM ${DbTables.OUTCOME_CHANCE} oc
           INNER JOIN (
-            SELECT outcome_id, MAX(createTime) AS latest_create_time
-            FROM ${DbTables.OUTCOME_CHANCE}
-            GROUP BY outcome_id
-          ) latest ON oc.outcome_id = latest.outcome_id AND oc.createTime = latest.latest_create_time
+            SELECT oc2.outcome_id, MAX(oc2.id) AS latest_id
+            FROM ${DbTables.OUTCOME_CHANCE} oc2
+            INNER JOIN (
+              SELECT outcome_id, MAX(createTime) AS latest_create_time
+              FROM ${DbTables.OUTCOME_CHANCE}
+              GROUP BY outcome_id
+            ) latest_time
+              ON latest_time.outcome_id = oc2.outcome_id
+             AND latest_time.latest_create_time = oc2.createTime
+            GROUP BY oc2.outcome_id
+          ) uniq
+            ON uniq.latest_id = oc.id
         ) oc ON oc.outcome_id = o.id
         LEFT JOIN ${DbTables.OUTCOME_SHARE_TRANSACTION} ost
           ON ost.outcome_id = o.id
@@ -627,7 +635,7 @@ export class PredictionSet extends AdvancedSQLModel {
       return new Outcome(
         {
           ...r,
-          volume: r.volume > 0 ? r.volume : 0
+          volume: BigInt(r.volume) > BigInt(0) ? r.volume : 0
         },
         context
       );
@@ -1118,10 +1126,18 @@ export class PredictionSet extends AdvancedSQLModel {
           SELECT oc.*
           FROM ${DbTables.OUTCOME_CHANCE} oc
           INNER JOIN (
-            SELECT outcome_id, MAX(createTime) as latest_create_time
-            FROM ${DbTables.OUTCOME_CHANCE}
-            GROUP BY outcome_id
-          ) latest ON oc.outcome_id = latest.outcome_id AND oc.createTime = latest.latest_create_time
+            SELECT oc2.outcome_id, MAX(oc2.id) AS latest_id
+            FROM ${DbTables.OUTCOME_CHANCE} oc2
+            INNER JOIN (
+              SELECT outcome_id, MAX(createTime) AS latest_create_time
+              FROM ${DbTables.OUTCOME_CHANCE}
+              GROUP BY outcome_id
+            ) latest_time
+              ON latest_time.outcome_id = oc2.outcome_id
+             AND latest_time.latest_create_time = oc2.createTime
+            GROUP BY oc2.outcome_id
+          ) uniq
+            ON uniq.latest_id = oc.id
         ) oc ON oc.outcome_id = o.id
         LEFT JOIN ${DbTables.USER_WATCHLIST} uw
           ON uw.prediction_set_id = p.id
