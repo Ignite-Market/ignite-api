@@ -8,6 +8,7 @@ import { sendToWorkerQueue } from '../../lib/aws/aws-sqs';
 import { setup } from '../../lib/blockchain';
 import { sendSlackWebhook } from '../../lib/slack-webhook';
 import { WorkerLogStatus } from '../../lib/worker/logger';
+import { CollateralToken } from '../../modules/collateral-token/models/collateral-token.model';
 import { Outcome } from '../../modules/prediction-set/models/outcome.model';
 import { PredictionSet, PredictionSetStatus } from '../../modules/prediction-set/models/prediction-set.model';
 import { OutcomeShareTransaction, ShareTransactionType } from '../../modules/prediction-set/models/transactions/outcome-share-transaction.model';
@@ -15,12 +16,11 @@ import {
   FundingTransactionType,
   PredictionSetFundingTransaction
 } from '../../modules/prediction-set/models/transactions/prediction-set-funding-transaction.model';
+import { RewardType } from '../../modules/reward-points/models/reward-points.model';
+import { RewardPointsService } from '../../modules/reward-points/reward-points.service';
 import { User } from '../../modules/user/models/user.model';
 import { WorkerName } from '../../workers/worker-executor';
 import { BaseProcess } from '../base-process';
-import { RewardPointsService } from '../../modules/reward-points/reward-points.service';
-import { RewardType } from '../../modules/reward-points/models/reward-points.model';
-import { CollateralToken } from '../../modules/collateral-token/models/collateral-token.model';
 
 /**
  * Main function to execute the prediction set parser process.
@@ -80,12 +80,10 @@ async function main() {
 
       /**
        *
-       * Funding events parsing - ADD or REMOVE.
+       * Add funding events parsing.
        *
        */
       const fundingEvents: FundingEvent[] = [];
-
-      // Funding added events.
       const fundingAddedEvents = (await fpmmContract.queryFilter(fpmmContract.filters.FPMMFundingAdded(), fromBlock, toBlock)) as ethers.EventLog[];
       for (const fundingEvent of fundingAddedEvents) {
         fundingEvents.push({
@@ -94,23 +92,6 @@ async function main() {
           wallet: fundingEvent.args[0],
           amounts: fundingEvent.args[1].toString(),
           shares: fundingEvent.args[2].toString()
-        });
-      }
-
-      // Funding removed events.
-      const fundingRemovedEvents = (await fpmmContract.queryFilter(
-        fpmmContract.filters.FPMMFundingRemoved(),
-        fromBlock,
-        toBlock
-      )) as ethers.EventLog[];
-      for (const fundingEvent of fundingRemovedEvents) {
-        fundingEvents.push({
-          type: FundingTransactionType.REMOVED,
-          txHash: fundingEvent.transactionHash,
-          wallet: fundingEvent.args[0],
-          amounts: fundingEvent.args[1].toString(),
-          collateralRemovedFromFeePool: fundingEvent.args[2].toString(),
-          shares: fundingEvent.args[3].toString()
         });
       }
 
@@ -134,51 +115,50 @@ async function main() {
         ).insert(SerializeFor.INSERT_DB, conn);
 
         // Insert share transactions if funding active prediction set.
-        if (fundingEvent.type === FundingTransactionType.ADDED) {
-          const amounts = fundingEvent.amounts.split(',').map(Number);
-          // Check all amounts are not equal. (collateral amount = max amount)
-          if (collateralAmount !== Math.min(...amounts)) {
-            for (const [index, amount] of amounts.entries()) {
-              if (amount === collateralAmount) {
-                break;
-              }
+        const amounts = fundingEvent.amounts.split(',').map(Number);
 
-              const outcome = await new Outcome({}, context).populateByIndexAndPredictionSetId(index, predictionSet.id, conn);
-              if (!outcome.exists()) {
-                await workerProcess.writeLogToDb(WorkerLogStatus.ERROR, 'Outcome does not exists: ', {
-                  predictionSetId,
-                  outcomeIndex: index
-                });
-
-                Logger.error(
-                  `ROLLING BACK: Outcome with outcome index from funding event ${fundingEvent} for prediction set ID ${predictionSet.id} does not exists.`,
-                  'prediction-set-parser.ts/main'
-                );
-                await context.mysql.rollback(conn);
-                return;
-              }
-
-              await new OutcomeShareTransaction(
-                {
-                  type: ShareTransactionType.FUND,
-                  txHash: fundingEvent.txHash,
-                  wallet: fundingEvent.wallet,
-                  amount: (collateralAmount - Number(fundingEvent.shares)).toString(),
-                  feeAmount: '0',
-                  outcomeIndex: index,
-                  outcomeTokens: (collateralAmount - amount).toString(),
-                  user_id: user?.id,
-                  outcome_id: outcome.id,
-                  prediction_set_id: predictionSet.id
-                },
-                context
-              ).insert(SerializeFor.INSERT_DB, conn);
+        // Check all amounts are not equal. (collateral amount = max amount).
+        if (collateralAmount !== Math.min(...amounts)) {
+          for (const [index, amount] of amounts.entries()) {
+            if (amount === collateralAmount) {
+              break;
             }
+
+            const outcome = await new Outcome({}, context).populateByIndexAndPredictionSetId(index, predictionSet.id, conn);
+            if (!outcome.exists()) {
+              await workerProcess.writeLogToDb(WorkerLogStatus.ERROR, 'Outcome does not exists: ', {
+                predictionSetId,
+                outcomeIndex: index
+              });
+
+              Logger.error(
+                `ROLLING BACK: Outcome with outcome index from funding event ${fundingEvent} for prediction set ID ${predictionSet.id} does not exists.`,
+                'prediction-set-parser.ts/main'
+              );
+              await context.mysql.rollback(conn);
+              return;
+            }
+
+            await new OutcomeShareTransaction(
+              {
+                type: ShareTransactionType.FUND,
+                txHash: fundingEvent.txHash,
+                wallet: fundingEvent.wallet,
+                amount: (collateralAmount - Number(fundingEvent.shares)).toString(),
+                feeAmount: '0',
+                outcomeIndex: index,
+                outcomeTokens: (collateralAmount - amount).toString(),
+                user_id: user?.id,
+                outcome_id: outcome.id,
+                prediction_set_id: predictionSet.id
+              },
+              context
+            ).insert(SerializeFor.INSERT_DB, conn);
           }
         }
 
         // Award points per each 100 USD funded.
-        if (user?.id && fundingEvent.type === FundingTransactionType.ADDED) {
+        if (user?.id) {
           const collateralToken = await new CollateralToken({}, context).populateById(predictionSet.collateral_token_id, conn);
 
           const amount = parseFloat(collateralAmount);

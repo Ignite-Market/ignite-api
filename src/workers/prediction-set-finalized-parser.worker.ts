@@ -1,14 +1,14 @@
 import { ethers } from 'ethers';
 import { env } from '../config/env';
-import { DbTables, SerializeFor, SqlModelStatus, FundingEvent, TransactionEvent } from '../config/types';
+import { DbTables, FundingEvent, SerializeFor, SqlModelStatus } from '../config/types';
 import { setup } from '../lib/blockchain';
 import { WorkerLogStatus } from '../lib/worker/logger';
 import { BaseQueueWorker } from '../lib/worker/serverless-workers/base-queue-worker';
+import { PredictionSet, PredictionSetStatus } from '../modules/prediction-set/models/prediction-set.model';
 import {
   FundingTransactionType,
   PredictionSetFundingTransaction
 } from '../modules/prediction-set/models/transactions/prediction-set-funding-transaction.model';
-import { PredictionSet, PredictionSetStatus } from '../modules/prediction-set/models/prediction-set.model';
 import { User } from '../modules/user/models/user.model';
 
 /**
@@ -99,17 +99,16 @@ export class PredictionSetFinalizedParserWorker extends BaseQueueWorker {
 
       /**
        *
-       * Funding events parsing - ADD or REMOVE.
+       * Remove funding events parsing.
        *
        */
       const fundingEvents: FundingEvent[] = [];
-
-      // Funding removed events.
       const fundingRemovedEvents = (await fpmmContract.queryFilter(
         fpmmContract.filters.FPMMFundingRemoved(),
         fromBlock,
         toBlock
       )) as ethers.EventLog[];
+
       for (const fundingEvent of fundingRemovedEvents) {
         fundingEvents.push({
           type: FundingTransactionType.REMOVED,
