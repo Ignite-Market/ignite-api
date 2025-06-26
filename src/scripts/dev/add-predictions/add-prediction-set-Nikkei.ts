@@ -1,3 +1,4 @@
+import { env } from '../../../config/env';
 import { addPredictionSet } from '../../../lib/blockchain';
 import { createContext } from '../../../lib/utils';
 import { DataSource } from '../../../modules/prediction-set/models/data-source.model';
@@ -5,32 +6,25 @@ import { Outcome } from '../../../modules/prediction-set/models/outcome.model';
 import { PredictionSet, ResolutionType } from '../../../modules/prediction-set/models/prediction-set.model';
 import { PredictionSetService } from '../../../modules/prediction-set/prediction-set.service';
 import * as dayjs from 'dayjs';
-import * as isoWeek from 'dayjs/plugin/isoWeek';
-import * as utc from 'dayjs/plugin/utc';
 
-dayjs.extend(isoWeek);
-dayjs.extend(utc);
-
-const priceGoal = 2.01;
-
-const attestationTime = dayjs('2025-06-26T14:40:00Z');
-// const attestationTime = dayjs.utc().endOf('isoWeek');
-const attestationTimeFormatted = dayjs(attestationTime).format('MMM D, YYYY HH:mm');
-const endTime = dayjs(attestationTime).toDate();
-// const endTime = dayjs.utc(attestationTime).subtract(1, 'day').toDate();
+// Market close time: 06:00:00 / 15:00:00 JST
+const attestationTime = dayjs('2025-06-30T06:00:00Z');
+const endTime = dayjs(attestationTime).subtract(1, 'day').toDate();
 const resolutionTime = dayjs(attestationTime).add(1, 'hour').toDate();
+const attestationTimeUnix = dayjs(attestationTime).unix();
+const goal = 39000;
 
 const data = {
   collateral_token_id: 1,
-  question: `Will the XRP market price be above $${priceGoal.toFixed(2)} at the end of this Sunday?`,
-  outcomeResolutionDef: `This market will resolve to "Yes" if the price of XRP is above $${priceGoal.toFixed(2)} at the end of this Sunday (${attestationTimeFormatted}). The resolution sources will be CoinGecko, CryptoCompare and Coinbase.`,
+  question: `Will the Nikkei 225 index be above 39,000 at market close on June 30?`,
+  outcomeResolutionDef: `This market will resolve to 'Yes' if the official closing value of the Nikkei 225 index on June 30, 2025, as reported by a reliable financial source (e.g., https://www.investing.com/indices/japan-ni225 or https://www.bloomberg.com), is strictly greater than 39,000. Otherwise, it will resolve to 'No'.`,
   startTime: new Date(Number(new Date())),
   endTime,
   attestationTime: attestationTime.toDate(),
   resolutionTime,
   resolutionType: ResolutionType.AUTOMATIC,
   consensusThreshold: 60,
-  imgUrl: 'https://images.ignitemarket.xyz/prediction-sets/xrp.jpg',
+  imgUrl: 'https://images.ignitemarket.xyz/prediction-sets/jpx.png',
   predictionOutcomes: [
     {
       name: 'No',
@@ -45,64 +39,49 @@ const data = {
 
 const dataSources = [
   {
-    endpoint: 'https://api.coingecko.com/api/v3/coins/ripple/history',
+    endpoint: 'https://bb-finance.p.rapidapi.com/market/get-chart',
     httpMethod: 'GET',
     queryParams: {
-      localization: 'false',
-      date: attestationTime.format('DD-MM-YYYY')
+      id: 'NKY:ind',
+      interval: 'd1'
     },
-    jqQuery: `{ "outcomeIdx": [1, 0][(.market_data.current_price.usd >= ${priceGoal}) | if . then 0 else 1 end] }`,
+    jqQuery: `{ "outcomeIdx": [1, 0][((.result."NKY:IND".ticks[] | select(.time == ${attestationTimeUnix}) | .close) // .result."NKY:IND".ticks[-1].close) >= ${goal} | if . then 0 else 1 end], "source": "primary" }`,
     abi: {
       'components': [
         {
           'internalType': 'uint256',
           'name': 'outcomeIdx',
           'type': 'uint256'
-        }
-      ],
-      'type': 'tuple'
-    }
-  },
-  {
-    endpoint: 'https://min-api.cryptocompare.com/data/v2/histominute',
-    httpMethod: 'GET',
-    queryParams: {
-      fsym: 'XRP',
-      tsym: 'USD',
-      limit: '1',
-      toTs: attestationTime.unix()
-    },
-    jqQuery: `{ "outcomeIdx": [1, 0][(.Data.Data[-1].close >= ${priceGoal}) | if . then 0 else 1 end] }`,
-    abi: {
-      'components': [
+        },
         {
-          'internalType': 'uint256',
-          'name': 'outcomeIdx',
-          'type': 'uint256'
+          'internalType': 'string',
+          'name': 'source',
+          'type': 'string'
         }
       ],
       'type': 'tuple'
-    }
-  },
-  {
-    endpoint: 'https://api.coinbase.com/v2/prices/XRP-USD/spot',
-    httpMethod: 'GET',
-    queryParams: {
-      date: attestationTime.format('YYYY-MM-DD')
     },
-    jqQuery: `{ "outcomeIdx": [1, 0][(.data.amount >= ${priceGoal}) | if . then 0 else 1 end] }`,
-    abi: {
-      'components': [
-        {
-          'internalType': 'uint256',
-          'name': 'outcomeIdx',
-          'type': 'uint256'
-        }
-      ],
-      'type': 'tuple'
+    headers: {
+      'x-rapidapi-host': 'bb-finance.p.rapidapi.com',
+      'x-rapidapi-key': env.RAPID_API_KEY
     }
   }
 ];
+
+// Add two more identical data sources with different source identifiers
+const dataSource2 = {
+  ...dataSources[0],
+  jqQuery: `{ "outcomeIdx": [1, 0][((.result."NKY:IND".ticks[] | select(.time == ${attestationTimeUnix}) | .close) // .result."NKY:IND".ticks[-1].close) >= ${goal} | if . then 0 else 1 end], "source": "secondary" }`
+};
+
+const dataSource3 = {
+  ...dataSources[0],
+  jqQuery: `{ "outcomeIdx": [1, 0][((.result."NKY:IND".ticks[] | select(.time == ${attestationTimeUnix}) | .close) // .result."NKY:IND".ticks[-1].close) >= ${goal} | if . then 0 else 1 end], "source": "tertiary" }`
+};
+
+dataSources.push(dataSource2, dataSource3);
+
+// TODO: Add more data sources. Since attestation request is limited to 1s, other data sources can not be used, since they take more than 1s to respond.
 
 const processPredictionSet = async () => {
   const context = await createContext();
