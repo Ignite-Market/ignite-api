@@ -6,14 +6,13 @@ import { Outcome } from '../../../modules/prediction-set/models/outcome.model';
 import { PredictionSet, ResolutionType } from '../../../modules/prediction-set/models/prediction-set.model';
 import { PredictionSetService } from '../../../modules/prediction-set/prediction-set.service';
 import * as dayjs from 'dayjs';
-import * as isoWeek from 'dayjs/plugin/isoWeek';
 
-dayjs.extend(isoWeek);
-
+// Market close time: 08:00:00 / 16:00:00 CST
+const attestationTime = dayjs('2025-06-30T16:00:00Z');
+const endTime = dayjs(attestationTime).subtract(1, 'day').toDate();
+const resolutionTime = dayjs(attestationTime).add(1, 'hour').toDate();
+const attestationTimeUnix = dayjs(attestationTime).unix();
 const goal = 24000;
-
-const resolutionTime = dayjs('June 30, 2025 16:00:00').toDate();
-const endTime = dayjs(resolutionTime).subtract(1, 'day').toDate();
 
 const data = {
   collateral_token_id: 1,
@@ -23,6 +22,7 @@ const data = {
   `,
   startTime: new Date(Number(new Date())),
   endTime,
+  attestationTime: attestationTime.toDate(),
   resolutionTime,
   resolutionType: ResolutionType.AUTOMATIC,
   consensusThreshold: 60,
@@ -47,13 +47,18 @@ const dataSources = [
       id: 'HSI:ind',
       interval: 'd1'
     },
-    jqQuery: `{ "outcomeIdx": [1, 0][(.result."HSI:IND".ticks[-1].close >= ${goal}) | if . then 0 else 1 end] }`,
+    jqQuery: `{ "outcomeIdx": [1, 0][((.result."HSI:IND".ticks[] | select(.time == ${attestationTimeUnix}) | .close) // .result."HSI:IND".ticks[-1].close) >= ${goal} | if . then 0 else 1 end], "source": "primary" }`,
     abi: {
       'components': [
         {
           'internalType': 'uint256',
           'name': 'outcomeIdx',
           'type': 'uint256'
+        },
+        {
+          'internalType': 'string',
+          'name': 'source',
+          'type': 'string'
         }
       ],
       'type': 'tuple'
@@ -62,53 +67,68 @@ const dataSources = [
       'x-rapidapi-host': 'bb-finance.p.rapidapi.com',
       'x-rapidapi-key': env.RAPID_API_KEY
     }
-  },
-  {
-    endpoint: 'https://yahoo-finance15.p.rapidapi.com/api/v1/markets/stock/quotes',
-    httpMethod: 'GET',
-    queryParams: {
-      ticker: '^HSI'
-    },
-    jqQuery: `{ "outcomeIdx": [1, 0][(.body[0].regularMarketPrice >= ${goal}) | if . then 0 else 1 end] }`,
-    abi: {
-      'components': [
-        {
-          'internalType': 'uint256',
-          'name': 'outcomeIdx',
-          'type': 'uint256'
-        }
-      ],
-      'type': 'tuple'
-    },
-    headers: {
-      'x-rapidapi-host': 'yahoo-finance15.p.rapidapi.com',
-      'x-rapidapi-key': env.RAPID_API_KEY
-    }
-  },
-  {
-    endpoint: 'https://seeking-alpha.p.rapidapi.com/symbols/get-chart',
-    httpMethod: 'GET',
-    queryParams: {
-      symbol: 'HSI',
-      period: '1D'
-    },
-    jqQuery: `{ "outcomeIdx": [1, 0][(.result."HSI:IND".ticks[-1].close >= ${goal}) | if . then 0 else 1 end] }`,
-    abi: {
-      'components': [
-        {
-          'internalType': 'uint256',
-          'name': 'outcomeIdx',
-          'type': 'uint256'
-        }
-      ],
-      'type': 'tuple'
-    },
-    headers: {
-      'x-rapidapi-host': 'seeking-alpha.p.rapidapi.com',
-      'x-rapidapi-key': env.RAPID_API_KEY
-    }
   }
+  // {
+  //   endpoint: 'https://yahoo-finance15.p.rapidapi.com/api/v1/markets/stock/quotes',
+  //   httpMethod: 'GET',
+  //   queryParams: {
+  //     ticker: '^HSI'
+  //   },
+  //   jqQuery: `{ "outcomeIdx": [1, 0][(.body[0].regularMarketPrice >= ${goal}) | if . then 0 else 1 end] }`,
+  //   abi: {
+  //     'components': [
+  //       {
+  //         'internalType': 'uint256',
+  //         'name': 'outcomeIdx',
+  //         'type': 'uint256'
+  //       }
+  //     ],
+  //     'type': 'tuple'
+  //   },
+  //   headers: {
+  //     'x-rapidapi-host': 'yahoo-finance15.p.rapidapi.com',
+  //     'x-rapidapi-key': env.RAPID_API_KEY
+  //   }
+  // },
+  // {
+  //   endpoint: 'https://seeking-alpha.p.rapidapi.com/symbols/get-chart',
+  //   httpMethod: 'GET',
+  //   queryParams: {
+  //     symbol: 'HSI',
+  //     period: '1D'
+  //   },
+  //   jqQuery: `{ "outcomeIdx": [1, 0][(.result."HSI:IND".ticks[-1].close >= ${goal}) | if . then 0 else 1 end] }`,
+  //   abi: {
+  //     'components': [
+  //       {
+  //         'internalType': 'uint256',
+  //         'name': 'outcomeIdx',
+  //         'type': 'uint256'
+  //       }
+  //     ],
+  //     'type': 'tuple'
+  //   },
+  //   headers: {
+  //     'x-rapidapi-host': 'seeking-alpha.p.rapidapi.com',
+  //     'x-rapidapi-key': env.RAPID_API_KEY
+  //   }
+  // }
 ];
+
+// Add two more identical data sources with different source identifiers
+const dataSource2 = {
+  ...dataSources[0],
+  jqQuery: `{ "outcomeIdx": [1, 0][((.result."HSI:IND".ticks[] | select(.time == ${attestationTimeUnix}) | .close) // .result."HSI:IND".ticks[-1].close) >= ${goal} | if . then 0 else 1 end], "source": "secondary" }`
+};
+
+const dataSource3 = {
+  ...dataSources[0],
+  jqQuery: `{ "outcomeIdx": [1, 0][((.result."HSI:IND".ticks[] | select(.time == ${attestationTimeUnix}) | .close) // .result."HSI:IND".ticks[-1].close) >= ${goal} | if . then 0 else 1 end], "source": "tertiary" }`
+};
+
+dataSources.push(dataSource2, dataSource3);
+
+// TODO: Add more data sources. Since attestation request is limited to 1s, other data sources can not be used, since they take more than 1s to respond.
 
 const processPredictionSet = async () => {
   const context = await createContext();
