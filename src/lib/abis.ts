@@ -1016,6 +1016,15 @@ export const ORACLE_ABI = [
     'type': 'event'
   },
   {
+    'anonymous': false,
+    'inputs': [
+      { 'indexed': true, 'internalType': 'address', 'name': 'admin', 'type': 'address' },
+      { 'indexed': true, 'internalType': 'bytes32', 'name': 'questionId', 'type': 'bytes32' }
+    ],
+    'name': 'VotingForced',
+    'type': 'event'
+  },
+  {
     'inputs': [],
     'name': 'DEFAULT_ADMIN_ROLE',
     'outputs': [{ 'internalType': 'bytes32', 'name': '', 'type': 'bytes32' }],
