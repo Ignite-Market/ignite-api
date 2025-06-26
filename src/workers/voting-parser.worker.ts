@@ -4,7 +4,7 @@ import { env } from '../config/env';
 import { SerializeFor } from '../config/types';
 import { ORACLE_ABI } from '../lib/abis';
 import { PredictionSetBcStatus } from '../lib/blockchain';
-import { sendSlackWebhook } from '../lib/slack-webhook';
+import { ChannelList, sendSlackWebhook } from '../lib/slack-webhook';
 import { WorkerLogStatus } from '../lib/worker/logger';
 import { BaseSingleThreadWorker, SingleThreadWorkerAlertType } from '../lib/worker/serverless-workers/base-single-thread-worker';
 import { Contract, ContractId } from '../modules/contract/models/contract.model';
@@ -54,11 +54,13 @@ export class VotingParserWorker extends BaseSingleThreadWorker {
 
         return;
       }
-
       const oracleContract = new ethers.Contract(contract.contractAddress, ORACLE_ABI, provider);
-      const events = (await oracleContract.queryFilter(oracleContract.filters.VoteSubmitted(), fromBlock, toBlock)) as ethers.EventLog[];
 
-      for (const event of events) {
+      /**
+       * Voting events parsing.
+       */
+      const votingEvents = (await oracleContract.queryFilter(oracleContract.filters.VoteSubmitted(), fromBlock, toBlock)) as ethers.EventLog[];
+      for (const event of votingEvents) {
         const voterAddress = event.args[0];
         const questionId = event.args[1];
         const outcomeIndex = Number(event.args[2]);
@@ -137,6 +139,63 @@ export class VotingParserWorker extends BaseSingleThreadWorker {
           },
           this.context
         ).insert(SerializeFor.INSERT_DB, conn);
+      }
+
+      /**
+       * Voting forced events parsing.
+       */
+      const votingForceEvents = (await oracleContract.queryFilter(oracleContract.filters.VotingForced(), fromBlock, toBlock)) as ethers.EventLog[];
+      for (const event of votingForceEvents) {
+        const adminAddress = event.args[0];
+        const questionId = event.args[1];
+        const txHash = event.transactionHash;
+
+        const chainData = await new PredictionSetChainData({}, this.context).populateByQuestionId(questionId, conn);
+        if (!chainData.exists()) {
+          await this.writeLogToDb(
+            WorkerLogStatus.ERROR,
+            `Prediction set chain data  with question ID: ${questionId} does not exists.`,
+            {
+              adminAddress,
+              questionId,
+              txHash
+            },
+            null
+          );
+
+          continue;
+        }
+
+        const predictionSet = await new PredictionSet({}, this.context).populateById(chainData.prediction_set_id, conn);
+        if (!predictionSet.exists()) {
+          await this.writeLogToDb(
+            WorkerLogStatus.ERROR,
+            `Prediction set with ID: ${chainData.prediction_set_id} does not exists.`,
+            {
+              adminAddress,
+              questionId,
+              txHash,
+              predictionSetChainDataId: chainData.id,
+              predictionSetId: chainData.prediction_set_id
+            },
+            null
+          );
+
+          continue;
+        }
+
+        predictionSet.setStatus = PredictionSetStatus.VOTING;
+        await predictionSet.update(SerializeFor.UPDATE_DB, conn);
+
+        await sendSlackWebhook(
+          `
+          Admin action required. Prediction set moved into voting phase: \n
+          - Prediction set ID: \`${predictionSet.id}\`
+          - Resolution type: MANUAL (FORCE VOTING)
+          `,
+          true,
+          ChannelList.VOTING
+        );
       }
 
       await contract.updateLastProcessedBlock(toBlock, conn);

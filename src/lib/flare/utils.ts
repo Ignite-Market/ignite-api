@@ -40,7 +40,6 @@ export async function getABI(address: string) {
 
 /**
  * Converts attestations proofs to named objects.
- * TODO: FIX!
  *
  * @param rawProofs Raw proofs array.
  * @returns Named object proof array.
