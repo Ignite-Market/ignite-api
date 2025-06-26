@@ -3,7 +3,7 @@ import { DbTables, SqlModelStatus } from '../../config/types';
 import { finalizePredictionSetResults, PredictionSetBcStatus } from '../../lib/blockchain';
 import { verifyProof } from '../../lib/flare/attestation';
 import { convertProofsToNamedObjects } from '../../lib/flare/utils';
-import { sendSlackWebhook } from '../../lib/slack-webhook';
+import { ChannelList, sendSlackWebhook } from '../../lib/slack-webhook';
 import { WorkerLogStatus } from '../../lib/worker/logger';
 import { BaseSingleThreadWorker, SingleThreadWorkerAlertType } from '../../lib/worker/serverless-workers/base-single-thread-worker';
 import { Job } from '../../modules/job/job.model';
@@ -142,6 +142,16 @@ export class FinalizeAutomaticPredictionSetWorker extends BaseSingleThreadWorker
           try {
             predictionSet.setStatus = PredictionSetStatus.VOTING;
             await predictionSet.update();
+
+            await sendSlackWebhook(
+              `
+              Admin action required. Prediction set moved into voting phase: \n
+              - Prediction set ID: \`${predictionSet.id}\`
+              - Resolution type: AUTOMATIC (Resolution not reached)
+              `,
+              true,
+              ChannelList.VOTING
+            );
           } catch (error) {
             await this._logError(
               'Error while updating prediction set.',

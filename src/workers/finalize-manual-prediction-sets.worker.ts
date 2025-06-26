@@ -1,6 +1,6 @@
 import { DbTables, SqlModelStatus } from '../config/types';
 import { finalizePredictionSetResults, PredictionSetBcStatus } from '../lib/blockchain';
-import { sendSlackWebhook } from '../lib/slack-webhook';
+import { ChannelList, sendSlackWebhook } from '../lib/slack-webhook';
 import { WorkerLogStatus } from '../lib/worker/logger';
 import { BaseSingleThreadWorker, SingleThreadWorkerAlertType } from '../lib/worker/serverless-workers/base-single-thread-worker';
 import { Job } from '../modules/job/job.model';
@@ -72,6 +72,16 @@ export class FinalizeManualPredictionSetWorker extends BaseSingleThreadWorker {
 
         predictionSet.setStatus = PredictionSetStatus.VOTING;
         await predictionSet.update();
+
+        await sendSlackWebhook(
+          `
+          Admin action required. Prediction set moved into voting phase: \n
+          - Prediction set ID: \`${predictionSet.id}\`
+          - Resolution type: MANUAL
+          `,
+          true,
+          ChannelList.VOTING
+        );
       } catch (error) {
         await this.writeLogToDb(
           WorkerLogStatus.ERROR,
