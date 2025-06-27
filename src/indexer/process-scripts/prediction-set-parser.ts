@@ -6,7 +6,7 @@ import { env } from '../../config/env';
 import { FundingEvent, SerializeFor, TransactionEvent } from '../../config/types';
 import { sendToWorkerQueue } from '../../lib/aws/aws-sqs';
 import { setup } from '../../lib/blockchain';
-import { sendSlackWebhook } from '../../lib/slack-webhook';
+import { ChannelList, sendSlackWebhook } from '../../lib/slack-webhook';
 import { WorkerLogStatus } from '../../lib/worker/logger';
 import { CollateralToken } from '../../modules/collateral-token/models/collateral-token.model';
 import { Outcome } from '../../modules/prediction-set/models/outcome.model';
@@ -285,7 +285,8 @@ async function main() {
         - Error ID: \`${errorId}\`\n
         - Prediction set ID: \`${predictionSetId}\`
         `,
-        true
+        false,
+        ChannelList.INDEXER
       );
 
       await workerProcess.writeLogToDb(

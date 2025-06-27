@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import * as os from 'os';
 import * as pm2 from 'pm2';
 import { DbTables, SqlModelStatus } from '../../config/types';
-import { sendSlackWebhook } from '../../lib/slack-webhook';
+import { ChannelList, sendSlackWebhook } from '../../lib/slack-webhook';
 import { WorkerLogStatus } from '../../lib/worker/logger';
 import { PredictionSetStatus } from '../../modules/prediction-set/models/prediction-set.model';
 import { BaseProcess } from '../base-process';
@@ -96,7 +96,8 @@ async function main() {
             - Error ID: \`${errorId}\`\n
             - Prediction set ID: \`${predictionSetId}\`
             `,
-            true
+            true,
+            ChannelList.INDEXER
           );
 
           await workerProcess.writeLogToDb(
@@ -142,7 +143,8 @@ async function main() {
       *[INDEXER ERROR]*: Error while parsing prediction sets claims. See DB worker logs for more info: \n
       - Error ID: \`${errorId}\`
       `,
-      true
+      true,
+      ChannelList.INDEXER
     );
 
     await workerProcess.writeLogToDb(WorkerLogStatus.ERROR, `Error executing prediction set parser planner process:`, null, error, errorId);

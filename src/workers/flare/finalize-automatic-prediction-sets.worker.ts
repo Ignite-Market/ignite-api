@@ -59,6 +59,16 @@ export class FinalizeAutomaticPredictionSetWorker extends BaseSingleThreadWorker
       if (attestations.length !== dataSources.length) {
         predictionSet.setStatus = PredictionSetStatus.ERROR;
         await predictionSet.update();
+        await sendSlackWebhook(
+          `
+            Admin action required. Prediction set moved to ERROR status.
+            Prediction set is missing attestations.
+            - Prediction set ID: \`${predictionSet.id}\`
+            - Attestations: \`${attestations.length}\`
+            - Data sources: \`${dataSources.length}\`
+          `,
+          true
+        );
         continue;
       }
 
