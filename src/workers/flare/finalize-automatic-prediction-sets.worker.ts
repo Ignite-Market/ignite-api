@@ -77,6 +77,22 @@ export class FinalizeAutomaticPredictionSetWorker extends BaseSingleThreadWorker
 
       for (const attestation of attestations) {
         try {
+          if (!attestation.proof) {
+            predictionSet.setStatus = PredictionSetStatus.ERROR;
+            await predictionSet.update();
+            await sendSlackWebhook(
+              `
+                Admin action required. Prediction set moved to ERROR status.
+                Attestation proof is missing.
+                - Prediction set ID: \`${predictionSet.id}\`
+                - Attestation ID: \`${attestation.id}\`
+            `,
+              true
+            );
+            validationResults.push(false);
+            break;
+          }
+
           const { verified, proofData } = await verifyProof(attestation.proof);
           if (!verified) {
             await this.writeLogToDb(WorkerLogStatus.INFO, `Prediction set results not verified: `, {
