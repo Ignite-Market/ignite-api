@@ -35,8 +35,6 @@ export class FinalizeAutomaticPredictionSetWorker extends BaseSingleThreadWorker
         SELECT 
           ps.*
         FROM ${DbTables.PREDICTION_SET} ps
-        INNER JOIN ${DbTables.PREDICTION_SET_ATTESTATION} psa
-          ON ps.id = psa.prediction_set_id
         WHERE 
           ps.resolutionTime <= NOW()
           AND ps.status = ${SqlModelStatus.ACTIVE}
@@ -57,8 +55,10 @@ export class FinalizeAutomaticPredictionSetWorker extends BaseSingleThreadWorker
         continue;
       }
 
-      // If data sources and attestations results doesn't match we should wait a little longer.
+      // If data sources and attestations results doesn't match set status to ERROR.
       if (attestations.length !== dataSources.length) {
+        predictionSet.setStatus = PredictionSetStatus.ERROR;
+        await predictionSet.update();
         continue;
       }
 
