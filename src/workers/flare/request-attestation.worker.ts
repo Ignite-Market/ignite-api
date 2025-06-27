@@ -62,6 +62,7 @@ export class RequestAttestationWorker extends BaseSingleThreadWorker {
             dataSource.jqQuery,
             dataSource.abi,
             dataSource.httpMethod,
+            dataSource.body,
             dataSource.headers,
             dataSource.queryParams
           );
