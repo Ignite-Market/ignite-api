@@ -57,7 +57,15 @@ export class RequestAttestationWorker extends BaseSingleThreadWorker {
       const dataSources = await predictionSet.getDataSources();
       for (const dataSource of dataSources) {
         try {
-          const attestationRequest = await prepareAttestationRequest(dataSource.endpoint, dataSource.jqQuery, dataSource.abi);
+          const attestationRequest = await prepareAttestationRequest(
+            dataSource.endpoint,
+            dataSource.jqQuery,
+            dataSource.abi,
+            dataSource.httpMethod,
+            dataSource.body,
+            dataSource.headers,
+            dataSource.queryParams
+          );
           if (attestationRequest.status === AttestationVerifierStatus.VALID) {
             const roundId = await submitAttestationRequest(attestationRequest);
             if (!roundId) {
