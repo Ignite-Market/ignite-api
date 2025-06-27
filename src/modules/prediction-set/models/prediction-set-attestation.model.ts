@@ -49,7 +49,7 @@ export class PredictionSetAttestation extends AdvancedSQLModel {
     parser: {
       resolver: integerParser()
     },
-    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB],
     populatable: [PopulateFrom.DB, PopulateFrom.USER]
   })
   roundId: number;
