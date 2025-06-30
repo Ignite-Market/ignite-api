@@ -140,7 +140,7 @@ async function main() {
     const errorId = randomUUID();
     await sendSlackWebhook(
       `
-      *[INDEXER ERROR]*: Error while parsing prediction sets claims. See DB worker logs for more info: \n
+      *[INDEXER ERROR]*: Error while parsing prediction sets. See DB worker logs for more info: \n
       - Error ID: \`${errorId}\`
       `,
       true,
