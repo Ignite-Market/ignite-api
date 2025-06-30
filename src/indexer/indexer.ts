@@ -2,7 +2,7 @@ import { Logger } from '@nestjs/common';
 import * as pm2 from 'pm2';
 import { env } from '../config/env';
 import { Context } from '../context';
-import { sendSlackWebhook } from '../lib/slack-webhook';
+import { ChannelList, sendSlackWebhook } from '../lib/slack-webhook';
 import { createContext } from '../lib/utils';
 import { ProcessName } from './types';
 
@@ -60,10 +60,11 @@ export class Indexer {
 
       await sendSlackWebhook(
         `
-            *[INDEXER ERROR]*: Error initializing worker process: \n
+            *[INDEXER ERROR]*: Error connecting to PM2 service: \n
             - Error: \`${error}\`
             `,
-        true
+        true,
+        ChannelList.INDEXER
       );
 
       await this.shutdown();
@@ -112,7 +113,8 @@ export class Indexer {
             *[INDEXER ERROR]*: Error initializing worker process: \n
             - Error: \`${error}\`
             `,
-            true
+            true,
+            ChannelList.INDEXER
           );
 
           await this.shutdown();

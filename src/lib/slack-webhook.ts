@@ -7,7 +7,8 @@ import axios from 'axios';
  */
 export enum ChannelList {
   LOGS = '#ignite-market-logs',
-  VOTING = '#ignite-market-voting'
+  VOTING = '#ignite-market-voting',
+  INDEXER = '#ignite-market-indexer'
 }
 
 /**
