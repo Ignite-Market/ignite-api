@@ -42,16 +42,16 @@ const comparedPrice = 24000; // Variable for the price threshold
 //   'x-rapidapi-key': env.RAPID_API_KEY
 // };
 
-const priceGoal = 24400;
+const priceGoal = 2.01;
 const dataSources = [
   {
-    endpoint: 'https://bb-finance.p.rapidapi.com/market/get-chart',
+    endpoint: 'https://api.coingecko.com/api/v3/coins/ripple/history',
     httpMethod: 'GET',
     queryParams: {
-      id: 'HSI:ind',
-      interval: 'd1'
+      localization: 'false',
+      date: '27-06-2025'
     },
-    jqQuery: `{ "outcomeIdx": [1, 0][((.result."HSI:IND".ticks[] | select(.time == 1750924200) | .close) // .result."HSI:IND".ticks[-1].close) >= ${priceGoal} | if . then 0 else 1 end] }`,
+    jqQuery: `{ "outcomeIdx": [1, 0][(.market_data.current_price.usd >= ${priceGoal}) | if . then 0 else 1 end] }`,
     abi: {
       'components': [
         {
@@ -61,10 +61,6 @@ const dataSources = [
         }
       ],
       'type': 'tuple'
-    },
-    headers: {
-      'x-rapidapi-host': 'bb-finance.p.rapidapi.com',
-      'x-rapidapi-key': env.RAPID_API_KEY
     }
   }
 ];
@@ -87,7 +83,8 @@ const httpMethod = 'GET';
     const httpMethod = dataSource.httpMethod;
     const queryParams = dataSource.queryParams;
     const jqQuery = dataSource.jqQuery;
-    const headers = dataSource?.headers || null;
+    // const headers = dataSource?.headers;
+    const headers = null;
 
     const test = await axios(endpoint, {
       method: httpMethod,
