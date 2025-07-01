@@ -141,7 +141,7 @@ async function main() {
                   'prediction-set-parser.ts/main'
                 );
                 await context.mysql.rollback(conn);
-                return;
+                continue;
               }
 
               // Calculate the cost of outcome tokens based on the ratio
