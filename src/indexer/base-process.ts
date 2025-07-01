@@ -91,10 +91,10 @@ export class BaseProcess {
       if (shuttingDown) return;
       shuttingDown = true;
       try {
-        Logger.log(`[${this.name}]: Received ${signal} - shutting down gracefully`, 'base-process/registerSignalHandlers/gracefulExit');
+        Logger.log(`[${this.name}]: Received ${signal} - shutting down gracefully.`, 'base-process/registerSignalHandlers/gracefulExit');
         await this.shutdown();
       } catch (e) {
-        Logger.error(`[${this.name}]: Error during graceful shutdown`, e, 'base-process/registerSignalHandlers/gracefulExit');
+        Logger.error(`[${this.name}]: Error during graceful shutdown.`, e, 'base-process/registerSignalHandlers/gracefulExit');
       } finally {
         process.exit(0);
       }

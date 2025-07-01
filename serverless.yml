@@ -12,7 +12,6 @@ custom:
         - '@aws-sdk/client-secrets-manager'
         - '@aws-sdk/client-sqs'
         - '@aws-sdk/s3-request-presigner'
-        - 'pm2'
     packagerOptions:
       lockFile: './package-lock.json'
     excludeFiles: '**/*\.test\.js|**/*\.test\.ts|**/tests/**/*|**/test/**/|**/*\.spec\.ts|**/*\.spec\.js'
