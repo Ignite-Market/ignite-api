@@ -67,7 +67,8 @@ async function main() {
 
           Logger.error(`ROLLING BACK: Prediction set does not exits: ${predictionSetId}`, 'prediction-set-parser.ts/cycle');
           await context.mysql.rollback(conn);
-          continue;
+          await workerProcess.shutdown();
+          return;
         }
 
         const { fpmmContract, provider } = setup(predictionSet.chainData.contractAddress);
@@ -83,6 +84,8 @@ async function main() {
         if (fromBlock > toBlock) {
           Logger.error('ROLLING BACK: Block not reached yet.', 'prediction-set-parser.ts/cycle');
           await context.mysql.rollback(conn);
+
+          await sleep(1000);
           continue;
         }
 
@@ -141,7 +144,8 @@ async function main() {
                   'prediction-set-parser.ts/main'
                 );
                 await context.mysql.rollback(conn);
-                continue;
+                await workerProcess.shutdown();
+                return;
               }
 
               // Calculate the cost of outcome tokens based on the ratio
@@ -243,7 +247,8 @@ async function main() {
               'prediction-set-parser.ts/cycle'
             );
             await context.mysql.rollback(conn);
-            continue;
+            await workerProcess.shutdown();
+            return;
           }
 
           await new OutcomeShareTransaction(
