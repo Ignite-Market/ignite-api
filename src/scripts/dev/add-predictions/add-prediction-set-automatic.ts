@@ -19,9 +19,9 @@ const data = {
   outcomeResolutionDef:
     "This market will resolve based on the official final score of the game as reported by the NBA. If the Lakers have a higher score, the market resolves to 'Lakers'. If the Rockets have a higher score, the market resolves to 'Rockets'. If the game ends in a tie and goes to overtime, the final score after overtime will determine the resolution. The official resolution source will be NBA.com or ESPN.",
   startTime: new Date(Number(new Date())),
-  endTime: new Date(Number(new Date()) + tenMinutes),
-  attestationTime: new Date(Number(new Date()) + tenMinutes),
-  resolutionTime: new Date(Number(new Date()) + tenMinutes * 2),
+  endTime: new Date(Number(new Date()) + oneWeek),
+  attestationTime: new Date(Number(new Date()) + oneWeek),
+  resolutionTime: new Date(Number(new Date()) + oneWeek * 2),
   resolutionType: ResolutionType.AUTOMATIC,
   consensusThreshold: 60,
   imgUrl: 'https://images.ignitemarket.xyz/prediction-sets/nba.png',

@@ -1,5 +1,4 @@
 import { Logger } from '@nestjs/common';
-import * as pm2 from 'pm2';
 import { Context } from '../context';
 import { createContext } from '../lib/utils';
 import { WorkerLogStatus, writeWorkerLog } from '../lib/worker/logger';
@@ -19,6 +18,16 @@ export class BaseProcess {
   public name: string;
 
   /**
+   * Whether the shutdown handlers have been registered.
+   */
+  private static _shutdownHandlersRegistered = false;
+
+  /**
+   * Flag to ensure shutdown logic runs only once.
+   */
+  private _hasShutdown = false;
+
+  /**
    * Constructor.
    * @param name The name of the process.
    */
@@ -28,30 +37,21 @@ export class BaseProcess {
 
   /**
    * Initializes the process.
-   * @param connectToPM2 Whether to connect to PM2.
    */
-  public async initialize(connectToPM2: boolean = false): Promise<void> {
+  public async initialize(): Promise<void> {
     this.context = await createContext();
-
-    if (connectToPM2) {
-      await new Promise((resolve, reject) => {
-        pm2.connect((error) => {
-          if (error) {
-            Logger.error(this.name + ': Error connecting to PM2:', error, 'base-process.ts/initialize');
-            reject(error);
-            return;
-          }
-          Logger.log(this.name + ': Connected to PM2 successfully.', 'base-process.ts/initialize');
-          resolve(true);
-        });
-      });
-    }
+    this._registerShutdownSignalHandlers();
   }
 
   /**
    * Shuts down the process.
    */
   public async shutdown(): Promise<void> {
+    if (this._hasShutdown) {
+      return;
+    }
+    this._hasShutdown = true;
+
     if (this.context && this.context.mysql) {
       await this.context.mysql.close();
     }
@@ -75,5 +75,32 @@ export class BaseProcess {
     } catch (e) {
       Logger.error(this.name + ': ' + error.message, e, 'base-process.ts/writeLogToDb');
     }
+  }
+
+  /**
+   * Register shutdown signal handlers.
+   */
+  private _registerShutdownSignalHandlers() {
+    if (BaseProcess._shutdownHandlersRegistered) {
+      return;
+    }
+    BaseProcess._shutdownHandlersRegistered = true;
+
+    let shuttingDown = false;
+    const gracefulExit = async (signal: string) => {
+      if (shuttingDown) return;
+      shuttingDown = true;
+      try {
+        Logger.log(`[${this.name}]: Received ${signal} - shutting down gracefully`, 'base-process/registerSignalHandlers/gracefulExit');
+        await this.shutdown();
+      } catch (e) {
+        Logger.error(`[${this.name}]: Error during graceful shutdown`, e, 'base-process/registerSignalHandlers/gracefulExit');
+      } finally {
+        process.exit(0);
+      }
+    };
+
+    process.once('SIGINT', () => gracefulExit('SIGINT'));
+    process.once('SIGTERM', () => gracefulExit('SIGTERM'));
   }
 }
