@@ -143,8 +143,8 @@ export const handler = async (event) => {
         })
       };
     }
-
     // Prepare request headers
+
     const requestHeaders = {
       'x-rapidapi-host': apiHost,
       'x-rapidapi-key': apiKey,
@@ -163,14 +163,6 @@ export const handler = async (event) => {
     const response = await makeRequest(targetUrl.toString(), httpMethod, requestHeaders, body);
 
     console.log(`Response status: ${response.status}`);
-
-    // Forward relevant response headers
-    const forwardResponseHeaders = ['cache-control', 'etag', 'last-modified'];
-    forwardResponseHeaders.forEach((header) => {
-      if (response.headers[header]) {
-        responseHeaders[header] = response.headers[header];
-      }
-    });
 
     return {
       statusCode: response.status,

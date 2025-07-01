@@ -97,6 +97,23 @@ export class Proposal extends AdvancedSQLModel {
   public outcomes: string[];
 
   /**
+   * Outcomes definition - Proposal outcomes definition.
+   */
+  @ConstantArray()
+  @prop({
+    parser: { resolver: stringParser(), array: true },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER],
+    setter(v) {
+      if (Array.isArray(v) && v.length === 1) {
+        return v[0].split(CONSTANT_ARRAY_DEFAULT_DELIMITER);
+      }
+      return v;
+    }
+  })
+  public tags: string[];
+
+  /**
    * Get list of proposals.
    *
    * @param query Filtering query.
@@ -160,6 +177,9 @@ export class Proposal extends AdvancedSQLModel {
           )
           AND (@proposalId IS NULL
             OR p.id = @proposalId
+          )
+          AND (@tag IS NULL
+            OR p.tag LIKE CONCAT('%', @tag, '%')
           )
         `,
       qGroup: `

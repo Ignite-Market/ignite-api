@@ -1,5 +1,5 @@
 import { prop } from '@rawmodel/core';
-import { integerParser } from '@rawmodel/parsers';
+import { integerParser, stringParser } from '@rawmodel/parsers';
 import { PopulateFrom } from '../../../config/types';
 import { BaseQueryFilter } from '../../../lib/base-models/base-query-filter.model';
 
@@ -15,4 +15,10 @@ export class ProposalsQueryFilter extends BaseQueryFilter {
     populatable: [PopulateFrom.USER]
   })
   public proposalId: number;
+
+  @prop({
+    parser: { resolver: stringParser() },
+    populatable: [PopulateFrom.USER]
+  })
+  public tag: string;
 }
