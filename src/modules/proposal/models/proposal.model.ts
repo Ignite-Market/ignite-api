@@ -179,7 +179,7 @@ export class Proposal extends AdvancedSQLModel {
             OR p.id = @proposalId
           )
           AND (@tag IS NULL
-            OR p.tag LIKE CONCAT('%', @tag, '%')
+            OR p.tags LIKE CONCAT('%', @tag, '%')
           )
         `,
       qGroup: `
