@@ -36,10 +36,10 @@ const bitcoin = {
 
 const xrp1 = {
   collateral_token_id: 1,
-  question: 'Will the SEC and Ripple finalize a settlement by Avgust 30, 2025?',
-  outcomeResolutionDef: `"Yes" if a formal legal settlement is filed in court or announced in an official joint statement on or before Avgust 30, 2025.
+  question: 'Will the SEC and Ripple finalize a settlement by August 30, 2025?',
+  outcomeResolutionDef: `"Yes" if a formal legal settlement is filed in court or announced in an official joint statement on or before August 30, 2025.
 "No" if no settlement is made public by that date and litigation continues.
-"Postponed" if both parties request or receive an official extension that delays proceedings beyond Avgust 30, 2025.`,
+"Postponed" if both parties request or receive an official extension that delays proceedings beyond August 30, 2025.`,
   startTime: new Date(Number(new Date()) + twoHours),
   endTime: new Date(Number(new Date()) + oneWeek),
   resolutionTime: new Date(Number(new Date()) + oneWeek + twoHours),
@@ -64,8 +64,8 @@ const xrp1 = {
 
 const xrp2 = {
   collateral_token_id: 1,
-  question: 'Will the SEC approve an XRP spot ETF by Avgust 30, 2025?',
-  outcomeResolutionDef: `"Approved" if the SEC publishes a formal approval for any XRP spot ETF before or on Avgust 30, 2025. 
+  question: 'Will the SEC approve an XRP spot ETF by August 30, 2025?',
+  outcomeResolutionDef: `"Approved" if the SEC publishes a formal approval for any XRP spot ETF before or on August 30, 2025. 
 "Denied" if the SEC formally rejects all proposals by that date. 
 "Delayed" if the SEC pushes its decision deadline beyond May 22, 2025 through official communication.`,
   startTime: new Date(Number(new Date()) + twoHours),

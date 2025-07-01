@@ -7,10 +7,11 @@ import { PredictionSet, ResolutionType } from '../../../modules/prediction-set/m
 import { PredictionSetService } from '../../../modules/prediction-set/prediction-set.service';
 import * as dayjs from 'dayjs';
 
-// Market close time: 08:00:00 / 16:00:00 CST
-const attestationTime = dayjs('2025-06-30T16:00:00Z');
-const endTime = dayjs(attestationTime).subtract(1, 'day').toDate();
-const resolutionTime = dayjs(attestationTime).add(1, 'hour').toDate();
+// Market close time: 08:00:00 / 16:00:00 ChinaST
+const attestationTime = dayjs('2025-06-27T08:00:00Z');
+// const endTime = dayjs(attestationTime).subtract(1, 'day').toDate();
+const endTime = dayjs('2025-06-27T14:00:00Z');
+const resolutionTime = dayjs(endTime).add(30, 'minutes').toDate();
 const attestationTimeUnix = dayjs(attestationTime).unix();
 const goal = 24000;
 
