@@ -196,6 +196,7 @@ export class Proposal extends AdvancedSQLModel {
       res.items = res.items.map((i: any) => ({
         ...i,
         votes: JSON.parse(i.votes),
+        tags: i.tags ? i.tags.split(CONSTANT_ARRAY_DEFAULT_DELIMITER) : [],
         outcomes: i.outcomes.split(CONSTANT_ARRAY_DEFAULT_DELIMITER)
       }));
     }
