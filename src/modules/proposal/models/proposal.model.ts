@@ -171,6 +171,7 @@ export class Proposal extends AdvancedSQLModel {
         WHERE p.status <> ${SqlModelStatus.DELETED}
           AND (@search IS NULL
             OR p.question LIKE CONCAT('%', @search, '%')
+            OR p.tags LIKE CONCAT('%', @search, '%')
           )
           AND (@roundId IS NULL
             OR p.round_id = @roundId
