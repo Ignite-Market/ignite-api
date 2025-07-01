@@ -98,10 +98,11 @@ async function main() {
       // Insert funding events.
       for (const fundingEvent of fundingEvents) {
         const user = await new User({}, context).populateByWalletAddress(fundingEvent.wallet, conn);
+        const amounts = fundingEvent.amounts.split(',').map(Number);
 
         let collateralAmount = null;
         if (fundingEvent.type === FundingTransactionType.ADDED) {
-          collateralAmount = Math.max(...fundingEvent.amounts.split(',').map(Number));
+          collateralAmount = Math.max(...amounts);
         }
 
         await new PredictionSetFundingTransaction(
@@ -115,8 +116,6 @@ async function main() {
         ).insert(SerializeFor.INSERT_DB, conn);
 
         // Insert share transactions if funding active prediction set.
-        const amounts = fundingEvent.amounts.split(',').map(Number);
-
         // Check all amounts are not equal. (collateral amount = max amount).
         if (collateralAmount !== Math.min(...amounts)) {
           for (const [index, amount] of amounts.entries()) {
@@ -139,15 +138,22 @@ async function main() {
               return;
             }
 
+            // Calculate the cost of outcome tokens based on the ratio
+            const totalPoolTokens = amounts.reduce((sum, amt) => sum + amt, 0);
+            const outcomeRatio = amounts[index] / totalPoolTokens;
+            const outcomePrice = 1 - outcomeRatio;
+            const outcomeTokens = collateralAmount - amount;
+            const outcomeAmount = Math.floor(outcomeTokens * outcomePrice);
+
             await new OutcomeShareTransaction(
               {
                 type: ShareTransactionType.FUND,
                 txHash: fundingEvent.txHash,
                 wallet: fundingEvent.wallet,
-                amount: (collateralAmount - Number(fundingEvent.shares)).toString(),
+                amount: outcomeAmount.toString(),
                 feeAmount: '0',
                 outcomeIndex: index,
-                outcomeTokens: (collateralAmount - amount).toString(),
+                outcomeTokens: outcomeTokens.toString(),
                 user_id: user?.id,
                 outcome_id: outcome.id,
                 prediction_set_id: predictionSet.id
