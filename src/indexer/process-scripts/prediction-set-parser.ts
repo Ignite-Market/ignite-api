@@ -121,7 +121,7 @@ async function main() {
         if (collateralAmount !== Math.min(...amounts)) {
           for (const [index, amount] of amounts.entries()) {
             if (amount === collateralAmount) {
-              break;
+              continue;
             }
 
             const outcome = await new Outcome({}, context).populateByIndexAndPredictionSetId(index, predictionSet.id, conn);
