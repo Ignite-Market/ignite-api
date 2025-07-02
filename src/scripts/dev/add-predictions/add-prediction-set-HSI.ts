@@ -6,20 +6,30 @@ import { Outcome } from '../../../modules/prediction-set/models/outcome.model';
 import { PredictionSet, ResolutionType } from '../../../modules/prediction-set/models/prediction-set.model';
 import { PredictionSetService } from '../../../modules/prediction-set/prediction-set.service';
 import * as dayjs from 'dayjs';
+import * as utc from 'dayjs/plugin/utc';
+
+dayjs.extend(utc);
 
 // Market close time: 08:00:00 / 16:00:00 ChinaST
-const attestationTime = dayjs('2025-06-27T08:00:00Z');
+const attestationTime = dayjs('2025-07-01T08:00:00Z');
 // const endTime = dayjs(attestationTime).subtract(1, 'day').toDate();
-const endTime = dayjs('2025-06-27T14:00:00Z');
+const endTime = dayjs('2025-07-01T10:30:00Z');
 const resolutionTime = dayjs(endTime).add(30, 'minutes').toDate();
 const attestationTimeUnix = dayjs(attestationTime).unix();
+const attestationTimeFormatted = dayjs(attestationTime).format('YYYY-MM-DD HH:mm:ss');
+
 const goal = 24000;
+const goalFormatted = new Intl.NumberFormat('en-US', {
+  style: 'decimal',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2
+}).format(goal);
 
 const data = {
   collateral_token_id: 1,
-  question: `Will the Hang Seng Index be above 24,000 at at market close on June 30?`,
+  question: `Will the Hang Seng Index be above ${goalFormatted} at at market close on ${attestationTime.utc().format('MMMM DD')}?`,
   outcomeResolutionDef: `
-    This market will resolve to 'Yes' if the official closing value of the Hang Seng Index on June 30, 2025, as reported by a reliable financial source (e.g., https://www.investing.com/indices/hang-sen-40 or https://www.bloomberg.com), is strictly greater than 24,000. Otherwise, it will resolve to 'No'.
+    This market will resolve to 'Yes' if the official closing value of the Hang Seng Index on ${attestationTime.utc().format('MMMM DD, YYYY')}, as reported by a reliable financial source (e.g., https://www.investing.com/indices/hang-sen-40 or https://www.bloomberg.com), is strictly greater than ${goalFormatted}. Otherwise, it will resolve to 'No'.
   `,
   startTime: new Date(Number(new Date())),
   endTime,
@@ -42,94 +52,64 @@ const data = {
 
 const dataSources = [
   {
-    endpoint: 'https://bb-finance.p.rapidapi.com/market/get-chart',
+    endpoint: 'https://api-proxy.ignitemarket.xyz/bloomberg/market/get-chart',
     httpMethod: 'GET',
     queryParams: {
       id: 'HSI:ind',
       interval: 'd1'
     },
-    jqQuery: `{ "outcomeIdx": [1, 0][((.result."HSI:IND".ticks[] | select(.time == ${attestationTimeUnix}) | .close) // .result."HSI:IND".ticks[-1].close) >= ${goal} | if . then 0 else 1 end], "source": "primary" }`,
+    jqQuery: `{ "outcomeIdx": [1, 0][((.result."HSI:IND".ticks[] | select(.time == ${attestationTimeUnix}) | .close) // .result."HSI:IND".ticks[-1].close) >= ${goal} | if . then 0 else 1 end] }`,
     abi: {
       'components': [
         {
           'internalType': 'uint256',
           'name': 'outcomeIdx',
           'type': 'uint256'
-        },
-        {
-          'internalType': 'string',
-          'name': 'source',
-          'type': 'string'
         }
       ],
       'type': 'tuple'
+    }
+  },
+  {
+    endpoint: 'https://api-proxy.ignitemarket.xyz/yahoo/api/v1/markets/stock/history',
+    httpMethod: 'GET',
+    queryParams: {
+      ticker: '^HSI',
+      interval: '30m'
     },
-    headers: {
-      'x-rapidapi-host': 'bb-finance.p.rapidapi.com',
-      'x-rapidapi-key': env.RAPID_API_KEY
+    jqQuery: `{ "outcomeIdx": [1, 0][((.body | to_entries[] | select(.value.date_utc == ${attestationTimeUnix}) | .value.close) // (.body | to_entries | last | .value.close)) >= ${goal} | if . then 0 else 1 end] }`,
+    abi: {
+      'components': [
+        {
+          'internalType': 'uint256',
+          'name': 'outcomeIdx',
+          'type': 'uint256'
+        }
+      ],
+      'type': 'tuple'
+    }
+  },
+  {
+    endpoint: 'https://api-proxy.ignitemarket.xyz/real-time/stock-time-series',
+    httpMethod: 'GET',
+    queryParams: {
+      symbol: 'HSI:INDEXHANGSENG',
+      period: '5D',
+      language: 'en'
+    },
+    jqQuery: `{ "outcomeIdx": [1, 0][((.data.time_series | to_entries[] | select(.key == "${attestationTimeFormatted}") | .value.price) // (.data.time_series | to_entries | last | .value.price)) >= ${goal} | if . then 0 else 1 end] }`,
+    abi: {
+      'components': [
+        {
+          'internalType': 'uint256',
+          'name': 'outcomeIdx',
+          'type': 'uint256'
+        }
+      ],
+      'type': 'tuple'
     }
   }
-  // {
-  //   endpoint: 'https://yahoo-finance15.p.rapidapi.com/api/v1/markets/stock/quotes',
-  //   httpMethod: 'GET',
-  //   queryParams: {
-  //     ticker: '^HSI'
-  //   },
-  //   jqQuery: `{ "outcomeIdx": [1, 0][(.body[0].regularMarketPrice >= ${goal}) | if . then 0 else 1 end] }`,
-  //   abi: {
-  //     'components': [
-  //       {
-  //         'internalType': 'uint256',
-  //         'name': 'outcomeIdx',
-  //         'type': 'uint256'
-  //       }
-  //     ],
-  //     'type': 'tuple'
-  //   },
-  //   headers: {
-  //     'x-rapidapi-host': 'yahoo-finance15.p.rapidapi.com',
-  //     'x-rapidapi-key': env.RAPID_API_KEY
-  //   }
-  // },
-  // {
-  //   endpoint: 'https://seeking-alpha.p.rapidapi.com/symbols/get-chart',
-  //   httpMethod: 'GET',
-  //   queryParams: {
-  //     symbol: 'HSI',
-  //     period: '1D'
-  //   },
-  //   jqQuery: `{ "outcomeIdx": [1, 0][(.result."HSI:IND".ticks[-1].close >= ${goal}) | if . then 0 else 1 end] }`,
-  //   abi: {
-  //     'components': [
-  //       {
-  //         'internalType': 'uint256',
-  //         'name': 'outcomeIdx',
-  //         'type': 'uint256'
-  //       }
-  //     ],
-  //     'type': 'tuple'
-  //   },
-  //   headers: {
-  //     'x-rapidapi-host': 'seeking-alpha.p.rapidapi.com',
-  //     'x-rapidapi-key': env.RAPID_API_KEY
-  //   }
-  // }
 ];
-
-// Add two more identical data sources with different source identifiers
-const dataSource2 = {
-  ...dataSources[0],
-  jqQuery: `{ "outcomeIdx": [1, 0][((.result."HSI:IND".ticks[] | select(.time == ${attestationTimeUnix}) | .close) // .result."HSI:IND".ticks[-1].close) >= ${goal} | if . then 0 else 1 end], "source": "secondary" }`
-};
-
-const dataSource3 = {
-  ...dataSources[0],
-  jqQuery: `{ "outcomeIdx": [1, 0][((.result."HSI:IND".ticks[] | select(.time == ${attestationTimeUnix}) | .close) // .result."HSI:IND".ticks[-1].close) >= ${goal} | if . then 0 else 1 end], "source": "tertiary" }`
-};
-
-dataSources.push(dataSource2, dataSource3);
-
-// TODO: Add more data sources. Since attestation request is limited to 1s, other data sources can not be used, since they take more than 1s to respond.
 
 const processPredictionSet = async () => {
   const context = await createContext();

@@ -2,6 +2,10 @@ import { env, exit } from 'process';
 import { prepareAttestationRequest } from '../../../lib/flare/attestation';
 import axios from 'axios';
 import * as jq from 'node-jq';
+import * as dayjs from 'dayjs';
+import * as utc from 'dayjs/plugin/utc';
+
+dayjs.extend(utc);
 
 // const endpoint = 'https://swapi.info/api/people/3';
 // const jqQuery = `{name: .name, height: .height, mass: .mass, numberOfFilms: .films | length, uid: (.url | split("/") | .[-1] | tonumber)}`;
@@ -42,16 +46,62 @@ const comparedPrice = 24000; // Variable for the price threshold
 //   'x-rapidapi-key': env.RAPID_API_KEY
 // };
 
-const priceGoal = 2.01;
+// Market close time: 08:00:00 / 16:00:00 ChinaST
+const attestationTime = dayjs('2025-07-01T08:00:00Z');
+// const endTime = dayjs(attestationTime).subtract(1, 'day').toDate();
+const endTime = dayjs('2025-07-01T09:30:00Z');
+const attestationTimeUnix = dayjs(attestationTime).unix();
+const attestationTimeFormatted = dayjs(attestationTime).utc().format('YYYY-MM-DD HH:mm:ss');
+const goal = 24050;
+
 const dataSources = [
   {
-    endpoint: 'https://api.coingecko.com/api/v3/coins/ripple/history',
+    endpoint: 'https://api-proxy.ignitemarket.xyz/bloomberg/market/get-chart',
     httpMethod: 'GET',
     queryParams: {
-      localization: 'false',
-      date: '27-06-2025'
+      id: 'HSI:ind',
+      interval: 'd1'
     },
-    jqQuery: `{ "outcomeIdx": [1, 0][(.market_data.current_price.usd >= ${priceGoal}) | if . then 0 else 1 end] }`,
+    jqQuery: `{ "outcomeIdx": [1, 0][((.result."HSI:IND".ticks[] | select(.time == ${attestationTimeUnix}) | .close) // .result."HSI:IND".ticks[-1].close) >= ${goal} | if . then 0 else 1 end] }`,
+    abi: {
+      'components': [
+        {
+          'internalType': 'uint256',
+          'name': 'outcomeIdx',
+          'type': 'uint256'
+        }
+      ],
+      'type': 'tuple'
+    }
+  },
+  {
+    endpoint: 'https://api-proxy.ignitemarket.xyz/yahoo/api/v1/markets/stock/history',
+    httpMethod: 'GET',
+    queryParams: {
+      ticker: '^HSI',
+      interval: '30m'
+    },
+    jqQuery: `{ "outcomeIdx": [1, 0][((.body | to_entries[] | select(.value.date_utc == ${attestationTimeUnix}) | .value.close) // (.body | to_entries | last | .value.close)) >= ${goal} | if . then 0 else 1 end] }`,
+    abi: {
+      'components': [
+        {
+          'internalType': 'uint256',
+          'name': 'outcomeIdx',
+          'type': 'uint256'
+        }
+      ],
+      'type': 'tuple'
+    }
+  },
+  {
+    endpoint: 'https://api-proxy.ignitemarket.xyz/real-time/stock-time-series',
+    httpMethod: 'GET',
+    queryParams: {
+      symbol: 'HSI:INDEXHANGSENG',
+      period: '5D',
+      language: 'en'
+    },
+    jqQuery: `{ "outcomeIdx": [1, 0][((.data.time_series | to_entries[] | select(.key == "${attestationTimeFormatted}") | .value.price) // (.data.time_series | to_entries | last | .value.price)) >= ${goal} | if . then 0 else 1 end] }`,
     abi: {
       'components': [
         {
@@ -75,7 +125,6 @@ const abi = {
   ],
   'type': 'tuple'
 };
-const httpMethod = 'GET';
 
 (async () => {
   for (const dataSource of dataSources) {

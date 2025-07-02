@@ -13,7 +13,7 @@ dayjs.extend(utc);
 
 const priceGoal = 2.01;
 
-const attestationTime = dayjs('2025-06-26T14:40:00Z');
+const attestationTime = dayjs('2025-07-01T10:00:00Z');
 // const attestationTime = dayjs.utc().endOf('isoWeek');
 const attestationTimeFormatted = dayjs(attestationTime).format('MMM D, YYYY HH:mm');
 const endTime = dayjs(attestationTime).toDate();
