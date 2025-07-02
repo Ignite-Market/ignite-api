@@ -6,18 +6,32 @@ import { Outcome } from '../../../modules/prediction-set/models/outcome.model';
 import { PredictionSet, ResolutionType } from '../../../modules/prediction-set/models/prediction-set.model';
 import { PredictionSetService } from '../../../modules/prediction-set/prediction-set.service';
 import * as dayjs from 'dayjs';
+import * as utc from 'dayjs/plugin/utc';
+import * as timezone from 'dayjs/plugin/timezone';
 
-// Market close time: 20:00:00 / 16:00:00 EDT
-const attestationTime = dayjs('2025-06-26T20:00:00Z');
+dayjs.extend(utc);
+dayjs.extend(timezone);
+// Market close time: 20:00:00 UTC / 16:00:00 EDT
+const attestationTime = dayjs('2025-07-07T20:00:00Z');
 const endTime = dayjs(attestationTime).subtract(1, 'hour').toDate();
-const resolutionTime = dayjs(attestationTime).add(1, 'hour').toDate();
+// const endTime = dayjs('2025-07-07T10:00:00Z');
+const resolutionTime = dayjs(endTime).add(1, 'hour').toDate();
 const attestationTimeUnix = dayjs(attestationTime).unix();
+
+// attestation time in exchange local time - US EDT
+const attestationTimeFormatted = dayjs(attestationTime).tz('America/New_York').format('YYYY-MM-DD HH:mm:ss');
+
 const goal = 6100;
+const goalFormatted = new Intl.NumberFormat('en-US', {
+  style: 'decimal',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2
+}).format(goal);
 
 const data = {
   collateral_token_id: 1,
-  question: `Will the S&P 500 index be above 6,100 at market close on June 26?`,
-  outcomeResolutionDef: `This market will resolve to 'Yes' if the official closing value of the S&P 500 index on June 26, 2025, as reported by a reliable financial source (e.g., https://www.investing.com/indices/us-spx-500 or https://www.bloomberg.com), is strictly greater than 6,100. Otherwise, it will resolve to 'No'.`,
+  question: `Will the S&P 500 index be above ${goalFormatted} at market close on ${attestationTime.utc().format('MMMM D')}?`,
+  outcomeResolutionDef: `This market will resolve to 'Yes' if the official closing value of the S&P 500 index on ${attestationTime.utc().format('MMMM DD, YYYY')}, as reported by a reliable financial source (e.g., https://www.investing.com/indices/us-spx-500 or https://www.bloomberg.com), is strictly greater than ${goalFormatted}. Otherwise, it will resolve to 'No'.`,
   startTime: new Date(Number(new Date())),
   endTime,
   attestationTime: attestationTime.toDate(),
@@ -34,54 +48,70 @@ const data = {
       name: 'Yes',
       imgUrl: 'https://images.ignitemarket.xyz/outcomes/yes.svg'
     }
-  ]
+  ],
+  categories: ['Finance']
 };
 
 const dataSources = [
   {
-    endpoint: 'https://bb-finance.p.rapidapi.com/market/get-chart',
+    endpoint: 'https://api-proxy.ignitemarket.xyz/bloomberg/market/get-chart',
     httpMethod: 'GET',
     queryParams: {
       id: 'SPX:ind',
       interval: 'd1'
     },
-    jqQuery: `{ "outcomeIdx": [1, 0][((.result."SPX:IND".ticks[] | select(.time == ${attestationTimeUnix}) | .close) // .result."SPX:IND".ticks[-1].close) >= ${goal} | if . then 0 else 1 end], "source": "primary" }`,
+    jqQuery: `{ "outcomeIdx": [1, 0][((.result."SPX:IND".ticks[] | select(.time == ${attestationTimeUnix}) | .close) // .result."SPX:IND".ticks[-1].close) >= ${goal} | if . then 0 else 1 end] }`,
     abi: {
       'components': [
         {
           'internalType': 'uint256',
           'name': 'outcomeIdx',
           'type': 'uint256'
-        },
-        {
-          'internalType': 'string',
-          'name': 'source',
-          'type': 'string'
         }
       ],
       'type': 'tuple'
+    }
+  },
+  {
+    endpoint: 'https://api-proxy.ignitemarket.xyz/yahoo/api/v1/markets/stock/history',
+    httpMethod: 'GET',
+    queryParams: {
+      ticker: '^GSPC',
+      interval: '30m'
     },
-    headers: {
-      'x-rapidapi-host': 'bb-finance.p.rapidapi.com',
-      'x-rapidapi-key': env.RAPID_API_KEY
+    jqQuery: `{ "outcomeIdx": [1, 0][((.body | to_entries[] | select(.value.date_utc == ${attestationTimeUnix}) | .value.close) // (.body | to_entries | last | .value.close)) >= ${goal} | if . then 0 else 1 end] }`,
+    abi: {
+      'components': [
+        {
+          'internalType': 'uint256',
+          'name': 'outcomeIdx',
+          'type': 'uint256'
+        }
+      ],
+      'type': 'tuple'
+    }
+  },
+  {
+    endpoint: 'https://api-proxy.ignitemarket.xyz/real-time/stock-time-series',
+    httpMethod: 'GET',
+    queryParams: {
+      symbol: '.INX:INDEXSP',
+      period: '5D',
+      language: 'en'
+    },
+    jqQuery: `{ "outcomeIdx": [1, 0][((.data.time_series | to_entries[] | select(.key == "${attestationTimeFormatted}") | .value.price) // (.data.time_series | to_entries | last | .value.price)) >= ${goal} | if . then 0 else 1 end] }`,
+    abi: {
+      'components': [
+        {
+          'internalType': 'uint256',
+          'name': 'outcomeIdx',
+          'type': 'uint256'
+        }
+      ],
+      'type': 'tuple'
     }
   }
 ];
-
-// Add two more identical data sources with different source identifiers
-const dataSource2 = {
-  ...dataSources[0],
-  jqQuery: `{ "outcomeIdx": [1, 0][((.result."SPX:IND".ticks[] | select(.time == ${attestationTimeUnix}) | .close) // .result."SPX:IND".ticks[-1].close) >= ${goal} | if . then 0 else 1 end], "source": "secondary" }`
-};
-
-const dataSource3 = {
-  ...dataSources[0],
-  jqQuery: `{ "outcomeIdx": [1, 0][((.result."SPX:IND".ticks[] | select(.time == ${attestationTimeUnix}) | .close) // .result."SPX:IND".ticks[-1].close) >= ${goal} | if . then 0 else 1 end], "source": "tertiary" }`
-};
-
-dataSources.push(dataSource2, dataSource3);
-
-// TODO: Add more data sources. Since attestation request is limited to 1s, other data sources can not be used, since they take more than 1s to respond.
 
 const processPredictionSet = async () => {
   const context = await createContext();
@@ -103,6 +133,12 @@ const processPredictionSet = async () => {
 
     // Create prediction set.
     const predictionSet = await service.createPredictionSet(ps, dataSourceIds, context);
+
+    if (data.categories) {
+      for (const category of data.categories) {
+        await service.addPredictionCategory(predictionSet.id, category, context);
+      }
+    }
 
     // Add prediction set to blockchain.
     await addPredictionSet(predictionSet, context);

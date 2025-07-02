@@ -3,20 +3,30 @@ import { createContext } from '../../../lib/utils';
 import { Outcome } from '../../../modules/prediction-set/models/outcome.model';
 import { PredictionSet, ResolutionType } from '../../../modules/prediction-set/models/prediction-set.model';
 import { PredictionSetService } from '../../../modules/prediction-set/prediction-set.service';
+import * as dayjs from 'dayjs';
+import * as utc from 'dayjs/plugin/utc';
+
+dayjs.extend(utc);
 
 const twoHours = 2 * 60 * 60 * 1000;
 const fourHours = 4 * 60 * 60 * 1000;
 const sixHours = 6 * 60 * 60 * 1000;
 const oneWeek = 7 * 24 * 60 * 60 * 1000;
 
+const endTime = dayjs('2025-07-11T11:00:00Z').toDate();
+const resolutionTime = dayjs('2025-07-14T09:00:00Z').toDate();
+
 const tdf1 = {
+  collateral_token_id: 1,
   question: 'Will Tadej Pogačar be in the top 3 overall by the end of Week 1 (Stage 7)?',
-  outcomeResolutionDef: "This resolves to 'Yes' if Pogačar is officially ranked 1st‑3rd in GC at the end of Stage 7.",
-  startTime: new Date(Number(new Date()) + twoHours),
-  endTime: new Date(Number(new Date()) + oneWeek),
-  resolutionTime: new Date(Number(new Date()) + oneWeek + twoHours),
+  outcomeResolutionDef:
+    "This resolves to 'Yes' if Pogačar is officially ranked 1st‑3rd in GC at the end of Stage 7. Using official GC standings after Stage 7 from the Tour de France Race Center",
+  startTime: new Date(Number(new Date())),
+  endTime,
+  resolutionTime,
   resolutionType: ResolutionType.MANUAL,
   consensusThreshold: 60,
+  imgUrl: 'https://images.ignitemarket.xyz/prediction-sets/tdf.jpg',
   predictionOutcomes: [
     {
       name: 'Yes',
@@ -26,7 +36,8 @@ const tdf1 = {
       name: 'No',
       imgUrl: 'https://images.ignitemarket.xyz/outcomes/no.svg'
     }
-  ]
+  ],
+  categories: ['Sports']
 };
 
 const processPredictionSet = async () => {
@@ -42,6 +53,12 @@ const processPredictionSet = async () => {
 
     // Create prediction set.
     const predictionSet = await service.createPredictionSet(ps, [], context);
+
+    if (selectedPredictionSet.categories) {
+      for (const category of selectedPredictionSet.categories) {
+        await service.addPredictionCategory(predictionSet.id, category, context);
+      }
+    }
 
     // Add prediction set to blockchain.
     await addPredictionSet(predictionSet, context);

@@ -7,16 +7,18 @@ import { PredictionSet, ResolutionType } from '../../../modules/prediction-set/m
 import { PredictionSetService } from '../../../modules/prediction-set/prediction-set.service';
 import * as dayjs from 'dayjs';
 import * as utc from 'dayjs/plugin/utc';
+import * as timezone from 'dayjs/plugin/timezone';
 
 dayjs.extend(utc);
+dayjs.extend(timezone);
 
-// Market close time: 08:00:00 / 16:00:00 ChinaST
-const attestationTime = dayjs('2025-07-01T08:00:00Z');
-// const endTime = dayjs(attestationTime).subtract(1, 'day').toDate();
-const endTime = dayjs('2025-07-01T10:30:00Z');
-const resolutionTime = dayjs(endTime).add(30, 'minutes').toDate();
+// Market close time: 08:00:00 UTC / 16:00:00 ChinaST
+const attestationTime = dayjs('2025-07-07T08:00:00Z');
+const endTime = dayjs(attestationTime).subtract(1, 'hour').toDate();
+const resolutionTime = dayjs(attestationTime).add(1, 'hour').toDate();
 const attestationTimeUnix = dayjs(attestationTime).unix();
-const attestationTimeFormatted = dayjs(attestationTime).format('YYYY-MM-DD HH:mm:ss');
+// attestation time in exchange local time - China ST
+const attestationTimeFormatted = dayjs(attestationTime).tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss');
 
 const goal = 24000;
 const goalFormatted = new Intl.NumberFormat('en-US', {
@@ -27,10 +29,8 @@ const goalFormatted = new Intl.NumberFormat('en-US', {
 
 const data = {
   collateral_token_id: 1,
-  question: `Will the Hang Seng Index be above ${goalFormatted} at at market close on ${attestationTime.utc().format('MMMM DD')}?`,
-  outcomeResolutionDef: `
-    This market will resolve to 'Yes' if the official closing value of the Hang Seng Index on ${attestationTime.utc().format('MMMM DD, YYYY')}, as reported by a reliable financial source (e.g., https://www.investing.com/indices/hang-sen-40 or https://www.bloomberg.com), is strictly greater than ${goalFormatted}. Otherwise, it will resolve to 'No'.
-  `,
+  question: `Will the Hang Seng Index be above ${goalFormatted} at at market close on ${attestationTime.utc().format('MMMM D')}?`,
+  outcomeResolutionDef: `This market will resolve to 'Yes' if the official closing value of the Hang Seng Index on ${attestationTime.utc().format('MMMM DD, YYYY')}, as reported by a reliable financial source (e.g., https://www.investing.com/indices/hang-sen-40 or https://www.bloomberg.com), is strictly greater than ${goalFormatted}. Otherwise, it will resolve to 'No'.`,
   startTime: new Date(Number(new Date())),
   endTime,
   attestationTime: attestationTime.toDate(),
@@ -47,7 +47,8 @@ const data = {
       name: 'Yes',
       imgUrl: 'https://images.ignitemarket.xyz/outcomes/yes.svg'
     }
-  ]
+  ],
+  categories: ['Finance']
 };
 
 const dataSources = [
@@ -131,6 +132,12 @@ const processPredictionSet = async () => {
 
     // Create prediction set.
     const predictionSet = await service.createPredictionSet(ps, dataSourceIds, context);
+
+    if (data.categories) {
+      for (const category of data.categories) {
+        await service.addPredictionCategory(predictionSet.id, category, context);
+      }
+    }
 
     // Add prediction set to blockchain.
     await addPredictionSet(predictionSet, context);

@@ -2,6 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { env } from '../../config/env';
 import {
   BadRequestErrorCode,
+  DbTables,
   PopulateFrom,
   ResourceNotFoundErrorCode,
   SerializeFor,
@@ -332,6 +333,39 @@ export class PredictionSetService {
         context
       });
     }
+
+    return predictionSet.serialize(SerializeFor.USER);
+  }
+
+  /**
+   * Add prediction category.
+   *
+   * @param predictionSetId Prediction set ID.
+   * @param category Category name.
+   * @param context Application context.
+   */
+  public async addPredictionCategory(predictionSetId: number, category: string, context: Context) {
+    const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId);
+    if (!predictionSet.exists() || !predictionSet.isEnabled()) {
+      throw new CodeException({
+        code: ResourceNotFoundErrorCode.PREDICTION_SET_DOES_NOT_EXISTS,
+        errorCodes: ResourceNotFoundErrorCode,
+        status: HttpStatus.NOT_FOUND,
+        sourceFunction: `${this.constructor.name}/updatePredictionSet`,
+        context
+      });
+    }
+
+    await context.mysql.paramExecute(
+      `
+        INSERT INTO ${DbTables.PREDICTION_SET_CATEGORY} (prediction_set_id, category, status)
+        VALUES (@predictionSetId, @category, ${SqlModelStatus.ACTIVE})
+      `,
+      {
+        predictionSetId: predictionSet.id,
+        category
+      }
+    );
 
     return predictionSet.serialize(SerializeFor.USER);
   }

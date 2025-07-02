@@ -474,54 +474,56 @@ export class PredictionSet extends AdvancedSQLModel {
     }, {});
 
     // Calculate position details for each outcome
-    const positions = Object.values(outcomeGroups).map((group: any) => {
-      // First pass: calculate final position and track buys
-      let remainingShares = 0;
-      let collateralAmount = 0;
-      const buys = [];
+    const positions = Object.values(outcomeGroups)
+      .map((group: any) => {
+        // First pass: calculate final position and track buys
+        let remainingShares = 0;
+        let collateralAmount = 0;
+        const buys = [];
 
-      group.transactions.forEach((tx: any) => {
-        const shareChange = tx.type === ShareTransactionType.SELL ? -Number(tx.outcomeTokens) : Number(tx.outcomeTokens);
-        const amountChange = tx.type === ShareTransactionType.SELL ? -Number(tx.amount) : Number(tx.amount);
+        group.transactions.forEach((tx: any) => {
+          const shareChange = tx.type === ShareTransactionType.SELL ? -Number(tx.outcomeTokens) : Number(tx.outcomeTokens);
+          const amountChange = tx.type === ShareTransactionType.SELL ? -Number(tx.amount) : Number(tx.amount);
 
-        remainingShares += shareChange;
-        collateralAmount += amountChange;
+          remainingShares += shareChange;
+          collateralAmount += amountChange;
 
-        if (tx.type === ShareTransactionType.BUY || tx.type === ShareTransactionType.FUND) {
-          buys.push({
-            shares: Number(tx.outcomeTokens),
-            amount: Number(tx.amount),
-            pricePerShare: Number(tx.amount) / Number(tx.outcomeTokens)
-          });
+          if (tx.type === ShareTransactionType.BUY || tx.type === ShareTransactionType.FUND) {
+            buys.push({
+              shares: Number(tx.outcomeTokens),
+              amount: Number(tx.amount),
+              pricePerShare: Number(tx.amount) / Number(tx.outcomeTokens)
+            });
+          }
+        });
+
+        // Second pass: calculate weighted average
+        // Needs to only account for shares that are not yet sold
+        let weightedAmount = 0;
+        let totalShares = 0;
+        let sharesToAccount = remainingShares;
+
+        // Process buys in reverse order (newest first)
+        for (let i = buys.length - 1; i >= 0 && sharesToAccount > 0; i--) {
+          const buy = buys[i];
+          const sharesFromThisBuy = Math.min(buy.shares, sharesToAccount);
+          const amountFromThisBuy = sharesFromThisBuy * buy.pricePerShare;
+
+          weightedAmount += amountFromThisBuy;
+          totalShares += sharesFromThisBuy;
+          sharesToAccount -= sharesFromThisBuy;
         }
-      });
 
-      // Second pass: calculate weighted average
-      // Needs to only account for shares that are not yet sold
-      let weightedAmount = 0;
-      let totalShares = 0;
-      let sharesToAccount = remainingShares;
-
-      // Process buys in reverse order (newest first)
-      for (let i = buys.length - 1; i >= 0 && sharesToAccount > 0; i--) {
-        const buy = buys[i];
-        const sharesFromThisBuy = Math.min(buy.shares, sharesToAccount);
-        const amountFromThisBuy = sharesFromThisBuy * buy.pricePerShare;
-
-        weightedAmount += amountFromThisBuy;
-        totalShares += sharesFromThisBuy;
-        sharesToAccount -= sharesFromThisBuy;
-      }
-
-      return {
-        outcomeId: group.outcomeId,
-        outcomeName: group.outcomeName,
-        outcomeIndex: group.outcomeIndex,
-        avgBuyPrice: totalShares > 0 ? weightedAmount / totalShares : 0,
-        collateralAmount,
-        sharesAmount: remainingShares
-      };
-    });
+        return {
+          outcomeId: group.outcomeId,
+          outcomeName: group.outcomeName,
+          outcomeIndex: group.outcomeIndex,
+          avgBuyPrice: totalShares > 0 ? weightedAmount / totalShares : 0,
+          collateralAmount,
+          sharesAmount: remainingShares
+        };
+      })
+      .filter((position: any) => position.sharesAmount > 0);
 
     return positions;
   }

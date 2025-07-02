@@ -13,11 +13,10 @@ dayjs.extend(utc);
 
 const priceGoal = 2.01;
 
-const attestationTime = dayjs('2025-07-01T10:00:00Z');
-// const attestationTime = dayjs.utc().endOf('isoWeek');
-const attestationTimeFormatted = dayjs(attestationTime).format('MMM D, YYYY HH:mm');
+// const attestationTime = dayjs('2025-07-01T10:00:00Z');
+const attestationTime = dayjs.utc().endOf('isoWeek');
+const attestationTimeFormatted = dayjs(attestationTime).utc().format('MMM D, YYYY HH:mm');
 const endTime = dayjs(attestationTime).toDate();
-// const endTime = dayjs.utc(attestationTime).subtract(1, 'day').toDate();
 const resolutionTime = dayjs(attestationTime).add(1, 'hour').toDate();
 
 const data = {
@@ -124,6 +123,7 @@ const processPredictionSet = async () => {
 
     // Create prediction set.
     const predictionSet = await service.createPredictionSet(ps, dataSourceIds, context);
+    await service.addPredictionCategory(predictionSet.id, 'XRP', context);
 
     // Add prediction set to blockchain.
     await addPredictionSet(predictionSet, context);
