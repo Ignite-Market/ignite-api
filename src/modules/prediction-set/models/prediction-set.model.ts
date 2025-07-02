@@ -1220,14 +1220,14 @@ export class PredictionSet extends AdvancedSQLModel {
         SELECT
           outcome_id,
           chance,
-          FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(createTime)/900)*900) as date
+          FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(createTime)/300)*300) as date
         FROM ${DbTables.OUTCOME_CHANCE}
         WHERE (outcome_id, createTime) IN (
           SELECT outcome_id, MAX(createTime)
           FROM ${DbTables.OUTCOME_CHANCE}
           WHERE prediction_set_id = @predictionSetId
           ${rangeCondition}
-          GROUP BY outcome_id, FLOOR(UNIX_TIMESTAMP(createTime)/900)
+          GROUP BY outcome_id, FLOOR(UNIX_TIMESTAMP(createTime)/300)
         )
         GROUP BY date, outcome_id
         ORDER BY date ASC
