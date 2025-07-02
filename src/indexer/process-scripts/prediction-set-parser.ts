@@ -295,14 +295,24 @@ async function main() {
         }
 
         const errorId = randomUUID();
-        await sendSlackWebhook(
-          `\n
-          *[INDEXER ERROR]*: Error while parsing prediction-set events.\n
-          - Error ID: \`${errorId}\`\n
-          - Prediction-set ID: \`${predictionSetId}\``,
-          false,
-          ChannelList.INDEXER
-        );
+
+        // Do not send slack notification for certain errors.
+        let sendSlackNotification = true;
+        if (error?.code === 'TIMEOUT') {
+          sendSlackNotification = false;
+        }
+
+        if (sendSlackNotification) {
+          await sendSlackWebhook(
+            `Error while parsing prediction-set events.\n
+            - Error ID: \`${errorId}\`\n
+            - Prediction-set ID: \`${predictionSetId}\`\n
+            ${error.message ? `- Error message: \`${error.message}\`` : ''}\n,
+            ${error.shortMessage ? `- Error short message: \`${error.shortMessage}\`` : ''}\n`,
+            false,
+            ChannelList.INDEXER
+          );
+        }
 
         await workerProcess.writeLogToDb(WorkerLogStatus.ERROR, 'Error while parsing prediction-set events', { predictionSetId }, error, errorId);
       }

@@ -31,8 +31,6 @@ export function setup(fpmmAddress: string = null) {
   const provider = new ethers.JsonRpcProvider(env.RPC_URL);
   const signer = new ethers.Wallet(env.SIGNER_PRIVATE_KEY, provider);
 
-  // TODO: DO NOT USE SIGNER IF NOT NECESSARY
-
   const oracleContract = new ethers.Contract(env.ORACLE_CONTRACT, ORACLE_ABI, signer);
   const fpmmfContract = new ethers.Contract(env.FPMM_FACTORY_CONTRACT, FPMM_FACTORY_ABI, signer);
   const conditionalTokenContract = new ethers.Contract(env.CONDITIONAL_TOKEN_CONTRACT, CONDITIONAL_TOKEN_ABI, signer);
