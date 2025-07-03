@@ -30,7 +30,8 @@ const goalFormatted = new Intl.NumberFormat('en-US', {
 const data = {
   collateral_token_id: 1,
   question: `Will the Nikkei 225 index be above ${goalFormatted} at at market close on ${attestationTime.utc().format('MMMM D')}?`,
-  outcomeResolutionDef: `This market will resolve to 'Yes' if the official closing value of the Nikkei 225 index on ${attestationTime.utc().format('MMMM DD, YYYY')}, as reported by a reliable financial source (e.g., https://www.investing.com/indices/japan-ni225 or https://www.bloomberg.com), is strictly greater than ${goalFormatted}. Otherwise, it will resolve to 'No'.`,
+  outcomeResolutionDef: `This market will resolve to 'Yes' if the official closing value of the Nikkei 225 index on ${attestationTime.utc().format('MMMM DD, YYYY')}, as reported by a reliable financial source, is strictly greater than ${goalFormatted}. Otherwise, it will resolve to 'No'.
+  The resolution sources will be: Bloomberg, Yahoo finance and Google finance.`,
   startTime: new Date(Number(new Date())),
   endTime,
   attestationTime: attestationTime.toDate(),
