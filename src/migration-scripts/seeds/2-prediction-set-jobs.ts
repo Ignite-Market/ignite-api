@@ -17,7 +17,8 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
       ('${WorkerName.REFRESH_OUTCOME_CHANCES}', 0, '*/15 * * * *', 5),
       ('${WorkerName.FINALIZE_PROPOSAL_ROUNDS}', 0, '0 * * * *', 5),
       ('${WorkerName.CLAIMS_PARSER}', 0, '0 * * * *', 5),
-      ('${WorkerName.COLLATERAL_TOKEN_USD_PRICE}', 0, '* * * * *', 5)
+      ('${WorkerName.COLLATERAL_TOKEN_USD_PRICE}', 0, '* * * * *', 5),
+      ('${WorkerName.INDEXER_HEALTH_CHECK}', 0, '* * * * *', 5)
   `);
 }
 
@@ -30,5 +31,6 @@ export async function downgrade(queryFn: (query: string, values?: any[]) => Prom
     DELETE FROM ${DbTables.JOB} WHERE name IN ('${WorkerName.REFRESH_OUTCOME_CHANCES}');
     DELETE FROM ${DbTables.JOB} WHERE name IN ('${WorkerName.CLAIMS_PARSER}');
     DELETE FROM ${DbTables.JOB} WHERE name IN ('${WorkerName.COLLATERAL_TOKEN_USD_PRICE}');
+    DELETE FROM ${DbTables.JOB} WHERE name IN ('${WorkerName.INDEXER_HEALTH_CHECK}');
   `);
 }
