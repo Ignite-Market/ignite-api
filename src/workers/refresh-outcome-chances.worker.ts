@@ -1,9 +1,7 @@
-import { env } from '../config/env';
 import { DbTables, SqlModelStatus } from '../config/types';
 import { setup } from '../lib/blockchain';
 import { WorkerLogStatus } from '../lib/worker/logger';
 import { BaseQueueWorker } from '../lib/worker/serverless-workers/base-queue-worker';
-import { CollateralToken } from '../modules/collateral-token/models/collateral-token.model';
 import { OutcomeChance } from '../modules/prediction-set/models/outcome-chance.model';
 import { PredictionSet, PredictionSetStatus } from '../modules/prediction-set/models/prediction-set.model';
 
@@ -27,6 +25,7 @@ export class RefreshOutcomeChancesWorker extends BaseQueueWorker {
           AND ps.status = ${SqlModelStatus.ACTIVE}
           AND o.status = ${SqlModelStatus.ACTIVE}
           AND o.positionId IS NOT NULL
+          AND ps.endTime > NOW()
         `,
       {}
     );
@@ -55,79 +54,42 @@ export class RefreshOutcomeChancesWorker extends BaseQueueWorker {
         return;
       }
 
-      const collateralToken = await new CollateralToken({}, this.context).populateById(predictionSet.collateral_token_id);
-      if (!collateralToken.exists() || !collateralToken.isEnabled()) {
-        await this.writeLogToDb(
-          WorkerLogStatus.ERROR,
-          `Collateral token with ID: ${predictionSet.collateral_token_id} does not exists or is not funded.`,
-          {
-            collateralTokenId: predictionSet.collateral_token_id
-          },
-          null
-        );
-
-        return;
-      }
-
       const owners = predictionSet.outcomes.map(() => predictionSet.chainData.contractAddress);
       const positionIds = predictionSet.outcomes.map((outcome) => BigInt(outcome.positionId));
 
-      const { conditionalTokenContract, fpmmContract } = setup(predictionSet.chainData.contractAddress);
-
+      const { conditionalTokenContract } = setup();
       const balances = await conditionalTokenContract.balanceOfBatch(owners, positionIds);
       if (!balances?.length) {
         return;
       }
       const totalSupply = balances.reduce((total: bigint, reserve: bigint) => total + reserve, BigInt(0));
 
-      // Calculate marginal prices.
-      const marginalPrices: number[] = [];
-      for (const outcome of predictionSet.outcomes) {
-        const amount = BigInt(Math.round(1 * 10 ** collateralToken.decimals));
-        const shares = await fpmmContract.calcBuyAmount(amount, outcome.outcomeIndex);
-        const pricePerShare = Number(amount) / Number(shares);
-        marginalPrices.push(pricePerShare);
-      }
+      // Calculate fixed-product market maker probabilities.
+      const balancesBigInt: bigint[] = balances.map((b: any) => BigInt(b));
 
-      // Normalize prices to sum to 1.
-      const priceTotal = marginalPrices.reduce((acc, p) => acc + p, 0);
-      const normalizedChances = marginalPrices.map((p) => p / priceTotal);
+      // Π_j b_j (product of all balances)
+      const product: bigint = balancesBigInt.reduce((acc, b) => acc * b, BigInt(1));
+
+      // numerator_i = product / b_i
+      const numerators: bigint[] = balancesBigInt.map((b) => product / b);
+      const denom: bigint = numerators.reduce((acc, n) => acc + n, BigInt(0));
+      const probabilities: number[] = numerators.map((n) => Number(n) / Number(denom));
 
       for (const [index, outcome] of predictionSet.outcomes.entries()) {
         const outcomeBalance = balances[index];
-        const normalizedChance = normalizedChances[index];
+        const chance = probabilities[index];
 
         await new OutcomeChance(
           {
             outcome_id: outcome.id,
             prediction_set_id: predictionSet.id,
-            chance: normalizedChance,
+            chance: chance,
             supply: outcomeBalance.toString(),
             totalSupply: totalSupply.toString()
           },
           this.context
         ).insert();
       }
-
-      // for (const [index, outcome] of predictionSet.outcomes.entries()) {
-      //   const outcomeBalance = balances[index];
-
-      //   // Get price per share if we invest 1 collateral token.
-      //   const amount = BigInt(Math.round(1 * 10 ** collateralToken.decimals));
-      //   const shares = await fpmmContract.calcBuyAmount(amount, outcome.outcomeIndex);
-      //   const pricePerShare = Number(amount) / Number(shares);
-
-      //   await new OutcomeChance(
-      //     {
-      //       outcome_id: outcome.id,
-      //       prediction_set_id: predictionSet.id,
-      //       chance: pricePerShare,
-      //       supply: outcomeBalance.toString(),
-      //       totalSupply: totalSupply.toString()
-      //     },
-      //     this.context
-      //   ).insert();
-      // }
     } catch (error) {
       await this.writeLogToDb(
         WorkerLogStatus.ERROR,
@@ -140,26 +102,3 @@ export class RefreshOutcomeChancesWorker extends BaseQueueWorker {
     }
   }
 }
-
-// Old way of price calculation:
-// const precision = BigInt(10) ** BigInt(18);
-// const product: bigint = balances.reduce((acc: bigint, balance: bigint) => acc * balance, precision);
-// const denominator: bigint = balances.reduce((acc: bigint, balance: bigint) => acc + product / balance, BigInt(0));
-// const totalSupply = balances.reduce((total: bigint, reserve: bigint) => total + reserve, BigInt(0));
-
-// for (const [index, outcome] of predictionSet.outcomes.entries()) {
-//   const outcomeBalance = balances[index];
-//   const priceInWei = (product * precision) / (outcomeBalance * denominator);
-//   const chance = Number(priceInWei) / 1e18;
-
-//   await new OutcomeChance(
-//     {
-//       outcome_id: outcome.id,
-//       prediction_set_id: predictionSet.id,
-//       chance: chance,
-//       supply: outcomeBalance.toString(),
-//       totalSupply: totalSupply.toString()
-//     },
-//     this.context
-//   ).insert();
-// }
