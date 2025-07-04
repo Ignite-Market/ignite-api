@@ -14,9 +14,9 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
       ('${WorkerName.VOTING_PARSER}', 0, '* * * * *', 5),
       ('${WorkerName.PREDICTION_SET_FINALIZED_PARSER}', 0, '*/15 * * * *', 5),
       ('${WorkerName.PREDICTION_SETS_FACTORY_PARSER}', 0, '* * * * *', 5),
-      ('${WorkerName.REFRESH_OUTCOME_CHANCES}', 0, '*/15 * * * *', 5),
-      ('${WorkerName.FINALIZE_PROPOSAL_ROUNDS}', 0, '0 * * * *', 5),
-      ('${WorkerName.CLAIMS_PARSER}', 0, '0 * * * *', 5),
+      ('${WorkerName.REFRESH_OUTCOME_CHANCES}', 0, '*/5 * * * *', 5),
+      ('${WorkerName.FINALIZE_PROPOSAL_ROUNDS}', 0, '*/5 * * * *', 5),
+      ('${WorkerName.CLAIMS_PARSER}', 0, '* * * * *', 5),
       ('${WorkerName.COLLATERAL_TOKEN_USD_PRICE}', 0, '* * * * *', 5),
       ('${WorkerName.INDEXER_HEALTH_CHECK}', 0, '* * * * *', 5)
   `);
