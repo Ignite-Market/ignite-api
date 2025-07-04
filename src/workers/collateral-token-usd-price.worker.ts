@@ -40,7 +40,7 @@ export class CollateralTokenUsdPriceWorker extends BaseSingleThreadWorker {
 
     for (const data of collateralTokens) {
       const collateralToken = new CollateralToken(data, this.context);
-      if (collateralToken.symbol.toLowerCase() === 'usdc') {
+      if (collateralToken.symbol.toLowerCase().startsWith('usd')) {
         continue;
       }
 
