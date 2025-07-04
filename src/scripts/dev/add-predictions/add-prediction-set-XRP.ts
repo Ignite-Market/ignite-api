@@ -22,7 +22,8 @@ const resolutionTime = dayjs(attestationTime).add(1, 'hour').toDate();
 const data = {
   collateral_token_id: 1,
   question: `Will the XRP market price be above $${priceGoal.toFixed(2)} at the end of this Sunday?`,
-  outcomeResolutionDef: `This market will resolve to "Yes" if the price of XRP is above $${priceGoal.toFixed(2)} at the end of this Sunday (${attestationTimeFormatted}). The resolution sources will be CoinGecko, CryptoCompare and Coinbase.`,
+  outcomeResolutionDef: `This market will resolve to "Yes" if the price of XRP is above $${priceGoal.toFixed(2)} at the end of this Sunday (${attestationTimeFormatted}).
+  The resolution sources will be: CoinGecko, CryptoCompare and Coinbase.`,
   startTime: new Date(Number(new Date())),
   endTime,
   attestationTime: attestationTime.toDate(),
@@ -44,13 +45,13 @@ const data = {
 
 const dataSources = [
   {
-    endpoint: 'https://api.coingecko.com/api/v3/coins/ripple/history',
+    endpoint: 'https://api.coingecko.com/api/v3/coins/ripple/market_chart',
     httpMethod: 'GET',
     queryParams: {
-      localization: 'false',
-      date: attestationTime.format('DD-MM-YYYY')
+      vs_currency: 'usd',
+      days: '1'
     },
-    jqQuery: `{ "outcomeIdx": [1, 0][(.market_data.current_price.usd >= ${priceGoal}) | if . then 0 else 1 end] }`,
+    jqQuery: `{ "outcomeIdx": [1, 0][(.prices | map(.[0] as $ts | [$ts, .[1], ($ts - ${attestationTime.unix() * 1000} | fabs)]) | sort_by(.[2]) | .[0][1] >= ${priceGoal}) | if . then 0 else 1 end] }`,
     abi: {
       'components': [
         {
@@ -87,9 +88,9 @@ const dataSources = [
     endpoint: 'https://api.coinbase.com/v2/prices/XRP-USD/spot',
     httpMethod: 'GET',
     queryParams: {
-      date: attestationTime.format('YYYY-MM-DD')
+      date: attestationTime.utc().format('YYYY-MM-DD')
     },
-    jqQuery: `{ "outcomeIdx": [1, 0][(.data.amount >= ${priceGoal}) | if . then 0 else 1 end] }`,
+    jqQuery: `{ "outcomeIdx": [1, 0][(.data.amount | tonumber >= ${priceGoal}) | if . then 0 else 1 end] }`,
     abi: {
       'components': [
         {

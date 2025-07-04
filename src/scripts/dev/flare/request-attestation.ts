@@ -47,22 +47,22 @@ const comparedPrice = 24000; // Variable for the price threshold
 // };
 
 // Market close time: 08:00:00 / 16:00:00 ChinaST
-const attestationTime = dayjs('2025-07-01T08:00:00Z');
+const attestationTime = dayjs('2025-07-02T23:59:59Z');
 // const endTime = dayjs(attestationTime).subtract(1, 'day').toDate();
 const endTime = dayjs('2025-07-01T09:30:00Z');
 const attestationTimeUnix = dayjs(attestationTime).unix();
 const attestationTimeFormatted = dayjs(attestationTime).utc().format('YYYY-MM-DD HH:mm:ss');
-const goal = 24050;
+const priceGoal = 2.243;
 
 const dataSources = [
   {
-    endpoint: 'https://api-proxy.ignitemarket.xyz/bloomberg/market/get-chart',
+    endpoint: 'https://api.coingecko.com/api/v3/coins/ripple/market_chart',
     httpMethod: 'GET',
     queryParams: {
-      id: 'HSI:ind',
-      interval: 'd1'
+      vs_currency: 'usd',
+      days: '1'
     },
-    jqQuery: `{ "outcomeIdx": [1, 0][((.result."HSI:IND".ticks[] | select(.time == ${attestationTimeUnix}) | .close) // .result."HSI:IND".ticks[-1].close) >= ${goal} | if . then 0 else 1 end] }`,
+    jqQuery: `{ "outcomeIdx": [1, 0][(.prices | map(.[0] as $ts | [$ts, .[1], ($ts - ${attestationTime.unix() * 1000} | fabs)]) | sort_by(.[2]) | .[0][1] >= ${priceGoal}) | if . then 0 else 1 end] }`,
     abi: {
       'components': [
         {
@@ -75,13 +75,15 @@ const dataSources = [
     }
   },
   {
-    endpoint: 'https://api-proxy.ignitemarket.xyz/yahoo/api/v1/markets/stock/history',
+    endpoint: 'https://min-api.cryptocompare.com/data/v2/histominute',
     httpMethod: 'GET',
     queryParams: {
-      ticker: '^HSI',
-      interval: '30m'
+      fsym: 'XRP',
+      tsym: 'USD',
+      limit: '1',
+      toTs: attestationTime.unix()
     },
-    jqQuery: `{ "outcomeIdx": [1, 0][((.body | to_entries[] | select(.value.date_utc == ${attestationTimeUnix}) | .value.close) // (.body | to_entries | last | .value.close)) >= ${goal} | if . then 0 else 1 end] }`,
+    jqQuery: `{ "outcomeIdx": [1, 0][(.Data.Data[-1].close >= ${priceGoal}) | if . then 0 else 1 end] }`,
     abi: {
       'components': [
         {
@@ -94,14 +96,12 @@ const dataSources = [
     }
   },
   {
-    endpoint: 'https://api-proxy.ignitemarket.xyz/real-time/stock-time-series',
+    endpoint: 'https://api.coinbase.com/v2/prices/XRP-USD/spot',
     httpMethod: 'GET',
     queryParams: {
-      symbol: 'HSI:INDEXHANGSENG',
-      period: '5D',
-      language: 'en'
+      date: attestationTime.utc().format('YYYY-MM-DD')
     },
-    jqQuery: `{ "outcomeIdx": [1, 0][((.data.time_series | to_entries[] | select(.key == "${attestationTimeFormatted}") | .value.price) // (.data.time_series | to_entries | last | .value.price)) >= ${goal} | if . then 0 else 1 end] }`,
+    jqQuery: `{ "outcomeIdx": [1, 0][(.data.amount | tonumber >= ${priceGoal}) | if . then 0 else 1 end] }`,
     abi: {
       'components': [
         {
@@ -141,8 +141,10 @@ const abi = {
       params: queryParams
     });
     const data = test.data;
-    console.log('API Response structure:');
-    console.log(JSON.stringify(data, null, 2));
+    console.log('API Request:');
+    console.log(endpoint, httpMethod, queryParams);
+    // console.log('API Response structure:');
+    // console.log(JSON.stringify(data, null, 2));
 
     // Test the jq query with real jq
     console.log('\nTesting JQ Query:');

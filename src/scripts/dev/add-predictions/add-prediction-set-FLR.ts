@@ -1,4 +1,3 @@
-import { env } from '../../../config/env';
 import { addPredictionSet } from '../../../lib/blockchain';
 import { createContext } from '../../../lib/utils';
 import { DataSource } from '../../../modules/prediction-set/models/data-source.model';
@@ -6,40 +5,32 @@ import { Outcome } from '../../../modules/prediction-set/models/outcome.model';
 import { PredictionSet, ResolutionType } from '../../../modules/prediction-set/models/prediction-set.model';
 import { PredictionSetService } from '../../../modules/prediction-set/prediction-set.service';
 import * as dayjs from 'dayjs';
+import * as isoWeek from 'dayjs/plugin/isoWeek';
 import * as utc from 'dayjs/plugin/utc';
-import * as timezone from 'dayjs/plugin/timezone';
 
+dayjs.extend(isoWeek);
 dayjs.extend(utc);
-dayjs.extend(timezone);
-// Market close time: 20:00:00 UTC / 16:00:00 EDT
-const attestationTime = dayjs('2025-07-07T20:00:00Z');
-const endTime = dayjs(attestationTime).subtract(1, 'hour').toDate();
-// const endTime = dayjs('2025-07-07T10:00:00Z');
-const resolutionTime = dayjs(endTime).add(1, 'hour').toDate();
-const attestationTimeUnix = dayjs(attestationTime).unix();
 
-// attestation time in exchange local time - US EDT
-const attestationTimeFormatted = dayjs(attestationTime).tz('America/New_York').format('YYYY-MM-DD HH:mm:ss');
+const priceGoal = 0.0172;
 
-const goal = 6100;
-const goalFormatted = new Intl.NumberFormat('en-US', {
-  style: 'decimal',
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 2
-}).format(goal);
+// const attestationTime = dayjs('2025-07-01T10:00:00Z');
+const attestationTime = dayjs.utc().endOf('isoWeek');
+const attestationTimeFormatted = dayjs(attestationTime).utc().format('MMM D, YYYY HH:mm');
+const endTime = dayjs(attestationTime).toDate();
+const resolutionTime = dayjs(attestationTime).add(1, 'hour').toDate();
 
 const data = {
   collateral_token_id: 1,
-  question: `Will the S&P 500 index be above ${goalFormatted} at market close on ${attestationTime.utc().format('MMMM D')}?`,
-  outcomeResolutionDef: `This market will resolve to 'Yes' if the official closing value of the S&P 500 index on ${attestationTime.utc().format('MMMM DD, YYYY')}, as reported by a reliable financial source, is strictly greater than ${goalFormatted}. Otherwise, it will resolve to 'No'.
-  The resolution sources will be: Bloomberg, Yahoo finance and Google finance.`,
+  question: `Will the FLR market price be above $${priceGoal.toFixed(4)} at the end of this Sunday?`,
+  outcomeResolutionDef: `This market will resolve to "Yes" if the price of FLR is above $${priceGoal.toFixed(4)} at the end of this Sunday (${attestationTimeFormatted}).
+  The resolution sources will be: CoinGecko, CryptoCompare and Coinbase.`,
   startTime: new Date(Number(new Date())),
   endTime,
   attestationTime: attestationTime.toDate(),
   resolutionTime,
   resolutionType: ResolutionType.AUTOMATIC,
   consensusThreshold: 60,
-  imgUrl: 'https://images.ignitemarket.xyz/prediction-sets/nyse.png',
+  imgUrl: 'https://images.ignitemarket.xyz/prediction-sets/flare.png',
   predictionOutcomes: [
     {
       name: 'No',
@@ -49,19 +40,18 @@ const data = {
       name: 'Yes',
       imgUrl: 'https://images.ignitemarket.xyz/outcomes/yes.svg'
     }
-  ],
-  categories: ['Finance']
+  ]
 };
 
 const dataSources = [
   {
-    endpoint: 'https://api-proxy.ignitemarket.xyz/bloomberg/market/get-chart',
+    endpoint: 'https://api.coingecko.com/api/v3/coins/flare-networks/market_chart',
     httpMethod: 'GET',
     queryParams: {
-      id: 'SPX:ind',
-      interval: 'd1'
+      vs_currency: 'usd',
+      days: '1'
     },
-    jqQuery: `{ "outcomeIdx": [1, 0][((.result."SPX:IND".ticks[] | select(.time == ${attestationTimeUnix}) | .close) // .result."SPX:IND".ticks[-1].close) >= ${goal} | if . then 0 else 1 end] }`,
+    jqQuery: `{ "outcomeIdx": [1, 0][(.prices | map(.[0] as $ts | [$ts, .[1], ($ts - ${attestationTime.unix() * 1000} | fabs)]) | sort_by(.[2]) | .[0][1] >= ${priceGoal}) | if . then 0 else 1 end] }`,
     abi: {
       'components': [
         {
@@ -74,13 +64,15 @@ const dataSources = [
     }
   },
   {
-    endpoint: 'https://api-proxy.ignitemarket.xyz/yahoo/api/v1/markets/stock/history',
+    endpoint: 'https://min-api.cryptocompare.com/data/v2/histominute',
     httpMethod: 'GET',
     queryParams: {
-      ticker: '^GSPC',
-      interval: '30m'
+      fsym: 'FLR',
+      tsym: 'USD',
+      limit: '1',
+      toTs: attestationTime.unix()
     },
-    jqQuery: `{ "outcomeIdx": [1, 0][((.body | to_entries[] | select(.value.date_utc == ${attestationTimeUnix}) | .value.close) // (.body | to_entries | last | .value.close)) >= ${goal} | if . then 0 else 1 end] }`,
+    jqQuery: `{ "outcomeIdx": [1, 0][(.Data.Data[-1].close >= ${priceGoal}) | if . then 0 else 1 end] }`,
     abi: {
       'components': [
         {
@@ -93,14 +85,12 @@ const dataSources = [
     }
   },
   {
-    endpoint: 'https://api-proxy.ignitemarket.xyz/real-time/stock-time-series',
+    endpoint: 'https://api.coinbase.com/v2/prices/FLR-USD/spot',
     httpMethod: 'GET',
     queryParams: {
-      symbol: '.INX:INDEXSP',
-      period: '5D',
-      language: 'en'
+      date: attestationTime.utc().format('YYYY-MM-DD')
     },
-    jqQuery: `{ "outcomeIdx": [1, 0][((.data.time_series | to_entries[] | select(.key == "${attestationTimeFormatted}") | .value.price) // (.data.time_series | to_entries | last | .value.price)) >= ${goal} | if . then 0 else 1 end] }`,
+    jqQuery: `{ "outcomeIdx": [1, 0][(.data.amount | tonumber >= ${priceGoal}) | if . then 0 else 1 end] }`,
     abi: {
       'components': [
         {
@@ -134,12 +124,7 @@ const processPredictionSet = async () => {
 
     // Create prediction set.
     const predictionSet = await service.createPredictionSet(ps, dataSourceIds, context);
-
-    if (data.categories) {
-      for (const category of data.categories) {
-        await service.addPredictionCategory(predictionSet.id, category, context);
-      }
-    }
+    await service.addPredictionCategory(predictionSet.id, 'Flare', context);
 
     // Add prediction set to blockchain.
     await addPredictionSet(predictionSet, context);
