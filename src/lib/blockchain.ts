@@ -1,14 +1,13 @@
 import { HttpStatus, Logger } from '@nestjs/common';
-import { ethers } from 'ethers';
+import { AbiCoder, ethers, keccak256 } from 'ethers';
 import { env } from '../config/env';
 import { ResourceNotFoundErrorCode, SystemErrorCode } from '../config/types';
 import { Context } from '../context';
+import { CollateralToken } from '../modules/collateral-token/models/collateral-token.model';
 import { PredictionSetChainData } from '../modules/prediction-set/models/prediction-set-chain-data.model';
 import { PredictionSet, ResolutionType } from '../modules/prediction-set/models/prediction-set.model';
 import { CONDITIONAL_TOKEN_ABI, FPMM_ABI, FPMM_FACTORY_ABI, ORACLE_ABI } from './abis';
 import { CodeException } from './exceptions/exceptions';
-import { CollateralToken } from '../modules/collateral-token/models/collateral-token.model';
-import { keccak256, AbiCoder } from 'ethers';
 
 /**
  * Prediction set blockchain status.
@@ -31,8 +30,6 @@ export enum PredictionSetBcStatus {
 export function setup(fpmmAddress: string = null) {
   const provider = new ethers.JsonRpcProvider(env.RPC_URL);
   const signer = new ethers.Wallet(env.SIGNER_PRIVATE_KEY, provider);
-
-  // TODO: DO NOT USE SIGNER IF NOT NECESSARY
 
   const oracleContract = new ethers.Contract(env.ORACLE_CONTRACT, ORACLE_ABI, signer);
   const fpmmfContract = new ethers.Contract(env.FPMM_FACTORY_CONTRACT, FPMM_FACTORY_ABI, signer);

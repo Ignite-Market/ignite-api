@@ -92,12 +92,12 @@ export class Outcome extends AdvancedSQLModel {
    * Outcome volume - virtual field, calculated, not saved.
    */
   @prop({
-    parser: { resolver: integerParser() },
+    parser: { resolver: stringParser() },
     serializable: [SerializeFor.USER],
     populatable: [PopulateFrom.DB],
     defaultValue: () => null
   })
-  volume: number;
+  volume: string;
 
   /**
    * Populated model by index and prediction set ID.

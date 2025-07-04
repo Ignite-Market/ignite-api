@@ -9,7 +9,7 @@ import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
 import { BaseQueryFilter } from '../../../lib/base-models/base-query-filter.model';
 import { getQueryParams, selectAndCountQuery, unionSelectAndCountQuery } from '../../../lib/database/sql-utils';
 import { dateToSqlString } from '../../../lib/utils';
-import { enumInclusionValidator } from '../../../lib/validators';
+import { conditionalPresenceValidator, enumInclusionValidator } from '../../../lib/validators';
 import { ActivityQueryFilter } from '../dtos/activity-query-filter';
 import { HoldersQueryFilter } from '../dtos/holders-query-filter';
 import { PredictionSetChanceHistoryQueryFilter } from '../dtos/prediction-set-chance-history-query-filter';
@@ -19,8 +19,8 @@ import { Outcome } from './outcome.model';
 import { PredictionSetAttestation } from './prediction-set-attestation.model';
 import { PredictionSetChainData } from './prediction-set-chain-data.model';
 import { ShareTransactionType } from './transactions/outcome-share-transaction.model';
-import { UserWatchlist } from './user-watchlist';
 import { FundingTransactionType } from './transactions/prediction-set-funding-transaction.model';
+import { UserWatchlist } from './user-watchlist';
 
 /**
  * Prediction set resolution type.
@@ -88,18 +88,6 @@ export class PredictionSet extends AdvancedSQLModel {
   public collateral_token_id: number;
 
   /**
-   * Set ID - A distinct code that uniquely identifies each prediction set within the platform.
-   */
-  @prop({
-    parser: {
-      resolver: stringParser()
-    },
-    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB],
-    populatable: [PopulateFrom.DB]
-  })
-  setId: string;
-
-  /**
    * Question - The central query or event being predicted, clearly framed to avoid ambiguity.
    */
   @prop({
@@ -118,42 +106,6 @@ export class PredictionSet extends AdvancedSQLModel {
   question: string;
 
   /**
-   * Description - A detailed explanation of the event or context behind the prediction, ensuring users understand its background and significance.
-   */
-  @prop({
-    parser: {
-      resolver: stringParser()
-    },
-    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
-    populatable: [PopulateFrom.DB, PopulateFrom.USER],
-    validators: [
-      {
-        resolver: presenceValidator(),
-        code: ValidatorErrorCode.PREDICTION_SET_DESCRIPTION_NOT_PRESENT
-      }
-    ]
-  })
-  description: string;
-
-  /**
-   * General resolution definition - A high-level summary of how the prediction will be resolved, offering clarity on the expected evaluation process.
-   */
-  @prop({
-    parser: {
-      resolver: stringParser()
-    },
-    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
-    populatable: [PopulateFrom.DB, PopulateFrom.USER],
-    validators: [
-      {
-        resolver: presenceValidator(),
-        code: ValidatorErrorCode.PREDICTION_SET_GENERAL_RESOLUTION_NOT_PRESENT
-      }
-    ]
-  })
-  generalResolutionDef: string;
-
-  /**
    * Outcome resolution definition - Specific criteria and data sources that determine the official resolution of the prediction, ensuring transparency and accuracy.
    */
   @prop({
@@ -170,24 +122,6 @@ export class PredictionSet extends AdvancedSQLModel {
     ]
   })
   outcomeResolutionDef: string;
-
-  /**
-   * Outcome price definition -  A description of how outcome prices are calculated, including references to external price feeds or oracles like the Flare Price Oracle.
-   */
-  @prop({
-    parser: {
-      resolver: stringParser()
-    },
-    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
-    populatable: [PopulateFrom.DB, PopulateFrom.USER],
-    validators: [
-      {
-        resolver: presenceValidator(),
-        code: ValidatorErrorCode.PREDICTION_SET_OUTCOME_PRICE_NOT_PRESENT
-      }
-    ]
-  })
-  outcomePriceDef: string;
 
   /**
    * Start time - The official launch date and time when the prediction market opens for trading.
@@ -220,6 +154,22 @@ export class PredictionSet extends AdvancedSQLModel {
     ]
   })
   public endTime: Date;
+
+  /**
+   * Attestation time - The date and time after which the attestation is allowed.
+   */
+  @prop({
+    parser: { resolver: dateParser() },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER],
+    validators: [
+      {
+        resolver: conditionalPresenceValidator('resolutionType', (value) => value === ResolutionType.AUTOMATIC),
+        code: ValidatorErrorCode.PREDICTION_SET_ATTESTATION_TIME_NOT_PRESENT
+      }
+    ]
+  })
+  public attestationTime: Date;
 
   /**
    * Resolution time - The scheduled time when the market's outcome is finalized, based on pre-defined resolution criteria.
@@ -349,23 +299,23 @@ export class PredictionSet extends AdvancedSQLModel {
    * Prediction set's liquidity (funding) volume.
    */
   @prop({
-    parser: { resolver: integerParser() },
+    parser: { resolver: stringParser() },
     serializable: [SerializeFor.USER],
     populatable: [PopulateFrom.USER],
-    defaultValue: () => 0
+    defaultValue: () => '0'
   })
-  public fundingVolume: number;
+  public fundingVolume: string;
 
   /**
    * Prediction set's transactions volume.
    */
   @prop({
-    parser: { resolver: integerParser() },
+    parser: { resolver: stringParser() },
     serializable: [SerializeFor.USER],
     populatable: [PopulateFrom.USER],
-    defaultValue: () => 0
+    defaultValue: () => '0'
   })
-  public transactionsVolume: number;
+  public transactionsVolume: string;
 
   /**
    * User's open positions.
@@ -382,12 +332,13 @@ export class PredictionSet extends AdvancedSQLModel {
    * User's open funding positions.
    */
   @prop({
+    parser: { resolver: stringParser() },
     serializable: [SerializeFor.USER],
     populatable: [PopulateFrom.USER],
-    defaultValue: () => 0,
-    emptyValue: () => 0
+    defaultValue: () => '0',
+    emptyValue: () => '0'
   })
-  public fundingPositions: number;
+  public fundingPositions: string;
 
   /**
    * Populate prediction set by ID.
@@ -427,8 +378,8 @@ export class PredictionSet extends AdvancedSQLModel {
 
     if (populate?.volume) {
       const volume = await this.getVolume(conn);
-      this.fundingVolume = volume?.fundingVolume | 0;
-      this.transactionsVolume = volume?.transactionsVolume | 0;
+      this.fundingVolume = volume?.fundingVolume || '0';
+      this.transactionsVolume = volume?.transactionsVolume || '0';
     }
 
     if (populate?.positions) {
@@ -523,54 +474,56 @@ export class PredictionSet extends AdvancedSQLModel {
     }, {});
 
     // Calculate position details for each outcome
-    const positions = Object.values(outcomeGroups).map((group: any) => {
-      // First pass: calculate final position and track buys
-      let remainingShares = 0;
-      let collateralAmount = 0;
-      const buys = [];
+    const positions = Object.values(outcomeGroups)
+      .map((group: any) => {
+        // First pass: calculate final position and track buys
+        let remainingShares = 0;
+        let collateralAmount = 0;
+        const buys = [];
 
-      group.transactions.forEach((tx: any) => {
-        const shareChange = tx.type === ShareTransactionType.BUY ? Number(tx.outcomeTokens) : -Number(tx.outcomeTokens);
-        const amountChange = tx.type === ShareTransactionType.BUY ? Number(tx.amount) : -Number(tx.amount);
+        group.transactions.forEach((tx: any) => {
+          const shareChange = tx.type === ShareTransactionType.SELL ? -Number(tx.outcomeTokens) : Number(tx.outcomeTokens);
+          const amountChange = tx.type === ShareTransactionType.SELL ? -Number(tx.amount) : Number(tx.amount);
 
-        remainingShares += shareChange;
-        collateralAmount += amountChange;
+          remainingShares += shareChange;
+          collateralAmount += amountChange;
 
-        if (tx.type === ShareTransactionType.BUY) {
-          buys.push({
-            shares: Number(tx.outcomeTokens),
-            amount: Number(tx.amount),
-            pricePerShare: Number(tx.amount) / Number(tx.outcomeTokens)
-          });
+          if (tx.type === ShareTransactionType.BUY || tx.type === ShareTransactionType.FUND) {
+            buys.push({
+              shares: Number(tx.outcomeTokens),
+              amount: Number(tx.amount),
+              pricePerShare: Number(tx.amount) / Number(tx.outcomeTokens)
+            });
+          }
+        });
+
+        // Second pass: calculate weighted average
+        // Needs to only account for shares that are not yet sold
+        let weightedAmount = 0;
+        let totalShares = 0;
+        let sharesToAccount = remainingShares;
+
+        // Process buys in reverse order (newest first)
+        for (let i = buys.length - 1; i >= 0 && sharesToAccount > 0; i--) {
+          const buy = buys[i];
+          const sharesFromThisBuy = Math.min(buy.shares, sharesToAccount);
+          const amountFromThisBuy = sharesFromThisBuy * buy.pricePerShare;
+
+          weightedAmount += amountFromThisBuy;
+          totalShares += sharesFromThisBuy;
+          sharesToAccount -= sharesFromThisBuy;
         }
-      });
 
-      // Second pass: calculate weighted average
-      // Needs to only account for shares that are not yet sold
-      let weightedAmount = 0;
-      let totalShares = 0;
-      let sharesToAccount = remainingShares;
-
-      // Process buys in reverse order (newest first)
-      for (let i = buys.length - 1; i >= 0 && sharesToAccount > 0; i--) {
-        const buy = buys[i];
-        const sharesFromThisBuy = Math.min(buy.shares, sharesToAccount);
-        const amountFromThisBuy = sharesFromThisBuy * buy.pricePerShare;
-
-        weightedAmount += amountFromThisBuy;
-        totalShares += sharesFromThisBuy;
-        sharesToAccount -= sharesFromThisBuy;
-      }
-
-      return {
-        outcomeId: group.outcomeId,
-        outcomeName: group.outcomeName,
-        outcomeIndex: group.outcomeIndex,
-        avgBuyPrice: totalShares > 0 ? weightedAmount / totalShares : 0,
-        collateralAmount,
-        sharesAmount: remainingShares
-      };
-    });
+        return {
+          outcomeId: group.outcomeId,
+          outcomeName: group.outcomeName,
+          outcomeIndex: group.outcomeIndex,
+          avgBuyPrice: totalShares > 0 ? weightedAmount / totalShares : 0,
+          collateralAmount,
+          sharesAmount: remainingShares
+        };
+      })
+      .filter((position: any) => position.sharesAmount > 0);
 
     return positions;
   }
@@ -581,17 +534,17 @@ export class PredictionSet extends AdvancedSQLModel {
    * @param conn Pool connection.
    * @returns Sum of collateral amount.
    */
-  public async getOpenFundingPositions(conn?: PoolConnection): Promise<number> {
+  public async getOpenFundingPositions(conn?: PoolConnection): Promise<string> {
     const context = this.getContext();
 
     if (!context.user) {
-      return 0;
+      return '0';
     }
 
     const result = await this.db().paramExecute(
       `
         SELECT
-          SUM(psft.collateralAmount) AS collateralAmount
+          IFNULL(SUM(psft.collateralAmount), 0) AS collateralAmount
         FROM ${DbTables.PREDICTION_SET_FUNDING_TRANSACTION} psft
         WHERE psft.prediction_set_id = @predictionSetId
           AND psft.user_id = @userId
@@ -602,8 +555,7 @@ export class PredictionSet extends AdvancedSQLModel {
       },
       conn
     );
-
-    return result[0]?.collateralAmount || 0;
+    return result[0]?.collateralAmount?.toString() || '0';
   }
 
   /**
@@ -612,7 +564,7 @@ export class PredictionSet extends AdvancedSQLModel {
    * @param conn Pool connection.
    * @returns Volume object with share, funding and total volumes.
    */
-  public async getVolume(conn?: PoolConnection): Promise<{ transactionsVolume: number; fundingVolume: number }> {
+  public async getVolume(conn?: PoolConnection): Promise<{ transactionsVolume: string; fundingVolume: string }> {
     const volumeData = await this.db().paramExecute(
       `
         SELECT
@@ -633,8 +585,8 @@ export class PredictionSet extends AdvancedSQLModel {
     );
 
     return {
-      transactionsVolume: volumeData[0].transactionsVolume,
-      fundingVolume: volumeData[0].fundingVolume
+      transactionsVolume: volumeData[0].transactionsVolume.toString(),
+      fundingVolume: volumeData[0].fundingVolume.toString()
     };
   }
 
@@ -656,10 +608,18 @@ export class PredictionSet extends AdvancedSQLModel {
           SELECT oc.*
           FROM ${DbTables.OUTCOME_CHANCE} oc
           INNER JOIN (
-            SELECT outcome_id, MAX(createTime) AS latest_create_time
-            FROM ${DbTables.OUTCOME_CHANCE}
-            GROUP BY outcome_id
-          ) latest ON oc.outcome_id = latest.outcome_id AND oc.createTime = latest.latest_create_time
+            SELECT oc2.outcome_id, MAX(oc2.id) AS latest_id
+            FROM ${DbTables.OUTCOME_CHANCE} oc2
+            INNER JOIN (
+              SELECT outcome_id, MAX(createTime) AS latest_create_time
+              FROM ${DbTables.OUTCOME_CHANCE}
+              GROUP BY outcome_id
+            ) latest_time
+              ON latest_time.outcome_id = oc2.outcome_id
+             AND latest_time.latest_create_time = oc2.createTime
+            GROUP BY oc2.outcome_id
+          ) uniq
+            ON uniq.latest_id = oc.id
         ) oc ON oc.outcome_id = o.id
         LEFT JOIN ${DbTables.OUTCOME_SHARE_TRANSACTION} ost
           ON ost.outcome_id = o.id
@@ -673,7 +633,15 @@ export class PredictionSet extends AdvancedSQLModel {
     );
 
     const context = this.getContext();
-    return rows.map((r) => new Outcome(r, context));
+    return rows.map((r) => {
+      return new Outcome(
+        {
+          ...r,
+          volume: BigInt(r.volume) > BigInt(0) ? r.volume : 0
+        },
+        context
+      );
+    });
   }
 
   /**
@@ -812,7 +780,7 @@ export class PredictionSet extends AdvancedSQLModel {
           o.name AS outcomeName,
           t.id as transactionId,
           t.amount AS userAmount,
-          t.type,
+          IF(t.type = ${ShareTransactionType.FUND}, 6, t.type) as type,
           t.outcomeTokens,
           t.txHash,
           t.createTime AS transactionTime
@@ -843,7 +811,7 @@ export class PredictionSet extends AdvancedSQLModel {
           u.walletAddress as userWallet,
           NULL AS outcomeName,
           t.id as transactionId,
-          t.collateralAmount AS userAmount,
+          IFNULL(t.collateralAmount, t.collateralRemovedFromFeePool) AS userAmount,
           t.type + 2 as type,
           NULL AS outcomeTokens,
           t.txHash,
@@ -1055,7 +1023,7 @@ export class PredictionSet extends AdvancedSQLModel {
         SELECT 
           ${new PredictionSet({}).generateSelectFields('p')},
           SUM(IF(psft.type = ${FundingTransactionType.ADDED}, psft.collateralAmount, 0)) AS fundedAmount,
-          SUM(IF(psft.type = ${FundingTransactionType.REMOVED}, psft.collateralAmount, 0)) AS removedAmount
+          SUM(IF(psft.type = ${FundingTransactionType.ADDED}, psft.shares, -psft.shares)) AS remainingShares
         `,
       qFrom: `
         FROM ${DbTables.PREDICTION_SET} p
@@ -1160,10 +1128,18 @@ export class PredictionSet extends AdvancedSQLModel {
           SELECT oc.*
           FROM ${DbTables.OUTCOME_CHANCE} oc
           INNER JOIN (
-            SELECT outcome_id, MAX(createTime) as latest_create_time
-            FROM ${DbTables.OUTCOME_CHANCE}
-            GROUP BY outcome_id
-          ) latest ON oc.outcome_id = latest.outcome_id AND oc.createTime = latest.latest_create_time
+            SELECT oc2.outcome_id, MAX(oc2.id) AS latest_id
+            FROM ${DbTables.OUTCOME_CHANCE} oc2
+            INNER JOIN (
+              SELECT outcome_id, MAX(createTime) AS latest_create_time
+              FROM ${DbTables.OUTCOME_CHANCE}
+              GROUP BY outcome_id
+            ) latest_time
+              ON latest_time.outcome_id = oc2.outcome_id
+             AND latest_time.latest_create_time = oc2.createTime
+            GROUP BY oc2.outcome_id
+          ) uniq
+            ON uniq.latest_id = oc.id
         ) oc ON oc.outcome_id = o.id
         LEFT JOIN ${DbTables.USER_WATCHLIST} uw
           ON uw.prediction_set_id = p.id
@@ -1244,14 +1220,14 @@ export class PredictionSet extends AdvancedSQLModel {
         SELECT
           outcome_id,
           chance,
-          FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(createTime)/900)*900) as date
+          FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(createTime)/300)*300) as date
         FROM ${DbTables.OUTCOME_CHANCE}
         WHERE (outcome_id, createTime) IN (
           SELECT outcome_id, MAX(createTime)
           FROM ${DbTables.OUTCOME_CHANCE}
           WHERE prediction_set_id = @predictionSetId
           ${rangeCondition}
-          GROUP BY outcome_id, FLOOR(UNIX_TIMESTAMP(createTime)/900)
+          GROUP BY outcome_id, FLOOR(UNIX_TIMESTAMP(createTime)/300)
         )
         GROUP BY date, outcome_id
         ORDER BY date ASC

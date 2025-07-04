@@ -1,4 +1,5 @@
 import { DbTables, SqlModelStatus } from '../../config/types';
+import { HttpException } from '../../lib/exceptions/http-exception';
 import { getAttestationProof, isRoundFinalized, submitAttestationRequest } from '../../lib/flare/attestation';
 import { AttestationVerifierStatus } from '../../lib/flare/types';
 import { WorkerLogStatus } from '../../lib/worker/logger';
@@ -64,14 +65,21 @@ export class RequestAttestationProofWorker extends BaseSingleThreadWorker {
       const attestations = await predictionSet.getAttestations();
 
       for (const attestation of attestations) {
+        if (attestation.proof) {
+          continue;
+        }
+
         try {
           const isFinalized = await isRoundFinalized(attestation.roundId);
           if (isFinalized) {
             const attestationProof = await getAttestationProof(attestation.roundId, attestation.abiEncodedRequest);
-            if (attestationProof.proof.length) {
+            if (attestationProof?.proof?.length) {
               attestation.proof = attestationProof;
               await attestation.update();
             } else {
+              if ((attestationProof as any)?.error) {
+                throw new HttpException((attestationProof as any)?.error, 400);
+              }
               // TODO: If this happens frequently should we also request attestation again?
               console.log('Invalid proof - we should wait one more cycle.');
             }

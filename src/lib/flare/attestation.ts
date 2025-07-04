@@ -54,9 +54,9 @@ export async function prepareAttestationRequest(
   jq: string,
   abi: any,
   httpMethod: string = 'GET',
-  body: Object = {},
-  headers: Object = {},
-  queryParams: Object = {}
+  body: Object = null,
+  headers: Object = null,
+  queryParams: Object = null
 ): Promise<EncodedAttestationRequest> {
   const attestationRequest = {
     attestationType: toUtf8HexString('Web2Json'),
@@ -66,9 +66,9 @@ export async function prepareAttestationRequest(
       postProcessJq: jq,
       abiSignature: typeof abi === 'string' ? abi : JSON.stringify(abi),
       httpMethod: httpMethod ? httpMethod : 'GET',
-      body: body ? JSON.stringify(body) : '{}',
-      headers: headers ? JSON.stringify(headers) : '{}',
-      queryParams: queryParams ? JSON.stringify(queryParams) : '{}'
+      body: body ? JSON.stringify(body) : '',
+      headers: headers ? JSON.stringify(headers) : '',
+      queryParams: queryParams ? JSON.stringify(queryParams) : ''
     }
   };
 

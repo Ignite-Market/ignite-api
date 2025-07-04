@@ -3,14 +3,23 @@ import { env } from '../config/env';
 import axios from 'axios';
 
 /**
+ * Slack channel list.
+ */
+export enum ChannelList {
+  LOGS = '#ignite-market-logs',
+  VOTING = '#ignite-market-voting',
+  INDEXER = '#ignite-market-indexer'
+}
+
+/**
  * Sends a webhook message to slack.
  *
  * @param message Message to send.
  * @param tagChannel If present channel will be tagged.
  */
-export async function sendSlackWebhook(message: string, tagChannel: boolean = false): Promise<void> {
+export async function sendSlackWebhook(message: string, tagChannel: boolean = false, channel: ChannelList = ChannelList.LOGS): Promise<void> {
   const payload = {
-    channel: '#ignite-market-logs',
+    channel,
     username: 'Ignite Market Log Bot',
     text: `*[${env.APP_ENV}]*: ${message}`,
     icon_emoji: ':robot_face:'

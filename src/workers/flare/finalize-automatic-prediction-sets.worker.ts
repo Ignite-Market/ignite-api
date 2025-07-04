@@ -3,7 +3,7 @@ import { DbTables, SqlModelStatus } from '../../config/types';
 import { finalizePredictionSetResults, PredictionSetBcStatus } from '../../lib/blockchain';
 import { verifyProof } from '../../lib/flare/attestation';
 import { convertProofsToNamedObjects } from '../../lib/flare/utils';
-import { sendSlackWebhook } from '../../lib/slack-webhook';
+import { ChannelList, sendSlackWebhook } from '../../lib/slack-webhook';
 import { WorkerLogStatus } from '../../lib/worker/logger';
 import { BaseSingleThreadWorker, SingleThreadWorkerAlertType } from '../../lib/worker/serverless-workers/base-single-thread-worker';
 import { Job } from '../../modules/job/job.model';
@@ -35,8 +35,6 @@ export class FinalizeAutomaticPredictionSetWorker extends BaseSingleThreadWorker
         SELECT 
           ps.*
         FROM ${DbTables.PREDICTION_SET} ps
-        INNER JOIN ${DbTables.PREDICTION_SET_ATTESTATION} psa 
-          ON ps.id = psa.prediction_set_id
         WHERE 
           ps.resolutionTime <= NOW()
           AND ps.status = ${SqlModelStatus.ACTIVE}
@@ -57,8 +55,20 @@ export class FinalizeAutomaticPredictionSetWorker extends BaseSingleThreadWorker
         continue;
       }
 
-      // If data sources and attestations results doesn't match we should wait a little longer.
+      // If data sources and attestations results doesn't match set status to ERROR.
       if (attestations.length !== dataSources.length) {
+        predictionSet.setStatus = PredictionSetStatus.ERROR;
+        await predictionSet.update();
+        await sendSlackWebhook(
+          `
+            Admin action required. Prediction set moved to ERROR status.
+            Prediction set is missing attestations.
+            - Prediction set ID: \`${predictionSet.id}\`
+            - Attestations: \`${attestations.length}\`
+            - Data sources: \`${dataSources.length}\`
+          `,
+          true
+        );
         continue;
       }
 
@@ -67,6 +77,22 @@ export class FinalizeAutomaticPredictionSetWorker extends BaseSingleThreadWorker
 
       for (const attestation of attestations) {
         try {
+          if (!attestation.proof) {
+            predictionSet.setStatus = PredictionSetStatus.ERROR;
+            await predictionSet.update();
+            await sendSlackWebhook(
+              `
+                Admin action required. Prediction set moved to ERROR status.
+                Attestation proof is missing.
+                - Prediction set ID: \`${predictionSet.id}\`
+                - Attestation ID: \`${attestation.id}\`
+            `,
+              true
+            );
+            validationResults.push(false);
+            break;
+          }
+
           const { verified, proofData } = await verifyProof(attestation.proof);
           if (!verified) {
             await this.writeLogToDb(WorkerLogStatus.INFO, `Prediction set results not verified: `, {
@@ -142,6 +168,16 @@ export class FinalizeAutomaticPredictionSetWorker extends BaseSingleThreadWorker
           try {
             predictionSet.setStatus = PredictionSetStatus.VOTING;
             await predictionSet.update();
+
+            await sendSlackWebhook(
+              `
+              Admin action required. Prediction set moved into voting phase: \n
+              - Prediction set ID: \`${predictionSet.id}\`
+              - Resolution type: AUTOMATIC (Resolution not reached)
+              `,
+              true,
+              ChannelList.VOTING
+            );
           } catch (error) {
             await this._logError(
               'Error while updating prediction set.',

@@ -97,6 +97,23 @@ export class Proposal extends AdvancedSQLModel {
   public outcomes: string[];
 
   /**
+   * Outcomes definition - Proposal outcomes definition.
+   */
+  @ConstantArray()
+  @prop({
+    parser: { resolver: stringParser(), array: true },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER],
+    setter(v) {
+      if (Array.isArray(v) && v.length === 1) {
+        return v[0].split(CONSTANT_ARRAY_DEFAULT_DELIMITER);
+      }
+      return v;
+    }
+  })
+  public tags: string[];
+
+  /**
    * Get list of proposals.
    *
    * @param query Filtering query.
@@ -154,12 +171,16 @@ export class Proposal extends AdvancedSQLModel {
         WHERE p.status <> ${SqlModelStatus.DELETED}
           AND (@search IS NULL
             OR p.question LIKE CONCAT('%', @search, '%')
+            OR p.tags LIKE CONCAT('%', @search, '%')
           )
           AND (@roundId IS NULL
             OR p.round_id = @roundId
           )
           AND (@proposalId IS NULL
             OR p.id = @proposalId
+          )
+          AND (@tag IS NULL
+            OR p.tags LIKE CONCAT('%', @tag, '%')
           )
         `,
       qGroup: `
@@ -176,6 +197,7 @@ export class Proposal extends AdvancedSQLModel {
       res.items = res.items.map((i: any) => ({
         ...i,
         votes: JSON.parse(i.votes),
+        tags: i.tags ? i.tags.split(CONSTANT_ARRAY_DEFAULT_DELIMITER) : [],
         outcomes: i.outcomes.split(CONSTANT_ARRAY_DEFAULT_DELIMITER)
       }));
     }

@@ -31,21 +31,29 @@ export class RequestAttestationWorker extends BaseSingleThreadWorker {
      * We take prediction sets that:
      * - ended,
      * - are still in resolution timeframe,
-     * - don't have attestation data.
+     * - have at least one missing attestation (not all attestations are present).
      */
     const predictionSets = await this.context.mysql.paramExecute(
       `
         SELECT ps.*
         FROM ${DbTables.PREDICTION_SET} ps
-        LEFT JOIN ${DbTables.PREDICTION_SET_ATTESTATION} a 
-          ON ps.id = a.prediction_set_id
         WHERE 
           ps.status = ${SqlModelStatus.ACTIVE}
           AND ps.setStatus = ${PredictionSetStatus.ACTIVE}
           AND ps.resolutionType = ${ResolutionType.AUTOMATIC}
           AND ps.endTime <= NOW()
-          AND ps.resolutionTime >= NOW() 
-          AND a.prediction_set_id IS NULL
+          AND ps.attestationTime <= NOW()
+          AND ps.resolutionTime >= NOW()
+          AND (
+            SELECT COUNT(*)
+            FROM ${DbTables.PREDICTION_SET_DATA_SOURCE} psds
+            WHERE psds.prediction_set_id = ps.id
+          ) > (
+            SELECT COUNT(*)
+            FROM ${DbTables.PREDICTION_SET_ATTESTATION} psa
+            WHERE psa.prediction_set_id = ps.id
+            AND psa.status <> ${SqlModelStatus.DELETED}
+          )
         `,
       {}
     );
@@ -54,9 +62,25 @@ export class RequestAttestationWorker extends BaseSingleThreadWorker {
       const predictionSet = new PredictionSet(data, this.context);
 
       const dataSources = await predictionSet.getDataSources();
+      const existingAttestations = await predictionSet.getAttestations();
+      const existingAttestationDataSourceIds = new Set(existingAttestations.map((a) => a.data_source_id));
+
       for (const dataSource of dataSources) {
+        // Skip if attestation already exists for this data source
+        if (existingAttestationDataSourceIds.has(dataSource.id)) {
+          continue;
+        }
+
         try {
-          const attestationRequest = await prepareAttestationRequest(dataSource.endpoint, dataSource.jqQuery, dataSource.abi);
+          const attestationRequest = await prepareAttestationRequest(
+            dataSource.endpoint,
+            dataSource.jqQuery,
+            dataSource.abi,
+            dataSource.httpMethod,
+            dataSource.body,
+            dataSource.headers,
+            dataSource.queryParams
+          );
           if (attestationRequest.status === AttestationVerifierStatus.VALID) {
             const roundId = await submitAttestationRequest(attestationRequest);
             if (!roundId) {

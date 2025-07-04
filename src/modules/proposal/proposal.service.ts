@@ -39,7 +39,13 @@ export class ProposalService {
       });
     }
 
-    const textToCheck = [proposal.question, proposal.generalResolutionDef, ...(Array.isArray(proposal.outcomes) ? proposal.outcomes : [])].join('\n');
+    const textToCheck = [
+      proposal.question,
+      proposal.generalResolutionDef,
+      ...(Array.isArray(proposal.outcomes) ? proposal.outcomes : []),
+      ...(Array.isArray(proposal.tags) ? proposal.tags : [])
+    ].join('\n');
+
     const isSafe = await isTextSafe(textToCheck);
     if (!isSafe) {
       throw new CodeException({
@@ -216,7 +222,13 @@ export class ProposalService {
     }
     proposal.populate(data, PopulateFrom.USER);
 
-    const textToCheck = [proposal.question, proposal.generalResolutionDef, ...(Array.isArray(proposal.outcomes) ? proposal.outcomes : [])].join('\n');
+    const textToCheck = [
+      proposal.question,
+      proposal.generalResolutionDef,
+      ...(Array.isArray(proposal.outcomes) ? proposal.outcomes : []),
+      ...(Array.isArray(proposal.tags) ? proposal.tags : [])
+    ].join('\n');
+
     const isSafe = await isTextSafe(textToCheck);
     if (!isSafe) {
       throw new CodeException({

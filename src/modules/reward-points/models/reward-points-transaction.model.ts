@@ -61,10 +61,19 @@ export class RewardPointsTransaction extends AdvancedSQLModel {
    * @param conn Pool connection.
    * @returns Total reward points.
    */
-  public async getUserPoints(userId: number, conn?: PoolConnection): Promise<number> {
+  public async getUserPoints(userId: number, conn?: PoolConnection): Promise<{ totalPoints: number; referralCount: number; referralPoints: number }> {
     const rows = await this.db().paramExecute(
       `
-        SELECT SUM(value) totalPoints
+        SELECT IFNULL(SUM(value), 0) totalPoints,
+        IFNULL(SUM(CASE WHEN type = ${RewardType.MARKET_FUNDING} THEN value ELSE 0 END), 0) marketFundingPoints,
+        IFNULL(SUM(CASE WHEN type = ${RewardType.BUYING_SHARES} THEN value ELSE 0 END), 0) buyingSharesPoints,
+        IFNULL(SUM(CASE WHEN type = ${RewardType.SELLING_SHARES} THEN value ELSE 0 END), 0) sellingSharesPoints,
+        IFNULL(SUM(CASE WHEN type = ${RewardType.MARKET_WINNER} THEN value ELSE 0 END), 0) marketWinnerPoints,
+        IFNULL(SUM(CASE WHEN type = ${RewardType.PROPOSAL_WINNER} THEN value ELSE 0 END), 0) proposalWinnerPoints,
+        IFNULL(SUM(CASE WHEN type = ${RewardType.PROPOSAL_VOTE} THEN value ELSE 0 END), 0) proposalVotePoints,
+        IFNULL(SUM(CASE WHEN type = ${RewardType.DAILY_LOGIN} THEN value ELSE 0 END), 0) dailyLoginPoints,
+        IFNULL(SUM(CASE WHEN type = ${RewardType.USER_REFERRAL} THEN value ELSE 0 END), 0) referralPoints,
+        IFNULL(COUNT(CASE WHEN type = ${RewardType.USER_REFERRAL} THEN 1 ELSE NULL END), 0) referralCount
         FROM ${DbTables.REWARD_POINTS_TRANSACTION}
         WHERE user_id = @userId
           AND status <> ${SqlModelStatus.DELETED}
@@ -73,7 +82,7 @@ export class RewardPointsTransaction extends AdvancedSQLModel {
       conn
     );
 
-    return rows.length && rows[0].totalPoints ? rows[0].totalPoints : 0;
+    return rows.length ? rows[0] : { totalPoints: 0, referralCount: 0, referralPoints: 0 };
   }
 
   /**

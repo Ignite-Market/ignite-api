@@ -23,7 +23,7 @@ export class RewardPointsController {
   @UseGuards(AuthGuard)
   async getUserRewardPoints(@Ctx() context: Context) {
     const points = await RewardPointsService.getUserRewardPoints(context.user.id, context);
-    return { points };
+    return points;
   }
 
   @Get('/daily')

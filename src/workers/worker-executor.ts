@@ -13,7 +13,8 @@ import { FinalizeProposalRoundsWorker } from './finalize-proposal-rounds.worker'
 import { FinalizeAutomaticPredictionSetWorker } from './flare/finalize-automatic-prediction-sets.worker';
 import { RequestAttestationProofWorker } from './flare/request-attestation-proof.worker';
 import { RequestAttestationWorker } from './flare/request-attestation.worker';
-import { PredictionSetParserWorker } from './prediction-set-parser.worker';
+import { IndexerHealthCheckWorker } from './indexer-health-check.worker';
+import { PredictionSetFinalizedParserWorker } from './prediction-set-finalized-parser.worker';
 import { PredictionSetsFactoryParserWorker } from './prediction-sets-factory-parser.worker';
 import { RefreshOutcomeChancesWorker } from './refresh-outcome-chances.worker';
 import { Scheduler } from './scheduler';
@@ -27,7 +28,7 @@ export enum WorkerName {
   CREATE_PREDICTION_SET = 'CreatePredictionSet',
   FINALIZE_MANUAL_PREDICTION_SET = 'FinalizeManualPredictionSet',
   FINALIZE_AUTOMATIC_PREDICTION_SET = 'FinalizeAutomaticPredictionSet',
-  PREDICTION_SET_PARSER = 'PredictionSetParser',
+  PREDICTION_SET_FINALIZED_PARSER = 'PredictionSetFinalizedParser',
   PREDICTION_SETS_FACTORY_PARSER = 'PredictionSetsFactoryParser',
   REFRESH_OUTCOME_CHANCES = 'RefreshOutcomeChances',
   REQUEST_ATTESTATION_PROOF = 'RequestAttestationProof',
@@ -35,7 +36,8 @@ export enum WorkerName {
   VOTING_PARSER = 'VotingParser',
   FINALIZE_PROPOSAL_ROUNDS = 'FinalizeProposalRounds',
   CLAIMS_PARSER = 'ClaimsParser',
-  COLLATERAL_TOKEN_USD_PRICE = 'CollateralTokenUsdPrice'
+  COLLATERAL_TOKEN_USD_PRICE = 'CollateralTokenUsdPrice',
+  INDEXER_HEALTH_CHECK = 'IndexerHealthCheck'
 }
 
 /**
@@ -118,8 +120,8 @@ export async function handleLambdaEvent(event: any, context: Context, serviceDef
       await new FinalizeManualPredictionSetWorker(workerDefinition, context).run();
       break;
 
-    case WorkerName.PREDICTION_SET_PARSER:
-      await new PredictionSetParserWorker(workerDefinition, context, QueueWorkerType.PLANNER).run();
+    case WorkerName.PREDICTION_SET_FINALIZED_PARSER:
+      await new PredictionSetFinalizedParserWorker(workerDefinition, context, QueueWorkerType.PLANNER).run();
       break;
 
     case WorkerName.PREDICTION_SETS_FACTORY_PARSER:
@@ -152,6 +154,10 @@ export async function handleLambdaEvent(event: any, context: Context, serviceDef
 
     case WorkerName.COLLATERAL_TOKEN_USD_PRICE:
       await new CollateralTokenUsdPriceWorker(workerDefinition, context).run();
+      break;
+
+    case WorkerName.INDEXER_HEALTH_CHECK:
+      await new IndexerHealthCheckWorker(workerDefinition, context).run();
       break;
 
     default:
@@ -218,8 +224,8 @@ export async function handleSqsMessages(event: any, context: Context, serviceDef
           });
           break;
 
-        case WorkerName.PREDICTION_SET_PARSER:
-          await new PredictionSetParserWorker(workerDefinition, context, QueueWorkerType.EXECUTOR).run({
+        case WorkerName.PREDICTION_SET_FINALIZED_PARSER:
+          await new PredictionSetFinalizedParserWorker(workerDefinition, context, QueueWorkerType.EXECUTOR).run({
             executeArg: message?.body
           });
           break;
@@ -268,6 +274,12 @@ export async function handleSqsMessages(event: any, context: Context, serviceDef
 
         case WorkerName.COLLATERAL_TOKEN_USD_PRICE:
           await new CollateralTokenUsdPriceWorker(workerDefinition, context).run({
+            executeArg: message?.body
+          });
+          break;
+
+        case WorkerName.INDEXER_HEALTH_CHECK:
+          await new IndexerHealthCheckWorker(workerDefinition, context).run({
             executeArg: message?.body
           });
           break;

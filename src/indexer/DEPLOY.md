@@ -26,7 +26,7 @@ aws --version
 aws configure
 
 
-## Create deploy.sh script and deploy.env with the following variables:
+## Create `deploy.sh` script and `deploy.env` with the following variables:
 AWS_REGION=
 ECR_REPO=
 IMAGE_TAG=
@@ -34,3 +34,5 @@ CONTAINER_NAME=
 
 ## And make sure that script is executable:
 chmod +x ./deploy.sh
+
+## Create `.env` file with the required env variables and add deployment SSH public key to the server.

@@ -1,9 +1,18 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { env } from '../../config/env';
-import { BadRequestErrorCode, PopulateFrom, ResourceNotFoundErrorCode, SerializeFor, SqlModelStatus, SystemErrorCode } from '../../config/types';
+import {
+  BadRequestErrorCode,
+  DbTables,
+  PopulateFrom,
+  ResourceNotFoundErrorCode,
+  SerializeFor,
+  SqlModelStatus,
+  SystemErrorCode,
+  ValidatorErrorCode
+} from '../../config/types';
 import { Context } from '../../context';
-import { sendToWorkerQueue } from '../../lib/aws/aws-sqs';
-import { CodeException } from '../../lib/exceptions/exceptions';
+import { sendToWorkerQueue, triggerWorkerSimpleQueue } from '../../lib/aws/aws-sqs';
+import { CodeException, ValidationException } from '../../lib/exceptions/exceptions';
 import { WorkerName } from '../../workers/worker-executor';
 import { ActivityQueryFilter } from './dtos/activity-query-filter';
 import { HoldersQueryFilter } from './dtos/holders-query-filter';
@@ -95,21 +104,25 @@ export class PredictionSetService {
     }
 
     // Create prediction set.
-    predictionSet.setId = this._generatePredictionSetId(predictionSet);
     try {
       await predictionSet.validate();
       await predictionSet.insert(SerializeFor.INSERT_DB, conn);
     } catch (error) {
       await context.mysql.rollback(conn);
 
-      throw new CodeException({
-        code: SystemErrorCode.SQL_SYSTEM_ERROR,
-        errorCodes: SystemErrorCode,
-        status: HttpStatus.INTERNAL_SERVER_ERROR,
-        sourceFunction: `${this.constructor.name}/createPredictionSet`,
-        details: error,
-        context
-      });
+      await predictionSet.handle(error);
+      if (!predictionSet.isValid()) {
+        throw new ValidationException(error, ValidatorErrorCode);
+      } else {
+        throw new CodeException({
+          code: SystemErrorCode.SQL_SYSTEM_ERROR,
+          errorCodes: SystemErrorCode,
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          sourceFunction: `${this.constructor.name}/createPredictionSet`,
+          details: error,
+          context
+        });
+      }
     }
 
     /**
@@ -325,6 +338,39 @@ export class PredictionSetService {
   }
 
   /**
+   * Add prediction category.
+   *
+   * @param predictionSetId Prediction set ID.
+   * @param category Category name.
+   * @param context Application context.
+   */
+  public async addPredictionCategory(predictionSetId: number, category: string, context: Context) {
+    const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId);
+    if (!predictionSet.exists() || !predictionSet.isEnabled()) {
+      throw new CodeException({
+        code: ResourceNotFoundErrorCode.PREDICTION_SET_DOES_NOT_EXISTS,
+        errorCodes: ResourceNotFoundErrorCode,
+        status: HttpStatus.NOT_FOUND,
+        sourceFunction: `${this.constructor.name}/updatePredictionSet`,
+        context
+      });
+    }
+
+    await context.mysql.paramExecute(
+      `
+        INSERT INTO ${DbTables.PREDICTION_SET_CATEGORY} (prediction_set_id, category, status)
+        VALUES (@predictionSetId, @category, ${SqlModelStatus.ACTIVE})
+      `,
+      {
+        predictionSetId: predictionSet.id,
+        category
+      }
+    );
+
+    return predictionSet.serialize(SerializeFor.USER);
+  }
+
+  /**
    * Returns listing of prediction.
    *
    * @param query Filtering query.
@@ -535,23 +581,34 @@ export class PredictionSetService {
   }
 
   /**
-   * Generate prediction set ID.
+   * Trigger finalized worker.
    *
-   * @param predictionSet Prediction set.
-   * @returns Prediction set ID.
+   * @param predictionSetId Prediction set ID.
+   * @param context Application context.
+   * @returns True if worker triggered, false otherwise.
    */
-  private _generatePredictionSetId(predictionSet: PredictionSet): string {
-    const eventCode = predictionSet.question
-      .split(/\s+/)
-      .filter((word) => word.match(/^[a-zA-Z0-9]+$/))
-      .map((word) => word[0].toUpperCase())
-      .join('');
+  public async triggerFinalizedWorker(predictionSetId: number, context: Context) {
+    const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId);
+    if (!predictionSet.exists() || !predictionSet.isEnabled()) {
+      throw new CodeException({
+        code: ResourceNotFoundErrorCode.PREDICTION_SET_DOES_NOT_EXISTS,
+        errorCodes: ResourceNotFoundErrorCode,
+        status: HttpStatus.NOT_FOUND,
+        sourceFunction: `${this.constructor.name}/triggerFinalizedWorker`,
+        context
+      });
+    }
 
-    const outcomeCode = predictionSet.outcomes.map((outcome) => outcome.name[0].toUpperCase()).join('');
-    const startTimeCode = predictionSet.startTime.toISOString().slice(0, 10).replace(/-/g, '');
-    const endTimeCode = predictionSet.endTime.toISOString().slice(0, 10).replace(/-/g, '');
-    const resolutionTimeCode = predictionSet.resolutionTime.toISOString().slice(0, 10).replace(/-/g, '');
+    if (predictionSet.setStatus !== PredictionSetStatus.FINALIZED) {
+      throw new CodeException({
+        code: BadRequestErrorCode.INVALID_PREDICTION_SET_STATUS,
+        errorCodes: BadRequestErrorCode,
+        status: HttpStatus.BAD_REQUEST,
+        sourceFunction: `${this.constructor.name}/triggerFinalizedWorker`,
+        context
+      });
+    }
 
-    return `${eventCode}_${outcomeCode}_S${startTimeCode}_E${endTimeCode}_RES${resolutionTimeCode}_ID${Number(new Date())}`;
+    await triggerWorkerSimpleQueue(WorkerName.PREDICTION_SET_FINALIZED_PARSER, predictionSetId);
   }
 }

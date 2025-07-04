@@ -1,13 +1,120 @@
-import { exit } from 'process';
+import { env, exit } from 'process';
 import { prepareAttestationRequest } from '../../../lib/flare/attestation';
+import axios from 'axios';
+import * as jq from 'node-jq';
+import * as dayjs from 'dayjs';
+import * as utc from 'dayjs/plugin/utc';
+
+dayjs.extend(utc);
 
 // const endpoint = 'https://swapi.info/api/people/3';
 // const jqQuery = `{name: .name, height: .height, mass: .mass, numberOfFilms: .films | length, uid: (.url | split("/") | .[-1] | tonumber)}`;
 // const abi = `{"components": [{"internalType": "string", "name": "name", "type": "string"},{"internalType": "uint256", "name": "height", "type": "uint256"},{"internalType": "uint256", "name": "mass", "type": "uint256"},{"internalType": "uint256", "name": "numberOfFilms", "type": "uint256"},{"internalType": "uint256", "name": "uid", "type": "uint256"}],"name": "task","type": "tuple"}`;
 // const endpoint = 'https://mock-api.ignitemarket.xyz/api1';
 
-const endpoint = 'https://mock-api.ignitemarket.xyz/api3/0';
-const jqQuery = `{ "outcomeIdx": .result }`;
+const comparedPrice = 24000; // Variable for the price threshold
+
+// const endpoint = 'https://bb-finance.p.rapidapi.com/market/get-chart';
+// const jqQuery = `{ "outcomeIdx": [1, 0][(.result."HSI:IND".ticks[-1].close >= ${comparedPrice}) | if . then 0 else 1 end] }`;
+// const queryParams = {
+//   id: 'HSI:ind',
+//   interval: 'd1'
+// };
+// const headers = {
+//   'x-rapidapi-host': 'bb-finance.p.rapidapi.com',
+//   'x-rapidapi-key': env.RAPID_API_KEY
+// };
+
+// const endpoint = 'https://yahoo-finance15.p.rapidapi.com/api/v1/markets/stock/quotes';
+// const jqQuery = `{ "outcomeIdx": [1, 0][(.body[0].regularMarketPrice >= ${comparedPrice}) | if . then 0 else 1 end] }`;
+// const queryParams = {
+//   ticker: '^HSI'
+// };
+// const headers = {
+//   'x-rapidapi-host': 'yahoo-finance15.p.rapidapi.com',
+//   'x-rapidapi-key': env.RAPID_API_KEY
+// };
+
+// const endpoint = 'https://seeking-alpha.p.rapidapi.com/symbols/get-chart';
+// const jqQuery = `{ "outcomeIdx": [1, 0][(.attributes | to_entries | sort_by(.key) | last | .value.close >= ${comparedPrice}) | if . then 0 else 1 end] }`;
+// const queryParams = {
+//   symbol: 'HSI',
+//   period: '1D'
+// };
+// const headers = {
+//   'x-rapidapi-host': 'seeking-alpha.p.rapidapi.com',
+//   'x-rapidapi-key': env.RAPID_API_KEY
+// };
+
+// Market close time: 08:00:00 / 16:00:00 ChinaST
+const attestationTime = dayjs('2025-07-02T23:59:59Z');
+// const endTime = dayjs(attestationTime).subtract(1, 'day').toDate();
+const endTime = dayjs('2025-07-01T09:30:00Z');
+const attestationTimeUnix = dayjs(attestationTime).unix();
+const attestationTimeFormatted = dayjs(attestationTime).utc().format('YYYY-MM-DD HH:mm:ss');
+const priceGoal = 2.243;
+
+const dataSources = [
+  {
+    endpoint: 'https://api.coingecko.com/api/v3/coins/ripple/market_chart',
+    httpMethod: 'GET',
+    queryParams: {
+      vs_currency: 'usd',
+      days: '1'
+    },
+    jqQuery: `{ "outcomeIdx": [1, 0][(.prices | map(.[0] as $ts | [$ts, .[1], ($ts - ${attestationTime.unix() * 1000} | fabs)]) | sort_by(.[2]) | .[0][1] >= ${priceGoal}) | if . then 0 else 1 end] }`,
+    abi: {
+      'components': [
+        {
+          'internalType': 'uint256',
+          'name': 'outcomeIdx',
+          'type': 'uint256'
+        }
+      ],
+      'type': 'tuple'
+    }
+  },
+  {
+    endpoint: 'https://min-api.cryptocompare.com/data/v2/histominute',
+    httpMethod: 'GET',
+    queryParams: {
+      fsym: 'XRP',
+      tsym: 'USD',
+      limit: '1',
+      toTs: attestationTime.unix()
+    },
+    jqQuery: `{ "outcomeIdx": [1, 0][(.Data.Data[-1].close >= ${priceGoal}) | if . then 0 else 1 end] }`,
+    abi: {
+      'components': [
+        {
+          'internalType': 'uint256',
+          'name': 'outcomeIdx',
+          'type': 'uint256'
+        }
+      ],
+      'type': 'tuple'
+    }
+  },
+  {
+    endpoint: 'https://api.coinbase.com/v2/prices/XRP-USD/spot',
+    httpMethod: 'GET',
+    queryParams: {
+      date: attestationTime.utc().format('YYYY-MM-DD')
+    },
+    jqQuery: `{ "outcomeIdx": [1, 0][(.data.amount | tonumber >= ${priceGoal}) | if . then 0 else 1 end] }`,
+    abi: {
+      'components': [
+        {
+          'internalType': 'uint256',
+          'name': 'outcomeIdx',
+          'type': 'uint256'
+        }
+      ],
+      'type': 'tuple'
+    }
+  }
+];
+
 const abi = {
   'components': [
     {
@@ -19,13 +126,40 @@ const abi = {
   'type': 'tuple'
 };
 
-const httpMethod = 'GET';
-const body = {};
-const queryParams = {};
-
 (async () => {
-  const attestationRequest = await prepareAttestationRequest(endpoint, jqQuery, abi, httpMethod, body, queryParams);
-  console.log(JSON.stringify(attestationRequest, null, 2));
+  for (const dataSource of dataSources) {
+    const endpoint = dataSource.endpoint;
+    const httpMethod = dataSource.httpMethod;
+    const queryParams = dataSource.queryParams;
+    const jqQuery = dataSource.jqQuery;
+    // const headers = dataSource?.headers;
+    const headers = null;
+
+    const test = await axios(endpoint, {
+      method: httpMethod,
+      headers: headers,
+      params: queryParams
+    });
+    const data = test.data;
+    console.log('API Request:');
+    console.log(endpoint, httpMethod, queryParams);
+    // console.log('API Response structure:');
+    // console.log(JSON.stringify(data, null, 2));
+
+    // Test the jq query with real jq
+    console.log('\nTesting JQ Query:');
+    try {
+      const jqResult = await jq.run(jqQuery, data, { input: 'json' });
+      console.log('JQ Query result:', jqResult);
+    } catch (error) {
+      console.error('JQ Query failed:', error);
+    }
+
+    const attestationRequest = await prepareAttestationRequest(endpoint, jqQuery, abi, httpMethod, null, headers, queryParams);
+    console.log('\nAttestation Request:');
+    console.log(JSON.stringify(attestationRequest, null, 2));
+  }
+
   exit(0);
 })().catch(async (err) => {
   console.log(err);
