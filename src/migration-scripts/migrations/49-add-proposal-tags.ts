@@ -4,7 +4,7 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
   await queryFn(`
     ALTER TABLE \`${DbTables.PROPOSAL}\`
     ADD COLUMN \`tags\` VARCHAR(255) NULL AFTER \`outcomes\`,
-    ADD INDEX \`idx_proposal__tag\` (\`tag\`(100)) VISIBLE;
+    ADD INDEX \`idx_proposal__tag\` (\`tags\`(100)) VISIBLE;
   `);
 }
 
