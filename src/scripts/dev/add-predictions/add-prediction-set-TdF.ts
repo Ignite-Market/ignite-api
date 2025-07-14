@@ -26,7 +26,7 @@ const tdf1 = {
   resolutionTime,
   resolutionType: ResolutionType.MANUAL,
   consensusThreshold: 60,
-  imgUrl: 'https://images.ignitemarket.xyz/prediction-sets/tdf.jpg',
+  imgUrl: 'https://images.ignitemarket.xyz/prediction-sets/tdf.png',
   predictionOutcomes: [
     {
       name: 'Yes',

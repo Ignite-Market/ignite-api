@@ -929,6 +929,7 @@ export class PredictionSet extends AdvancedSQLModel {
         `,
       qGroup: `
         GROUP BY u.id
+        HAVING outcomeTokens > 0
       `,
       qFilter: `
         ORDER BY ${filters.orderStr}
