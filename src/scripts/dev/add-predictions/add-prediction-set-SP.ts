@@ -15,7 +15,7 @@ dayjs.extend(timezone);
 const attestationTime = dayjs('2025-07-07T20:00:00Z');
 const endTime = dayjs(attestationTime).subtract(1, 'hour').toDate();
 // const endTime = dayjs('2025-07-07T10:00:00Z');
-const resolutionTime = dayjs(endTime).add(1, 'hour').toDate();
+const resolutionTime = dayjs(attestationTime).add(1, 'hour').toDate();
 const attestationTimeUnix = dayjs(attestationTime).unix();
 
 // attestation time in exchange local time - US EDT
