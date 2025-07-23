@@ -768,7 +768,12 @@ export class PredictionSet extends AdvancedSQLModel {
       id: null
     };
 
-    const { params, filters } = getQueryParams(defaultParams, '', {}, query.serialize());
+    const fieldMap = {
+      id: 'p.id',
+      status: 'p.setStatus'
+    };
+
+    const { params, filters } = getQueryParams(defaultParams, '', fieldMap, query.serialize());
     const qSelects = [
       {
         qSelect: `
@@ -956,7 +961,8 @@ export class PredictionSet extends AdvancedSQLModel {
       boughtAmount: `SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount - ost.feeAmount, 0))`,
       soldAmount: `SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0))`,
       outcomeTokens: `SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.outcomeTokens, 0))`,
-      claimedAmount: `IFNULL(ct.amount, 0)`
+      claimedAmount: `IFNULL(ct.amount, 0)`,
+      status: 'p.setStatus'
     };
 
     const { params, filters } = getQueryParams(defaultParams, 'p', fieldMap, { ...query.serialize(), userId: id });
@@ -1015,7 +1021,8 @@ export class PredictionSet extends AdvancedSQLModel {
     const fieldMap = {
       id: 'p.id',
       fundedAmount: `SUM(IF(psft.type = ${FundingTransactionType.ADDED}, psft.collateralAmount, 0))`,
-      removedAmount: `SUM(IF(psft.type = ${FundingTransactionType.REMOVED}, psft.collateralAmount, 0))`
+      removedAmount: `SUM(IF(psft.type = ${FundingTransactionType.REMOVED}, psft.collateralAmount, 0))`,
+      status: 'p.setStatus'
     };
 
     const { params, filters } = getQueryParams(defaultParams, 'p', fieldMap, { ...query.serialize(), userId: id });
@@ -1060,7 +1067,8 @@ export class PredictionSet extends AdvancedSQLModel {
     };
 
     const fieldMap = {
-      id: 'p.id'
+      id: 'p.id',
+      status: 'p.setStatus'
     };
 
     const { params, filters } = getQueryParams(defaultParams, 'p', fieldMap, query.serialize());
