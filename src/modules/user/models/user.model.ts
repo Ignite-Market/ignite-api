@@ -108,7 +108,7 @@ export class User extends AdvancedSQLModel {
     await super.populateById(id, conn, forUpdate);
 
     if (populateRoles) {
-      this.populateRoles(conn);
+      await this.populateRoles(conn);
     }
     return this;
   }
