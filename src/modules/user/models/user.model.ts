@@ -104,6 +104,15 @@ export class User extends AdvancedSQLModel {
   })
   public roles: Role[];
 
+  async populateById(id: number | string, conn?: PoolConnection, forUpdate = false, populateRoles = false): Promise<this> {
+    await super.populateById(id, conn, forUpdate);
+
+    if (populateRoles) {
+      this.populateRoles(conn);
+    }
+    return this;
+  }
+
   /**
    * Populates user by wallet address.
    * @param address Wallet address.
