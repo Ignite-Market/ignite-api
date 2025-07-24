@@ -38,6 +38,14 @@ export class PredictionSetController {
     return await this.predictionSetService.getPredictionSets(query, context);
   }
 
+  @Get('/admin')
+  @Validation({ dto: PredictionSetQueryFilter, validateFor: ValidateFor.QUERY })
+  @UseGuards(ValidationGuard, AuthGuard)
+  @Roles(DefaultUserRole.ADMIN)
+  async getPredictionsAdmin(@Query() query: PredictionSetQueryFilter, @Ctx() context: Context) {
+    return await this.predictionSetService.getPredictionSets(query, context, true);
+  }
+
   @Get('/activity')
   @Validation({ dto: ActivityQueryFilter, validateFor: ValidateFor.QUERY })
   @UseGuards(ValidationGuard)

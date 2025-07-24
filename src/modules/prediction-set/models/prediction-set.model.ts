@@ -1061,7 +1061,7 @@ export class PredictionSet extends AdvancedSQLModel {
    * @param query Prediction set query filter.
    * @returns Array of prediction sets.
    */
-  public async getList(query: PredictionSetQueryFilter): Promise<any> {
+  public async getList(query: PredictionSetQueryFilter, isAdmin: boolean = false): Promise<any> {
     const defaultParams = {
       id: null
     };
@@ -1075,6 +1075,10 @@ export class PredictionSet extends AdvancedSQLModel {
 
     if (this.getContext()?.user?.id) {
       params.userId = this.getContext().user.id;
+    }
+
+    if (isAdmin) {
+      params.admin = true;
     }
 
     if (params.watchlist) {
@@ -1156,7 +1160,8 @@ export class PredictionSet extends AdvancedSQLModel {
         LEFT JOIN ${DbTables.PREDICTION_SET_CATEGORY} pc
           ON pc.prediction_set_id = p.id
         WHERE p.status <> ${SqlModelStatus.DELETED}
-        AND (@status IS NULL AND p.setStatus NOT IN(${PredictionSetStatus.ERROR}, ${PredictionSetStatus.INITIALIZED}, ${PredictionSetStatus.PENDING})
+        AND (@status IS NULL AND
+          (@admin = 1 OR p.setStatus NOT IN(${PredictionSetStatus.ERROR}, ${PredictionSetStatus.INITIALIZED}, ${PredictionSetStatus.PENDING}))
           OR FIND_IN_SET(p.setStatus, @status)
         )
         AND (@search IS NULL
@@ -1174,12 +1179,16 @@ export class PredictionSet extends AdvancedSQLModel {
       qFilter: `
         ORDER BY 
           CASE 
-            WHEN p.setStatus = ${PredictionSetStatus.ACTIVE} AND p.endTime > NOW() THEN 1
-            WHEN p.setStatus = ${PredictionSetStatus.FUNDING} THEN 2
-            WHEN p.setStatus = ${PredictionSetStatus.ACTIVE} AND p.endTime <= NOW() THEN 3
-            WHEN p.setStatus = ${PredictionSetStatus.VOTING} THEN 4
-            WHEN p.setStatus = ${PredictionSetStatus.FINALIZED} THEN 5
-            ELSE 6
+            WHEN @admin = 1 THEN p.id
+            ELSE
+              CASE 
+                WHEN p.setStatus = ${PredictionSetStatus.ACTIVE} AND p.endTime > NOW() THEN 1
+                WHEN p.setStatus = ${PredictionSetStatus.FUNDING} THEN 2
+                WHEN p.setStatus = ${PredictionSetStatus.ACTIVE} AND p.endTime <= NOW() THEN 3
+                WHEN p.setStatus = ${PredictionSetStatus.VOTING} THEN 4
+                WHEN p.setStatus = ${PredictionSetStatus.FINALIZED} THEN 5
+                ELSE 6
+              END
           END,
           ${filters.orderStr}
         LIMIT ${filters.limit} OFFSET ${filters.offset};

@@ -379,8 +379,8 @@ export class PredictionSetService {
    * @param context Application context.
    * @returns Prediction group.
    */
-  public async getPredictionSets(query: PredictionSetQueryFilter, context: Context) {
-    return await new PredictionSet({}, context).getList(query);
+  public async getPredictionSets(query: PredictionSetQueryFilter, context: Context, isAdmin: boolean = false) {
+    return await new PredictionSet({}, context).getList(query, isAdmin);
   }
 
   /**
