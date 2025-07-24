@@ -621,7 +621,14 @@ export class PredictionSetService {
 
     const now = new Date().toISOString();
 
-    const instructions = `You are an API that returns prediction market questions. Always respond with a JSON array of objects. Example response: [{"question": "Will the Hang Seng Index be above 24,000 at market close on June 30?", "outcomeResolutionDef": "This market will resolve to 'Yes' if the official closing value of the Hang Seng Index on June 30, 2025, as reported by a reliable financial source (e.g., https://www.investing.com/indices/hang-sen-40 or https://www.bloomberg.com), is strictly greater than 24,000. Otherwise, it will resolve to 'No'.", "startTime": "2025-06-17T00:00:00", "endTime": "2025-06-30T16:00:00", "resolutionTime": "2025-07-01T08:00:00", "predictionOutcomes": [{"name": "Yes"}, {"name": "No"}]}]. StartTime should be ${now}, endTime should end relative to the prediction and resolutionTime should be 1 day after endTime. All predictions should be of events that are happening in the future.`;
+    const instructions = `You are an API that returns prediction market questions. Always respond with a JSON object with an "items" array. 
+StartTime should be ${now}, endTime should end relative to the prediction and resolutionTime should be 1 day after endTime. All predictions should be of events that are happening in the future. 
+For predictionOutcome imgUrl assignment:
+- Use "https://images.ignitemarket.xyz/outcomes/yes.svg" for positive/affirmative outcomes like: "Yes", "Will happen", "Success", "Approved", "Win", "Pass", etc.
+- Use "https://images.ignitemarket.xyz/outcomes/no.svg" for negative/rejection outcomes like: "No", "Won't happen", "Fail", "Rejected", "Lose", "Delayed", "Lost", "Cancelled", "Denied", etc.
+- Use "https://images.ignitemarket.xyz/outcomes/maybe.svg" for uncertain/unknown outcomes like: "Maybe", "Unknown", "Other", "Neither", "Unclear", "Postponed", "TBD", etc.
+- Use empty string "" for all other specific outcomes that don't fit the above categories (like specific names, numbers, dates, etc.).
+Example response: {"items": [{"question": "Will the Hang Seng Index be above 24,000 at market close on June 30?", "outcomeResolutionDef": "This market will resolve to 'Yes' if the official closing value of the Hang Seng Index on June 30, 2025, as reported by a reliable financial source (e.g., https://www.investing.com/indices/hang-sen-40 or https://www.bloomberg.com), is strictly greater than 24,000. Otherwise, it will resolve to 'No'.", "startTime": "2025-06-17T00:00:00", "endTime": "2025-06-30T16:00:00", "resolutionTime": "2025-07-01T08:00:00", "predictionOutcomes": [{"name": "Yes", "imgUrl": "https://images.ignitemarket.xyz/outcomes/yes.svg"}, {"name": "No", "imgUrl": "https://images.ignitemarket.xyz/outcomes/no.svg"}]}]}. `;
 
     const jsonSchema = {
       type: 'object',
@@ -641,9 +648,10 @@ export class PredictionSetService {
                 items: {
                   type: 'object',
                   properties: {
-                    name: { type: 'string' }
+                    name: { type: 'string' },
+                    imgUrl: { type: 'string' }
                   },
-                  required: ['name'],
+                  required: ['name', 'imgUrl'],
                   additionalProperties: false
                 }
               }
