@@ -118,7 +118,7 @@ export class User extends AdvancedSQLModel {
    * @param address Wallet address.
    * @returns Populated user.
    */
-  async populateByWalletAddress(address: string, conn?: PoolConnection): Promise<User> {
+  async populateByWalletAddress(address: string, conn?: PoolConnection, populateRoles = false): Promise<User> {
     this.reset();
 
     const data = await this.db().paramExecute(
@@ -134,6 +134,10 @@ export class User extends AdvancedSQLModel {
 
     if (data && data.length) {
       this.populate(data[0], PopulateFrom.DB);
+    }
+
+    if (populateRoles) {
+      await this.populateRoles(conn);
     }
 
     return this;
@@ -214,6 +218,10 @@ export class User extends AdvancedSQLModel {
    * @returns The same instance of the object, but with the roles freshly populated.
    */
   public async populateRoles(conn?: PoolConnection): Promise<User> {
+    if (!this.id) {
+      return this;
+    }
+
     this.roles = [];
 
     const rows = await this.db().paramExecute(

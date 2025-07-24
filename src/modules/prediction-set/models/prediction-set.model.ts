@@ -1179,7 +1179,7 @@ export class PredictionSet extends AdvancedSQLModel {
       qFilter: `
         ORDER BY 
           CASE 
-            WHEN @admin = 1 THEN p.id
+            WHEN @admin = 1 THEN NULL
             ELSE
               CASE 
                 WHEN p.setStatus = ${PredictionSetStatus.ACTIVE} AND p.endTime > NOW() THEN 1
