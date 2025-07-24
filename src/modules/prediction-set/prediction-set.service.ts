@@ -25,6 +25,8 @@ import { Outcome } from './models/outcome.model';
 import { PredictionSet, PredictionSetStatus, ResolutionType } from './models/prediction-set.model';
 import { UserWatchlist } from './models/user-watchlist';
 import { CollateralToken } from '../collateral-token/models/collateral-token.model';
+import { GenerateSuggestionsDto } from './dtos/generate-suggestions.dto';
+import { OpenAI } from 'openai';
 
 @Injectable()
 export class PredictionSetService {
@@ -610,5 +612,82 @@ export class PredictionSetService {
     }
 
     await triggerWorkerSimpleQueue(WorkerName.PREDICTION_SET_FINALIZED_PARSER, predictionSetId);
+  }
+
+  public async generateSuggestions(data: GenerateSuggestionsDto, context: Context) {
+    const openai = new OpenAI({
+      apiKey: env.OPENAI_API_KEY
+    });
+
+    const now = new Date().toISOString();
+
+    const instructions = `You are an API that returns prediction market questions. Always respond with a JSON array of objects. Example response: [{"question": "Will the Hang Seng Index be above 24,000 at market close on June 30?", "outcomeResolutionDef": "This market will resolve to 'Yes' if the official closing value of the Hang Seng Index on June 30, 2025, as reported by a reliable financial source (e.g., https://www.investing.com/indices/hang-sen-40 or https://www.bloomberg.com), is strictly greater than 24,000. Otherwise, it will resolve to 'No'.", "startTime": "2025-06-17T00:00:00", "endTime": "2025-06-30T16:00:00", "resolutionTime": "2025-07-01T08:00:00", "predictionOutcomes": [{"name": "Yes"}, {"name": "No"}]}]. StartTime should be ${now}, endTime should end relative to the prediction and resolutionTime should be 1 day after endTime. All predictions should be of events that are happening in the future.`;
+
+    const jsonSchema = {
+      type: 'object',
+      properties: {
+        items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              question: { type: 'string' },
+              outcomeResolutionDef: { type: 'string' },
+              startTime: { type: 'string' },
+              endTime: { type: 'string' },
+              resolutionTime: { type: 'string' },
+              predictionOutcomes: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string' }
+                  },
+                  required: ['name'],
+                  additionalProperties: false
+                }
+              }
+            },
+            required: ['question', 'outcomeResolutionDef', 'startTime', 'endTime', 'resolutionTime', 'predictionOutcomes'],
+            additionalProperties: false
+          }
+        }
+      },
+      required: ['items'],
+      additionalProperties: false
+    };
+
+    const response = await openai.responses.create({
+      model: 'gpt-4o',
+      instructions,
+      input: data.prompt,
+      text: {
+        format: {
+          type: 'json_schema',
+          name: 'PredictionSetSuggestions',
+          schema: jsonSchema
+        }
+      }
+    });
+
+    try {
+      // The response should be a JSON array as a string
+      const content = response.output_text;
+      const parsed = JSON.parse(content);
+      if (!Array.isArray(parsed?.items)) {
+        throw new Error('OpenAI response is not an array');
+      }
+
+      return parsed.items;
+    } catch (err) {
+      throw new CodeException({
+        code: SystemErrorCode.SQL_SYSTEM_ERROR,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        sourceFunction: `${this.constructor.name}/generateSuggestions`,
+        errorMessage: 'Failed to parse OpenAI response as array of objects',
+        details: err,
+        context
+      });
+    }
   }
 }
