@@ -43,7 +43,7 @@ export class Context {
 
     const { id } = parseJwtToken(JwtTokenType.USER_LOGIN, token);
     if (id) {
-      this.user = await new User({}, this).populateById(id);
+      this.user = await new User({}, this).populateById(id, null, false, true);
     }
 
     return this.user;

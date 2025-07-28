@@ -117,7 +117,7 @@ export class UserService {
     }
 
     // Find or create user by wallet address.
-    const user = await new User({}, context).populateByWalletAddress(data.address);
+    const user = await new User({}, context).populateByWalletAddress(data.address, null, true);
     if (!user.exists()) {
       const conn = await context.mysql.start();
 
