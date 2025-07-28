@@ -14,6 +14,7 @@ import { PredictionSetQueryFilter } from './dtos/prediction-set-query-filter';
 import { PredictionSetChanceHistoryQueryFilter } from './dtos/prediction-set-chance-history-query-filter';
 import { ActivityQueryFilter } from './dtos/activity-query-filter';
 import { HoldersQueryFilter } from './dtos/holders-query-filter';
+import { GenerateSuggestionsDto } from './dtos/generate-suggestions.dto';
 
 @Controller('prediction-sets')
 export class PredictionSetController {
@@ -35,6 +36,14 @@ export class PredictionSetController {
   @UseGuards(ValidationGuard)
   async getPredictions(@Query() query: PredictionSetQueryFilter, @Ctx() context: Context) {
     return await this.predictionSetService.getPredictionSets(query, context);
+  }
+
+  @Get('/admin')
+  @Validation({ dto: PredictionSetQueryFilter, validateFor: ValidateFor.QUERY })
+  @UseGuards(ValidationGuard, AuthGuard)
+  @Roles(DefaultUserRole.ADMIN)
+  async getPredictionsAdmin(@Query() query: PredictionSetQueryFilter, @Ctx() context: Context) {
+    return await this.predictionSetService.getPredictionSets(query, context, true);
   }
 
   @Get('/activity')
@@ -124,5 +133,11 @@ export class PredictionSetController {
   @UseGuards(AuthGuard)
   async triggerFinalizedWorker(@Param('id', ParseIntPipe) id: number, @Ctx() context: Context) {
     return await this.predictionSetService.triggerFinalizedWorker(id, context);
+  }
+
+  @Post('/generate-suggestions')
+  @UseGuards(AuthGuard)
+  async generateSuggestions(@Body() data: GenerateSuggestionsDto, @Ctx() context: Context) {
+    return await this.predictionSetService.generateSuggestions(data, context);
   }
 }

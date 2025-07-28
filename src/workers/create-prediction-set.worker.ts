@@ -37,7 +37,7 @@ export class CreatePredictionSetWorker extends BaseQueueWorkerExecutor {
    * @param data Prediction set data.
    */
   public async handleCreatePredictionSet(data: PredictionSetData): Promise<void> {
-    const predictionSet = await new PredictionSet({}, this.context).populateById(data.predictionSetId);
+    const predictionSet = await new PredictionSet({}, this.context).populateById(data.predictionSetId, null, false, { outcomes: true });
     if (!predictionSet.exists() || !predictionSet.isEnabled()) {
       await this.writeLogToDb(
         WorkerLogStatus.ERROR,

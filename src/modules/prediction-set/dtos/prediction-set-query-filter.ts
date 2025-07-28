@@ -36,8 +36,8 @@ export class PredictionSetQueryFilter extends BaseQueryFilter {
   public collateralTokenId: number;
 
   @prop({
-    parser: { resolver: integerParser() },
+    parser: { resolver: integerParser(), array: true },
     populatable: [PopulateFrom.USER]
   })
-  public status: PredictionSetStatus;
+  public status: PredictionSetStatus[];
 }
