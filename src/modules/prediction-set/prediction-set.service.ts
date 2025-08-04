@@ -666,7 +666,7 @@ Example response: {"items": [{"question": "Will the Hang Seng Index be above 24,
     };
 
     const response = await openai.responses.create({
-      model: 'gpt-4o',
+      model: 'gpt-4o-mini-2024-07-18',
       instructions,
       input: data.prompt,
       text: {

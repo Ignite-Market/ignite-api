@@ -148,10 +148,12 @@ async function main() {
                 return;
               }
 
-              // Calculate the cost of outcome tokens based on the ratio
-              const totalPoolTokens = amounts.reduce((sum, amt) => sum + amt, 0);
-              const outcomeRatio = amounts[index] / totalPoolTokens;
-              const outcomePrice = 1 - outcomeRatio;
+              // Calculate price using Fixed-Product Market Maker formula
+              const outcomeProducts = amounts.map((_, i) => amounts.reduce((prod, amt, j) => (i === j ? prod : prod * amt), 1));
+              const denominator = outcomeProducts.reduce((sum, val) => sum + val, 0);
+              const outcomePrice = denominator === 0 ? 0 : outcomeProducts[index] / denominator;
+
+              // Determine how many outcome tokens were actually acquired and their cost
               const outcomeTokens = collateralAmount - amount;
               const outcomeAmount = Math.floor(outcomeTokens * outcomePrice);
 
