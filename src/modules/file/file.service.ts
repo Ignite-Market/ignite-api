@@ -28,7 +28,7 @@ export class FileService {
 
     const s3 = new AWS_S3();
 
-    const uploadPath = `uploads/${fileName}`;
+    const uploadPath = `upload/${fileName}`;
 
     const uploadUrl = await s3.generateSignedUploadURL(env.IMAGE_BUCKET, uploadPath);
     return { uploadUrl };
