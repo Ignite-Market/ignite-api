@@ -10,7 +10,7 @@ import { ProposalModule } from './modules/proposal/proposal.module';
 import { RewardPointsModule } from './modules/reward-points/reward-points.module';
 import { StatsModule } from './modules/stats/stats.module';
 import { UserModule } from './modules/user/user.module';
-
+import { FileModule } from './modules/file/file.module';
 @Module({
   imports: [
     MySQLModule,
@@ -21,7 +21,8 @@ import { UserModule } from './modules/user/user.module';
     ProposalModule,
     RewardPointsModule,
     CollateralTokenModule,
-    StatsModule
+    StatsModule,
+    FileModule
   ],
   controllers: [],
   providers: []
