@@ -27,6 +27,7 @@ import { UserWatchlist } from './models/user-watchlist';
 import { CollateralToken } from '../collateral-token/models/collateral-token.model';
 import { GenerateSuggestionsDto } from './dtos/generate-suggestions.dto';
 import { OpenAI } from 'openai';
+import { PoolConnection } from 'mysql2/promise';
 
 @Injectable()
 export class PredictionSetService {
@@ -91,7 +92,12 @@ export class PredictionSetService {
    * @param dataSourceIds Data source IDs.
    * @param context Application context.
    */
-  public async createPredictionSet(predictionSet: PredictionSet, dataSourceIds: number[], context: Context): Promise<PredictionSet> {
+  public async createPredictionSet(
+    predictionSet: PredictionSet,
+    dataSourceIds: number[],
+    context: Context,
+    categories?: string[]
+  ): Promise<PredictionSet> {
     const conn = await context.mysql.start();
 
     const collateralToken = await new CollateralToken({}, context).populateById(predictionSet.collateral_token_id);
@@ -196,6 +202,12 @@ export class PredictionSetService {
           details: error,
           context
         });
+      }
+    }
+
+    if (categories) {
+      for (const category of categories) {
+        await this.addPredictionCategory(predictionSet.id, category, context, conn);
       }
     }
 
@@ -346,8 +358,8 @@ export class PredictionSetService {
    * @param category Category name.
    * @param context Application context.
    */
-  public async addPredictionCategory(predictionSetId: number, category: string, context: Context) {
-    const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId);
+  public async addPredictionCategory(predictionSetId: number, category: string, context: Context, conn?: PoolConnection) {
+    const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId, conn);
     if (!predictionSet.exists() || !predictionSet.isEnabled()) {
       throw new CodeException({
         code: ResourceNotFoundErrorCode.PREDICTION_SET_DOES_NOT_EXISTS,
@@ -366,7 +378,8 @@ export class PredictionSetService {
       {
         predictionSetId: predictionSet.id,
         category
-      }
+      },
+      conn
     );
 
     return predictionSet.serialize(SerializeFor.USER);
