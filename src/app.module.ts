@@ -11,6 +11,7 @@ import { RewardPointsModule } from './modules/reward-points/reward-points.module
 import { StatsModule } from './modules/stats/stats.module';
 import { UserModule } from './modules/user/user.module';
 import { FileModule } from './modules/file/file.module';
+import { AirdropModule } from './modules/airdrop/airdrop.module';
 @Module({
   imports: [
     MySQLModule,
@@ -22,7 +23,8 @@ import { FileModule } from './modules/file/file.module';
     RewardPointsModule,
     CollateralTokenModule,
     StatsModule,
-    FileModule
+    FileModule,
+    AirdropModule
   ],
   controllers: [],
   providers: []
