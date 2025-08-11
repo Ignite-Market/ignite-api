@@ -28,7 +28,9 @@ export class PredictionSetController {
     const predictionSet = new PredictionSet(data.serialize(), context);
     predictionSet.outcomes = data.predictionOutcomes.map((d) => new Outcome(d.serialize(), context));
 
-    return (await this.predictionSetService.createPredictionSet(predictionSet, data.dataSourceIds, context)).serialize(SerializeFor.USER);
+    return (await this.predictionSetService.createPredictionSet(predictionSet, data.dataSourceIds, context, data.categories)).serialize(
+      SerializeFor.USER
+    );
   }
 
   @Get('')

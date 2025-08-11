@@ -1,5 +1,5 @@
 import { prop } from '@rawmodel/core';
-import { integerParser } from '@rawmodel/parsers';
+import { integerParser, stringParser } from '@rawmodel/parsers';
 import { arrayLengthValidator, presenceValidator } from '@rawmodel/validators';
 import { PopulateFrom, ValidatorErrorCode } from '../../../config/types';
 import { PredictionSet, ResolutionType } from '../models/prediction-set.model';
@@ -47,4 +47,10 @@ export class PredictionSetDto extends PredictionSet {
     ]
   })
   public predictionOutcomes: Outcome[];
+
+  @prop({
+    parser: { resolver: stringParser(), array: true },
+    populatable: [PopulateFrom.USER]
+  })
+  public categories: string[];
 }
