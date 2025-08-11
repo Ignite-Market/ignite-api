@@ -16,33 +16,34 @@ export enum AppEnvironment {
  * Database table names.
  */
 export enum DbTables {
-  JOB = 'job',
-  WORKER_LOG = 'worker_log',
-  USER = 'user',
-  ROLE = 'role',
-  USER_ROLE = 'user_role',
-  PREDICTION_SET = 'prediction_set',
-  PREDICTION_SET_CHAIN_DATA = 'prediction_set_chain_data',
-  PREDICTION_SET_FUNDING_TRANSACTION = 'prediction_set_funding_transaction',
+  AIRDROP_USER = 'airdrop_user',
+  BANNER = 'banner',
   CLAIM_TRANSACTION = 'claim_transaction',
+  COLLATERAL_TOKEN = 'collateral_token',
+  COMMENT = 'comment',
+  CONTRACT = 'contract',
   DATA_SOURCE = 'data_source',
-  PREDICTION_SET_DATA_SOURCE = 'prediction_set_data_source',
+  JOB = 'job',
   OUTCOME = 'outcome',
   OUTCOME_CHANCE = 'outcome_chance',
   OUTCOME_SHARE_TRANSACTION = 'outcome_share_transaction',
-  COMMENT = 'comment',
-  PREDICTION_SET_ATTESTATION = 'prediction_set_attestation',
-  CONTRACT = 'contract',
   OUTCOME_VOTING_TRANSACTION = 'outcome_voting_transaction',
-  USER_WATCHLIST = 'user_watchlist',
-  BANNER = 'banner',
+  PREDICTION_SET = 'prediction_set',
+  PREDICTION_SET_ATTESTATION = 'prediction_set_attestation',
   PREDICTION_SET_CATEGORY = 'prediction_set_category',
+  PREDICTION_SET_CHAIN_DATA = 'prediction_set_chain_data',
+  PREDICTION_SET_DATA_SOURCE = 'prediction_set_data_source',
+  PREDICTION_SET_FUNDING_TRANSACTION = 'prediction_set_funding_transaction',
   PROPOSAL = 'proposal',
   PROPOSAL_ROUND = 'proposal_round',
   PROPOSAL_VOTE = 'proposal_vote',
   REWARD_POINTS = 'reward_points',
   REWARD_POINTS_TRANSACTION = 'reward_points_transaction',
-  COLLATERAL_TOKEN = 'collateral_token'
+  ROLE = 'role',
+  USER = 'user',
+  USER_ROLE = 'user_role',
+  USER_WATCHLIST = 'user_watchlist',
+  WORKER_LOG = 'worker_log'
 }
 /**
  * Validation error codes - 422_00_000.
@@ -88,7 +89,12 @@ export enum ValidatorErrorCode {
   DATA_SOURCE_ABI_NOT_PRESENT = 422_00_037,
   PREDICTION_SET_ATTESTATION_TIME_NOT_PRESENT = 422_00_038,
   GENERATE_SUGGESTIONS_PROMPT_NOT_PRESENT = 422_00_039,
-  FILE_NAME_NOT_PRESENT = 422_00_040
+  FILE_NAME_NOT_PRESENT = 422_00_040,
+  AIRDROP_USER_WALLET_ADDRESS_NOT_PRESENT = 422_00_041,
+  AIRDROP_USER_WALLET_ADDRESS_NOT_UNIQUE = 422_00_042,
+  AIRDROP_USER_EMAIL_NOT_PRESENT = 422_00_043,
+  AIRDROP_USER_EMAIL_NOT_UNIQUE = 422_00_044,
+  AIRDROP_USER_EMAIL_NOT_VALID = 422_00_045
 }
 
 /**
