@@ -958,9 +958,9 @@ export class PredictionSet extends AdvancedSQLModel {
 
     const fieldMap = {
       id: 'p.id',
-      boughtAmount: `SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount - ost.feeAmount, 0))`,
+      boughtAmount: `SUM(IF(ost.type = ${ShareTransactionType.BUY} OR ost.type = ${ShareTransactionType.FUND}, ost.amount - ost.feeAmount, 0))`,
       soldAmount: `SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0))`,
-      outcomeTokens: `SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.outcomeTokens, 0))`,
+      outcomeTokens: `SUM(IF(ost.type = ${ShareTransactionType.BUY} OR ost.type = ${ShareTransactionType.FUND}, ost.outcomeTokens, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.outcomeTokens, 0))`,
       claimedAmount: `IFNULL(ct.amount, 0)`,
       status: 'p.setStatus'
     };
@@ -973,9 +973,9 @@ export class PredictionSet extends AdvancedSQLModel {
           o.id AS outcomeId,
           o.name AS outcomeName,
           o.imgUrl AS outcomeImg,
-          SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.amount - ost.feeAmount, 0)) AS boughtAmount,
+          SUM(IF(ost.type = ${ShareTransactionType.BUY} OR ost.type = ${ShareTransactionType.FUND}, ost.amount - ost.feeAmount, 0)) AS boughtAmount,
           SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.amount, 0)) AS soldAmount,
-          SUM(IF(ost.type = ${ShareTransactionType.BUY}, ost.outcomeTokens, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.outcomeTokens, 0)) AS outcomeTokens,
+          SUM(IF(ost.type = ${ShareTransactionType.BUY} OR ost.type = ${ShareTransactionType.FUND}, ost.outcomeTokens, 0)) - SUM(IF(ost.type = ${ShareTransactionType.SELL}, ost.outcomeTokens, 0)) AS outcomeTokens,
           IFNULL(ct.amount, 0) AS claimedAmount
         `,
       qFrom: `
