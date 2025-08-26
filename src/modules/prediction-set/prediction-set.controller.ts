@@ -62,11 +62,6 @@ export class PredictionSetController {
     return await this.predictionSetService.getPredictionSetHolders(query, context);
   }
 
-  @Get('/banners')
-  async getBanners(@Ctx() context: Context) {
-    return await this.predictionSetService.getBanners(context);
-  }
-
   @Get('/:id')
   async getPredictionById(@Param('id', ParseIntPipe) id: number, @Ctx() context: Context) {
     return await this.predictionSetService.getPredictionById(id, context);

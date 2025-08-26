@@ -13,14 +13,14 @@ const fourHours = 4 * 60 * 60 * 1000;
 const sixHours = 6 * 60 * 60 * 1000;
 const oneWeek = 7 * 24 * 60 * 60 * 1000;
 
-const endTime = dayjs('2025-07-11T11:00:00Z').toDate();
-const resolutionTime = dayjs('2025-07-14T09:00:00Z').toDate();
+const endTime = dayjs('2025-07-19T10:00:00Z').toDate();
+const resolutionTime = dayjs('2025-07-21T09:00:00Z').toDate();
 
 const tdf1 = {
   collateral_token_id: 1,
-  question: 'Will Tadej Pogačar be in the top 3 overall by the end of Week 1 (Stage 7)?',
+  question: 'Will Tadej Pogačar be in the top 3 overall by the end of Week 2 (Stage 14)?',
   outcomeResolutionDef:
-    "This resolves to 'Yes' if Pogačar is officially ranked 1st‑3rd in GC at the end of Stage 7. Using official GC standings after Stage 7 from the Tour de France Race Center",
+    "This resolves to 'Yes' if Pogačar is officially ranked 1st-3rd in GC at the end of Stage 14. Using official GC standings after Stage 14 from the Tour de France Race Center.",
   startTime: new Date(Number(new Date())),
   endTime,
   resolutionTime,
@@ -40,10 +40,81 @@ const tdf1 = {
   categories: ['Sports']
 };
 
+const tdf2 = {
+  collateral_token_id: 1,
+  question: 'Will a French rider win any stage during Week 2 (Stages 8-14)?',
+  outcomeResolutionDef:
+    "This resolves to 'Yes' if atleast one rider with French nationality wins any stage during Week 2 (Stages 8-14). Using official stage results from the Tour de France Race Center.",
+  startTime: new Date(Number(new Date())),
+  endTime,
+  resolutionTime,
+  resolutionType: ResolutionType.MANUAL,
+  consensusThreshold: 60,
+  imgUrl: 'https://images.ignitemarket.xyz/prediction-sets/tdf.png',
+  predictionOutcomes: [
+    {
+      name: 'Yes',
+      imgUrl: 'https://images.ignitemarket.xyz/outcomes/yes.svg'
+    },
+    {
+      name: 'No',
+      imgUrl: 'https://images.ignitemarket.xyz/outcomes/no.svg'
+    }
+  ],
+  categories: ['Sports']
+};
+
+const tdf3 = {
+  collateral_token_id: 1,
+  question: 'Will Primož Roglič be among the first 4 riders in the general classification at the end of the Tour?',
+  outcomeResolutionDef:
+    "This resolves to 'Yes' if Roglič is officially ranked 1st-4th in GC at the end of the Tour. Using official GC standings after the Tour from the Tour de France Race Center.",
+  startTime: new Date(Number(new Date())),
+  endTime: dayjs('2025-07-27T10:00:00Z').toDate(),
+  resolutionTime: dayjs('2025-07-28T08:00:00Z').toDate(),
+  resolutionType: ResolutionType.MANUAL,
+  consensusThreshold: 60,
+  imgUrl: 'https://images.ignitemarket.xyz/prediction-sets/tdf.png',
+  predictionOutcomes: [
+    {
+      name: 'Yes',
+      imgUrl: 'https://images.ignitemarket.xyz/outcomes/yes.svg'
+    },
+    {
+      name: 'No',
+      imgUrl: 'https://images.ignitemarket.xyz/outcomes/no.svg'
+    }
+  ],
+  categories: ['Sports']
+};
+
+const tdf4 = {
+  collateral_token_id: 1,
+  question: 'Will Jasper Philipsen get more then one stage win at the end of the Tour?',
+  outcomeResolutionDef:
+    "This resolves to 'Yes' if Philipsen wins more than one stage at the end of the Tour. Using official stage results after the Tour from the Tour de France Race Center.",
+  startTime: new Date(Number(new Date())),
+  endTime: dayjs('2025-07-27T10:00:00Z').toDate(),
+  resolutionTime: dayjs('2025-07-28T08:00:00Z').toDate(),
+  resolutionType: ResolutionType.MANUAL,
+  consensusThreshold: 60,
+  imgUrl: 'https://images.ignitemarket.xyz/prediction-sets/tdf.png',
+  predictionOutcomes: [
+    {
+      name: 'Yes',
+      imgUrl: 'https://images.ignitemarket.xyz/outcomes/yes.svg'
+    },
+    {
+      name: 'No',
+      imgUrl: 'https://images.ignitemarket.xyz/outcomes/no.svg'
+    }
+  ],
+  categories: ['Sports']
+};
 const processPredictionSet = async () => {
   const context = await createContext();
 
-  const selectedPredictionSet = tdf1;
+  const selectedPredictionSet = tdf4;
 
   try {
     const service = new PredictionSetService();
