@@ -230,7 +230,7 @@ const flare4 = {
 const processPredictionSet = async () => {
   const context = await createContext();
 
-  const selectedPredictionSet = flare4;
+  const selectedPredictionSet = flare1;
 
   try {
     const service = new PredictionSetService();

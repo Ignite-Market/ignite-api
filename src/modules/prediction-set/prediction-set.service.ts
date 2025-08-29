@@ -19,7 +19,7 @@ import { HoldersQueryFilter } from './dtos/holders-query-filter';
 import { PredictionSetChanceHistoryQueryFilter } from './dtos/prediction-set-chance-history-query-filter';
 import { PredictionSetQueryFilter } from './dtos/prediction-set-query-filter';
 import { PredictionSetDto } from './dtos/prediction-set.dto';
-import { Banner } from './models/banner';
+import { Banner } from '../banner/models/banner';
 import { DataSource } from './models/data-source.model';
 import { Outcome } from './models/outcome.model';
 import { PredictionSet, PredictionSetStatus, ResolutionType } from './models/prediction-set.model';
@@ -583,16 +583,6 @@ export class PredictionSetService {
     }
 
     return true;
-  }
-
-  /**
-   * Get active banners.
-   *
-   * @param context Application context.
-   * @returns Active banners.
-   */
-  public async getBanners(context: Context) {
-    return await new Banner({}, context).getActive();
   }
 
   /**

@@ -12,6 +12,8 @@ import { StatsModule } from './modules/stats/stats.module';
 import { UserModule } from './modules/user/user.module';
 import { FileModule } from './modules/file/file.module';
 import { AirdropModule } from './modules/airdrop/airdrop.module';
+import { BannerModule } from './modules/banner/banner.module';
+
 @Module({
   imports: [
     MySQLModule,
@@ -24,7 +26,8 @@ import { AirdropModule } from './modules/airdrop/airdrop.module';
     CollateralTokenModule,
     StatsModule,
     FileModule,
-    AirdropModule
+    AirdropModule,
+    BannerModule
   ],
   controllers: [],
   providers: []

@@ -9,6 +9,7 @@ export async function upgrade(queryFn: (query: string, values?: any[]) => Promis
     \`description\` VARCHAR(500) NOT NULL,
     \`button\` VARCHAR(255) NOT NULL,
     \`imageUrl\` VARCHAR(255) NOT NULL,
+    \`isActive\` TINYINT(1) NOT NULL DEFAULT 1,
     \`status\` INT NOT NULL DEFAULT '${SqlModelStatus.ACTIVE}',
     \`createTime\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     \`createUser\` INT NULL,
