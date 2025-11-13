@@ -186,4 +186,79 @@ export class StatsService {
 
     return await selectAndCountQuery(context.mysql, sqlQuery, params, 'u.id');
   }
+
+  /**
+   * Returns top users based on the sum of reward points from reward points transactions.
+   *
+   * @param query Query filter to apply.
+   * @param context Application context.
+   * @returns List of top users with their total reward points.
+   */
+  async getTopUsersByRewardPoints(query: TopUsersQueryFilter, context: Context): Promise<any> {
+    // Set default parameters
+    const defaultParams = {
+      range: TimeRange.ALL
+    };
+
+    // Define field mappings for ordering
+    const fieldMap = {
+      id: 'u.id',
+      username: 'u.username',
+      walletAddress: 'u.walletAddress',
+      totalRewardPoints: 'SUM(rpt.value)'
+    };
+
+    // Get params and filters from the query
+    const { params, filters } = getQueryParams(defaultParams, 'u', fieldMap, query.serialize());
+
+    // Build time range filter
+    let timeRangeFilter = '';
+    if (params.range !== TimeRange.ALL) {
+      let interval: string = null;
+      switch (params.range) {
+        case TimeRange.ONE_DAY:
+          interval = 'DAY';
+          break;
+        case TimeRange.ONE_WEEK:
+          interval = 'WEEK';
+          break;
+        case TimeRange.ONE_MONTH:
+          interval = 'MONTH';
+          break;
+        default:
+          interval = null;
+      }
+
+      if (interval) {
+        timeRangeFilter = `AND rpt.createTime >= DATE_SUB(NOW(), INTERVAL 1 ${interval})`;
+      }
+    }
+
+    const sqlQuery = {
+      qSelect: `
+        SELECT 
+          u.id,
+          u.username,
+          u.walletAddress,
+          SUM(rpt.value) AS totalRewardPoints
+      `,
+      qFrom: `
+        FROM ${DbTables.REWARD_POINTS_TRANSACTION} rpt
+        JOIN ${DbTables.USER} u
+          ON u.id = rpt.user_id
+        WHERE rpt.status <> ${SqlModelStatus.DELETED}
+          AND u.status <> ${SqlModelStatus.DELETED}
+          ${timeRangeFilter}
+      `,
+      qGroup: `
+        GROUP BY u.id
+      `,
+      qFilter: `
+        ORDER BY ${filters.orderStr || 'totalRewardPoints DESC'}
+        LIMIT ${filters.limit} OFFSET ${filters.offset};
+      `
+    };
+
+    return await selectAndCountQuery(context.mysql, sqlQuery, params, 'u.id');
+  }
 }

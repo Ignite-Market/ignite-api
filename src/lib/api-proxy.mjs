@@ -92,6 +92,23 @@ export const handler = async (event) => {
   try {
     console.log('Proxy event:', JSON.stringify(event, null, 2));
 
+    // Authenticate request with API key
+    const requiredApiKey = process.env.API_PROXY_KEY;
+    if (requiredApiKey) {
+      const incomingHeaders = event.headers || {};
+      const providedApiKey = incomingHeaders['x-api-key']
+
+      if (!providedApiKey || providedApiKey !== requiredApiKey) {
+        return {
+          statusCode: 401,
+          body: JSON.stringify({
+            error: 'Unauthorized',
+            message: 'Valid API key required in x-api-key header'
+          })
+        };
+      }
+    }
+
     const { rawPath, rawQueryString, queryStringParameters, body } = event;
     const httpMethod = event.requestContext.http.method;
 

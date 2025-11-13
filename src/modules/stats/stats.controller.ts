@@ -18,6 +18,13 @@ export class StatsController {
     return this.statsService.getTopUsersByProfit(query, context);
   }
 
+  @Get('leaderboard/points')
+  @Validation({ dto: TopUsersQueryFilter, validateFor: ValidateFor.QUERY })
+  @UseGuards(ValidationGuard)
+  async getTopUsersByRewardPoints(@Query() query: TopUsersQueryFilter, @Ctx() context: Context) {
+    return this.statsService.getTopUsersByRewardPoints(query, context);
+  }
+
   @Get('leaderboard/volume')
   @Validation({ dto: TopUsersQueryFilter, validateFor: ValidateFor.QUERY })
   @UseGuards(ValidationGuard)
