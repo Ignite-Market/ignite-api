@@ -4,7 +4,7 @@ import { isPresent } from '@rawmodel/utils';
 import { presenceValidator } from '@rawmodel/validators';
 import { groupBy } from 'lodash';
 import { PoolConnection } from 'mysql2/promise';
-import { DbTables, ErrorCode, PopulateFrom, SerializeFor, SqlModelStatus, ValidatorErrorCode } from '../../../config/types';
+import { DbTables, DefaultUserRole, ErrorCode, PopulateFrom, SerializeFor, SqlModelStatus, ValidatorErrorCode } from '../../../config/types';
 import { AdvancedSQLModel } from '../../../lib/base-models/advanced-sql.model';
 import { BaseQueryFilter } from '../../../lib/base-models/base-query-filter.model';
 import { getQueryParams, selectAndCountQuery, unionSelectAndCountQuery } from '../../../lib/database/sql-utils';
@@ -21,6 +21,7 @@ import { PredictionSetChainData } from './prediction-set-chain-data.model';
 import { ShareTransactionType } from './transactions/outcome-share-transaction.model';
 import { FundingTransactionType } from './transactions/prediction-set-funding-transaction.model';
 import { UserWatchlist } from './user-watchlist';
+import { User } from '../../user/models/user.model';
 
 /**
  * Prediction set resolution type.
@@ -1061,7 +1062,7 @@ export class PredictionSet extends AdvancedSQLModel {
    * @param query Prediction set query filter.
    * @returns Array of prediction sets.
    */
-  public async getList(query: PredictionSetQueryFilter, isAdmin: boolean = false): Promise<any> {
+  public async getList(query: PredictionSetQueryFilter, admin: boolean = false): Promise<any> {
     const defaultParams = {
       id: null
     };
@@ -1073,12 +1074,20 @@ export class PredictionSet extends AdvancedSQLModel {
 
     const { params, filters } = getQueryParams(defaultParams, 'p', fieldMap, query.serialize());
 
-    if (this.getContext()?.user?.id) {
-      params.userId = this.getContext().user.id;
+    const user = this.getContext()?.user as User;
+
+    if (user?.id) {
+      params.userId = user.id;
     }
 
-    if (isAdmin) {
+    // Is admin route
+    if (admin) {
       params.admin = true;
+    }
+
+    // Is user admin
+    if (user?.hasRole(DefaultUserRole.ADMIN)) {
+      params.isAdmin = true;
     }
 
     if (params.watchlist) {
@@ -1159,11 +1168,15 @@ export class PredictionSet extends AdvancedSQLModel {
           AND uw.user_id = @userId
         LEFT JOIN ${DbTables.PREDICTION_SET_CATEGORY} pc
           ON pc.prediction_set_id = p.id
+        LEFT JOIN ${DbTables.PREDICTION_SET_FUNDING_TRANSACTION} psft
+          ON psft.prediction_set_id = p.id
+          AND psft.status = ${SqlModelStatus.ACTIVE}
         WHERE p.status <> ${SqlModelStatus.DELETED}
         AND (@status IS NULL AND
           (@admin = 1 OR p.setStatus NOT IN(${PredictionSetStatus.ERROR}, ${PredictionSetStatus.INITIALIZED}, ${PredictionSetStatus.PENDING}))
           OR FIND_IN_SET(p.setStatus, @status)
         )
+        AND (@isAdmin = 1 OR p.setStatus != ${PredictionSetStatus.FUNDING} OR psft.id IS NOT NULL)
         AND (@search IS NULL
           OR p.question LIKE CONCAT('%', @search, '%')
         )
