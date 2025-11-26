@@ -1,5 +1,151 @@
 import https from 'https';
 import { URL } from 'url';
+import crypto from 'crypto';
+
+// Cache TTL in seconds (default: 30 seconds)
+const CACHE_TTL = parseInt(process.env.API_PROXY_CACHE_TTL) || 30;
+
+// Maximum number of cache entries (default: 50)
+// Prevents memory exhaustion with many unique requests
+const MAX_CACHE_ENTRIES = parseInt(process.env.API_PROXY_MAX_CACHE_ENTRIES) || 50;
+
+// Maximum response size to cache in bytes (default: 1MB)
+// Prevents caching extremely large responses that could cause memory issues
+const MAX_CACHE_RESPONSE_SIZE = parseInt(process.env.API_PROXY_MAX_CACHE_SIZE) || 1 * 1024 * 1024;
+
+// Maximum total cache memory in bytes (default: 30MB)
+// Conservative limit to leave room for Lambda runtime (~30-50MB), code (~10-20MB), and request handling
+// Set to ~25% of 128MB Lambda memory to be safe
+const MAX_TOTAL_CACHE_MEMORY = parseInt(process.env.API_PROXY_MAX_TOTAL_CACHE_MEMORY) || 30 * 1024 * 1024;
+
+// Simple in-memory cache with TTL and LRU eviction (using only built-in Node.js modules)
+const cache = new Map();
+// Track access order for LRU eviction
+const accessOrder = [];
+// Track total estimated memory usage
+let totalCacheMemory = 0;
+
+// Generate cache key from request
+const generateCacheKey = (method, url, queryParams) => {
+  const keyData = `${method}:${url}:${JSON.stringify(queryParams || {})}`;
+  return crypto.createHash('md5').update(keyData).digest('hex');
+};
+
+// Get cached response if available and not expired
+const getCachedResponse = (key) => {
+  const cached = cache.get(key);
+  if (!cached) {
+    return null;
+  }
+
+  const now = Date.now();
+  if (now > cached.expiresAt) {
+    // Remove from memory tracking
+    const entrySize = estimateResponseSize(cached.data);
+    totalCacheMemory -= entrySize;
+
+    cache.delete(key);
+    // Remove from access order
+    const index = accessOrder.indexOf(key);
+    if (index > -1) {
+      accessOrder.splice(index, 1);
+    }
+    return null;
+  }
+
+  // Update access order for LRU (move to end)
+  const index = accessOrder.indexOf(key);
+  if (index > -1) {
+    accessOrder.splice(index, 1);
+  }
+  accessOrder.push(key);
+
+  return cached.data;
+};
+
+// Estimate response size in bytes (rough approximation)
+const estimateResponseSize = (responseData) => {
+  try {
+    return JSON.stringify(responseData).length;
+  } catch {
+    // Fallback: estimate based on body length
+    return (responseData.body || '').length;
+  }
+};
+
+// Store response in cache with size limits and LRU eviction
+const setCachedResponse = (key, data) => {
+  // Check if response is too large to cache
+  const estimatedSize = estimateResponseSize(data);
+  if (estimatedSize > MAX_CACHE_RESPONSE_SIZE) {
+    console.log(`Skipping cache for large response: ${estimatedSize} bytes (max: ${MAX_CACHE_RESPONSE_SIZE})`);
+    return;
+  }
+
+  // Evict oldest entries until we have room (by count or memory)
+  while (cache.size >= MAX_CACHE_ENTRIES || (totalCacheMemory + estimatedSize > MAX_TOTAL_CACHE_MEMORY && cache.size > 0)) {
+    // Remove oldest entry (first in access order)
+    const oldestKey = accessOrder.shift();
+    if (oldestKey) {
+      const oldestEntry = cache.get(oldestKey);
+      if (oldestEntry) {
+        const oldestSize = estimateResponseSize(oldestEntry.data);
+        totalCacheMemory -= oldestSize;
+      }
+      cache.delete(oldestKey);
+      console.log(`Evicted oldest cache entry (entries: ${cache.size}, memory: ${Math.round(totalCacheMemory / 1024 / 1024)}MB)`);
+    } else {
+      break; // No more entries to evict
+    }
+  }
+
+  // Check if we still don't have enough room after eviction
+  if (totalCacheMemory + estimatedSize > MAX_TOTAL_CACHE_MEMORY) {
+    console.log(
+      `Skipping cache: would exceed memory limit (current: ${Math.round(totalCacheMemory / 1024 / 1024)}MB, adding: ${Math.round(estimatedSize / 1024 / 1024)}MB, max: ${Math.round(MAX_TOTAL_CACHE_MEMORY / 1024 / 1024)}MB)`
+    );
+    return;
+  }
+
+  const expiresAt = Date.now() + CACHE_TTL * 1000;
+  cache.set(key, { data, expiresAt });
+  totalCacheMemory += estimatedSize;
+
+  // Add to end of access order (most recently used)
+  accessOrder.push(key);
+};
+
+// Clean expired cache entries periodically
+// Cleanup interval is half of TTL (or 30s minimum) to ensure expired entries don't linger too long
+const CLEANUP_INTERVAL = Math.max(Math.floor(CACHE_TTL * 500), 30000);
+setInterval(() => {
+  const now = Date.now();
+  const keysToDelete = [];
+
+  for (const [key, value] of cache.entries()) {
+    if (now > value.expiresAt) {
+      keysToDelete.push(key);
+    }
+  }
+
+  // Remove expired entries from both cache and access order
+  keysToDelete.forEach((key) => {
+    const entry = cache.get(key);
+    if (entry) {
+      const entrySize = estimateResponseSize(entry.data);
+      totalCacheMemory -= entrySize;
+    }
+    cache.delete(key);
+    const index = accessOrder.indexOf(key);
+    if (index > -1) {
+      accessOrder.splice(index, 1);
+    }
+  });
+
+  if (keysToDelete.length > 0) {
+    console.log(`Cleaned up ${keysToDelete.length} expired cache entries`);
+  }
+}, CLEANUP_INTERVAL);
 
 // Parse API mappings from environment variable
 // Format: "bloomberg:bb-finance.p.rapidapi.com,yahoo:yahoo-finance15.p.rapidapi.com,seeking-alpha:seeking-alpha.p.rapidapi.com"
@@ -96,7 +242,7 @@ export const handler = async (event) => {
     const requiredApiKey = process.env.API_PROXY_KEY;
     if (requiredApiKey) {
       const incomingHeaders = event.headers || {};
-      const providedApiKey = incomingHeaders['x-api-key']
+      const providedApiKey = incomingHeaders['x-api-key'];
 
       if (!providedApiKey || providedApiKey !== requiredApiKey) {
         return {
@@ -160,8 +306,19 @@ export const handler = async (event) => {
         })
       };
     }
-    // Prepare request headers
 
+    // Check cache for GET requests
+    if (httpMethod === 'GET') {
+      const cacheKey = generateCacheKey(httpMethod, targetUrl.toString(), queryStringParameters);
+      const cachedResponse = getCachedResponse(cacheKey);
+
+      if (cachedResponse) {
+        console.log(`Returning cached response for: ${targetUrl.toString()}`);
+        return cachedResponse;
+      }
+    }
+
+    // Prepare request headers
     const requestHeaders = {
       'x-rapidapi-host': apiHost,
       'x-rapidapi-key': apiKey,
@@ -181,10 +338,19 @@ export const handler = async (event) => {
 
     console.log(`Response status: ${response.status}`);
 
-    return {
+    const responseData = {
       statusCode: response.status,
       body: response.data
     };
+
+    // Cache successful GET responses
+    if (httpMethod === 'GET' && response.status >= 200 && response.status < 300) {
+      const cacheKey = generateCacheKey(httpMethod, targetUrl.toString(), queryStringParameters);
+      setCachedResponse(cacheKey, responseData);
+      console.log(`Cached response for: ${targetUrl.toString()}`);
+    }
+
+    return responseData;
   } catch (error) {
     console.error('Proxy error:', error);
 
