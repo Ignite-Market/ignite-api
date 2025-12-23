@@ -11,8 +11,7 @@ ENV_VARS=$(printf '{"Variables":{"API_KEYS_S3_BUCKET":"%s","API_KEYS_DECRYPTED_S
   "${API_PROXY_KEY}" \
   "${RAPID_API_KEY}" \
   "${API_MAPPINGS}" \
-  "${API_PROXY_CACHE_TTL:-30}" \
-  "${AWS_REGION}")
+  "${API_PROXY_CACHE_TTL:-30}")
 
 # Check if function exists by checking exit code
 if aws lambda get-function --function-name "$FUNCTION_NAME" --region "${AWS_REGION}" >/dev/null 2>&1; then
