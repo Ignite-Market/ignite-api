@@ -1,14 +1,6 @@
 version: 0.2
 
 phases:
-  install:
-    runtime-versions:
-      nodejs: 20
-    commands:
-      - echo "Installing dependencies for API proxy"
-      - npm cache verify
-      - npm install --production
-
   pre_build:
     commands:
       - echo "Preparing Lambda package for api-proxy"
