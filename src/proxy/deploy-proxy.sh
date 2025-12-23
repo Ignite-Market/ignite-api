@@ -22,6 +22,12 @@ if aws lambda get-function --function-name "$FUNCTION_NAME" --region "${AWS_REGI
     --zip-file fileb://api-proxy.zip \
     --region "${AWS_REGION}"
   
+  # Wait for the code update to complete before updating configuration
+  echo "Waiting for code update to complete..."
+  aws lambda wait function-updated \
+    --function-name "$FUNCTION_NAME" \
+    --region "${AWS_REGION}"
+  
   echo "Updating function configuration..."
   aws lambda update-function-configuration \
     --function-name "$FUNCTION_NAME" \
