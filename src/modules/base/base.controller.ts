@@ -1,7 +1,5 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { BaseService } from './base.service';
-import { Ctx } from '../../decorators/context.decorator';
-import { Context } from '../../context';
 
 @Controller()
 export class BaseController {
@@ -15,5 +13,10 @@ export class BaseController {
   @Post('siteverify')
   getSiteVerify(@Body() data: any): Promise<boolean> {
     return this.baseService.getSiteVerify(data);
+  }
+
+  @Get('proxy-api-keys')
+  getEncryptedApiKeys(): Promise<Array<{ identity_address: string; encrypted_API_key: string }>> {
+    return this.baseService.getEncryptedApiKeys();
   }
 }

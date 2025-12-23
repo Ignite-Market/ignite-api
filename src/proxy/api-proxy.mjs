@@ -1,6 +1,8 @@
 import https from 'https';
 import { URL } from 'url';
 import crypto from 'crypto';
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { consumers } from 'stream';
 
 // Cache TTL in seconds (default: 30 seconds)
 const CACHE_TTL = parseInt(process.env.API_PROXY_CACHE_TTL) || 30;
@@ -9,9 +11,9 @@ const CACHE_TTL = parseInt(process.env.API_PROXY_CACHE_TTL) || 30;
 // Prevents memory exhaustion with many unique requests
 const MAX_CACHE_ENTRIES = parseInt(process.env.API_PROXY_MAX_CACHE_ENTRIES) || 50;
 
-// Maximum response size to cache in bytes (default: 1MB)
+// Maximum response size to cache in bytes (default: 2MB)
 // Prevents caching extremely large responses that could cause memory issues
-const MAX_CACHE_RESPONSE_SIZE = parseInt(process.env.API_PROXY_MAX_CACHE_SIZE) || 1 * 1024 * 1024;
+const MAX_CACHE_RESPONSE_SIZE = parseInt(process.env.API_PROXY_MAX_CACHE_SIZE) || 2 * 1024 * 1024;
 
 // Maximum total cache memory in bytes (default: 30MB)
 // Conservative limit to leave room for Lambda runtime (~30-50MB), code (~10-20MB), and request handling
@@ -24,6 +26,19 @@ const cache = new Map();
 const accessOrder = [];
 // Track total estimated memory usage
 let totalCacheMemory = 0;
+// Counter for periodic cleanup (cleanup every N operations to avoid performance impact)
+let operationCount = 0;
+const CLEANUP_FREQUENCY = 10; // Clean up every 10 cache operations
+
+// API Keys cache (loaded from S3)
+let apiKeysCache = null;
+let apiKeysCacheTime = 0;
+const API_KEYS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache TTL
+
+// Initialize S3 client (uses Lambda execution role credentials)
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION || 'us-east-1'
+});
 
 // Generate cache key from request
 const generateCacheKey = (method, url, queryParams) => {
@@ -33,6 +48,12 @@ const generateCacheKey = (method, url, queryParams) => {
 
 // Get cached response if available and not expired
 const getCachedResponse = (key) => {
+  // Periodic cleanup (Lambda-friendly, no background intervals)
+  operationCount++;
+  if (operationCount % CLEANUP_FREQUENCY === 0) {
+    cleanupExpiredEntries();
+  }
+
   const cached = cache.get(key);
   if (!cached) {
     return null;
@@ -115,10 +136,9 @@ const setCachedResponse = (key, data) => {
   accessOrder.push(key);
 };
 
-// Clean expired cache entries periodically
-// Cleanup interval is half of TTL (or 30s minimum) to ensure expired entries don't linger too long
-const CLEANUP_INTERVAL = Math.max(Math.floor(CACHE_TTL * 500), 30000);
-setInterval(() => {
+// Clean expired cache entries on-demand (Lambda-friendly)
+// This is called during cache operations to avoid background intervals
+const cleanupExpiredEntries = () => {
   const now = Date.now();
   const keysToDelete = [];
 
@@ -145,7 +165,7 @@ setInterval(() => {
   if (keysToDelete.length > 0) {
     console.log(`Cleaned up ${keysToDelete.length} expired cache entries`);
   }
-}, CLEANUP_INTERVAL);
+};
 
 // Parse API mappings from environment variable
 // Format: "bloomberg:bb-finance.p.rapidapi.com,yahoo:yahoo-finance15.p.rapidapi.com,seeking-alpha:seeking-alpha.p.rapidapi.com"
@@ -186,6 +206,72 @@ const buildTargetUrl = (apiHost, path, queryParams) => {
   }
 
   return null;
+};
+
+// Load API keys from S3
+const loadApiKeysFromS3 = async () => {
+  const now = Date.now();
+
+  // Return cached keys if still valid
+  if (apiKeysCache && now - apiKeysCacheTime < API_KEYS_CACHE_TTL) {
+    return apiKeysCache;
+  }
+
+  const bucket = process.env.API_KEYS_S3_BUCKET;
+  const key = process.env.API_KEYS_DECRYPTED_S3_KEY || 'api-keys/decrypted-keys.json';
+
+  if (!bucket) {
+    console.warn('API_KEYS_S3_BUCKET not set, skipping S3 key loading');
+    return null;
+  }
+
+  try {
+    const command = new GetObjectCommand({ Bucket: bucket, Key: key });
+    const response = await s3Client.send(command);
+
+    // Read and parse JSON
+    const text = await consumers.text(response.Body);
+    const keys = JSON.parse(text);
+
+    apiKeysCache = keys;
+    apiKeysCacheTime = now;
+
+    console.log(`Loaded ${Object.keys(keys).length} API keys from S3`);
+    return keys;
+  } catch (error) {
+    // If file doesn't exist, log warning but don't fail
+    if (error.name === 'NoSuchKey' || error.$metadata?.httpStatusCode === 404) {
+      console.warn(`API keys file not found in S3: ${bucket}/${key}`);
+      return null;
+    }
+    console.error('Error loading API keys from S3:', error);
+    // Return null on error - will fall back to API_PROXY_KEY if set
+    return null;
+  }
+};
+
+// Verify API key - check if it matches any key in S3
+const verifyApiKey = async (providedApiKey) => {
+  if (!providedApiKey) {
+    return false;
+  }
+
+  // Try to load keys from S3
+  const apiKeys = await loadApiKeysFromS3();
+
+  if (!apiKeys) {
+    // Fallback to environment variable if S3 keys not available
+    const requiredApiKey = process.env.API_PROXY_KEY;
+    if (requiredApiKey) {
+      return providedApiKey === requiredApiKey;
+    }
+    // No authentication configured
+    return false;
+  }
+
+  // Check if provided key matches any value in the keys map
+  const keyValues = Object.values(apiKeys);
+  return keyValues.includes(providedApiKey);
 };
 
 // Make HTTP request using built-in modules
@@ -239,20 +325,21 @@ export const handler = async (event) => {
     console.log('Proxy event:', JSON.stringify(event, null, 2));
 
     // Authenticate request with API key
-    const requiredApiKey = process.env.API_PROXY_KEY;
-    if (requiredApiKey) {
-      const incomingHeaders = event.headers || {};
-      const providedApiKey = incomingHeaders['x-api-key'];
+    const incomingHeaders = event.headers || {};
+    const queryParams = event.queryStringParameters || {};
 
-      if (!providedApiKey || providedApiKey !== requiredApiKey) {
-        return {
-          statusCode: 401,
-          body: JSON.stringify({
-            error: 'Unauthorized',
-            message: 'Valid API key required in x-api-key header'
-          })
-        };
-      }
+    const providedApiKey = incomingHeaders['x-api-key'] || incomingHeaders['X-Api-Key'] || queryParams['api_key'];
+
+    // Verify API key against S3 keys or fallback to environment variable
+    const isValid = await verifyApiKey(providedApiKey);
+    if (!isValid) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({
+          error: 'Unauthorized',
+          message: 'Valid API key required in x-api-key header or api_key query parameter'
+        })
+      };
     }
 
     const { rawPath, rawQueryString, queryStringParameters, body } = event;
