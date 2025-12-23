@@ -25,7 +25,7 @@ phases:
 
   post_build:
     commands:
-      - echo "Deploying Lambda function: api-proxy-${ENV}"
+      - echo "Deploying Lambda function api-proxy-${ENV}"
       - chmod +x src/proxy/deploy-proxy.sh
       - ./src/proxy/deploy-proxy.sh
       - echo "Deployment completed successfully"
