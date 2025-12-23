@@ -1,8 +1,8 @@
-import https from 'https';
-import { URL } from 'url';
-import crypto from 'crypto';
+import https from 'node:https';
+import { URL } from 'node:url';
+import crypto from 'node:crypto';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
-import { consumers } from 'stream';
+import * as consumers from 'node:stream/consumers';
 
 // Cache TTL in seconds (default: 30 seconds)
 const CACHE_TTL = parseInt(process.env.API_PROXY_CACHE_TTL) || 30;
@@ -39,6 +39,9 @@ const API_KEYS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache TTL
 const s3Client = new S3Client({
   region: process.env.AWS_REGION || 'us-east-1'
 });
+
+// Log module initialization to verify it loads
+console.log('API Proxy module loaded successfully');
 
 // Generate cache key from request
 const generateCacheKey = (method, url, queryParams) => {
@@ -440,6 +443,7 @@ export const handler = async (event) => {
     return responseData;
   } catch (error) {
     console.error('Proxy error:', error);
+    console.error('Error stack:', error.stack);
 
     return {
       statusCode: 500,

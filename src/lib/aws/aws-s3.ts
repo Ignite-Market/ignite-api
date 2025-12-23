@@ -11,7 +11,8 @@ import {
   S3Client
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { consumers, Readable } from 'stream';
+import { Readable } from 'stream';
+import { text } from 'stream/consumers';
 import { env } from '../../config/env';
 
 /**
@@ -104,7 +105,7 @@ export class AWS_S3 {
    */
   async read(bucket: string, source: string): Promise<string> {
     const resp = await this.get(bucket, source);
-    return consumers.text(resp.Body as Readable);
+    return text(resp.Body as Readable);
   }
 
   /**
