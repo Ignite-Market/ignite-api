@@ -3,8 +3,16 @@ set -e
 
 FUNCTION_NAME="api-proxy-${ENV}"
 
-# Build environment variables in AWS CLI format: Variables="{Key1=value1,Key2=value2}"
-ENV_VARS="API_KEYS_S3_BUCKET=${API_KEYS_S3_BUCKET},API_KEYS_DECRYPTED_S3_KEY=${API_KEYS_DECRYPTED_S3_KEY:-api-keys/decrypted-keys.json},API_PROXY_KEY=${API_PROXY_KEY},RAPID_API_KEY=${RAPID_API_KEY},API_MAPPINGS=${API_MAPPINGS},API_PROXY_CACHE_TTL=${API_PROXY_CACHE_TTL:-30},AWS_REGION=${AWS_REGION}"
+# Build environment variables JSON in the correct format: {"Variables":{"Key":"Value"}}
+# Use printf to build JSON safely
+ENV_VARS=$(printf '{"Variables":{"API_KEYS_S3_BUCKET":"%s","API_KEYS_DECRYPTED_S3_KEY":"%s","API_PROXY_KEY":"%s","RAPID_API_KEY":"%s","API_MAPPINGS":"%s","API_PROXY_CACHE_TTL":"%s","AWS_REGION":"%s"}}' \
+  "${API_KEYS_S3_BUCKET}" \
+  "${API_KEYS_DECRYPTED_S3_KEY:-api-keys/decrypted-keys.json}" \
+  "${API_PROXY_KEY}" \
+  "${RAPID_API_KEY}" \
+  "${API_MAPPINGS}" \
+  "${API_PROXY_CACHE_TTL:-30}" \
+  "${AWS_REGION}")
 
 # Check if function exists by checking exit code
 if aws lambda get-function --function-name "$FUNCTION_NAME" --region "${AWS_REGION}" >/dev/null 2>&1; then
@@ -17,7 +25,7 @@ if aws lambda get-function --function-name "$FUNCTION_NAME" --region "${AWS_REGI
   echo "Updating function configuration..."
   aws lambda update-function-configuration \
     --function-name "$FUNCTION_NAME" \
-    --environment "Variables={${ENV_VARS}}" \
+    --environment "${ENV_VARS}" \
     --region "${AWS_REGION}" || echo "Warning: Failed to update function configuration"
 else
   echo "Function does not exist, creating new function..."
@@ -30,7 +38,7 @@ else
     --zip-file fileb://api-proxy.zip \
     --timeout 30 \
     --memory-size 128 \
-    --environment "Variables={${ENV_VARS}}" \
+    --environment "${ENV_VARS}" \
     --region "${AWS_REGION}" \
     --tags "project=ignite-market,env=${ENV},component=api-proxy"
 fi
