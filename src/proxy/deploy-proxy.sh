@@ -30,6 +30,7 @@ if aws lambda get-function --function-name "$FUNCTION_NAME" --region "${AWS_REGI
   echo "Updating function configuration..."
   aws lambda update-function-configuration \
     --function-name "$FUNCTION_NAME" \
+    --handler "index.handler" \
     --environment "${ENV_VARS}" \
     --region "${AWS_REGION}" || echo "Warning: Failed to update function configuration"
 else
@@ -39,7 +40,7 @@ else
     --function-name "$FUNCTION_NAME" \
     --runtime nodejs20.x \
     --role "${LAMBDA_ROLE_ARN}" \
-    --handler api-proxy.handler \
+    --handler index.handler \
     --zip-file fileb://api-proxy.zip \
     --timeout 30 \
     --memory-size 128 \
