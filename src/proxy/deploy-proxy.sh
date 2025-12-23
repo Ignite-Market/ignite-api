@@ -4,8 +4,8 @@ set -e
 FUNCTION_NAME="api-proxy-${ENV}"
 
 # Build environment variables JSON in the correct format: {"Variables":{"Key":"Value"}}
-# Use printf to build JSON safely
-ENV_VARS=$(printf '{"Variables":{"API_KEYS_S3_BUCKET":"%s","API_KEYS_DECRYPTED_S3_KEY":"%s","API_PROXY_KEY":"%s","RAPID_API_KEY":"%s","API_MAPPINGS":"%s","API_PROXY_CACHE_TTL":"%s","AWS_REGION":"%s"}}' \
+# Note: AWS_REGION is automatically set by Lambda, so we don't include it
+ENV_VARS=$(printf '{"Variables":{"API_KEYS_S3_BUCKET":"%s","API_KEYS_DECRYPTED_S3_KEY":"%s","API_PROXY_KEY":"%s","RAPID_API_KEY":"%s","API_MAPPINGS":"%s","API_PROXY_CACHE_TTL":"%s"}}' \
   "${API_KEYS_S3_BUCKET}" \
   "${API_KEYS_DECRYPTED_S3_KEY:-api-keys/decrypted-keys.json}" \
   "${API_PROXY_KEY}" \
