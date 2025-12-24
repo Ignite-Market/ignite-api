@@ -105,6 +105,10 @@ export interface IEnv {
   MAIL_TEMPLATE_PATH: string;
 
   IMAGE_BUCKET: string;
+
+  API_KEYS_S3_BUCKET: string;
+  API_KEYS_ENCRYPTED_S3_KEY: string;
+  API_KEYS_DECRYPTED_S3_KEY: string;
 }
 
 dotenv.config();
@@ -227,7 +231,11 @@ export let env: IEnv = {
 
   MAIL_TEMPLATE_PATH: process.env['MAIL_TEMPLATE_PATH'],
 
-  IMAGE_BUCKET: process.env['IMAGE_BUCKET'] || 'ignite-market-images'
+  IMAGE_BUCKET: process.env['IMAGE_BUCKET'] || 'ignite-market-images',
+
+  API_KEYS_S3_BUCKET: process.env['API_KEYS_S3_BUCKET'],
+  API_KEYS_ENCRYPTED_S3_KEY: process.env['API_KEYS_ENCRYPTED_S3_KEY'] || 'api-keys/encrypted-keys.json',
+  API_KEYS_DECRYPTED_S3_KEY: process.env['API_KEYS_DECRYPTED_S3_KEY'] || 'api-keys/decrypted-keys.json'
 };
 
 /**

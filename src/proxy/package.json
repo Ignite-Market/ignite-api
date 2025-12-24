@@ -1,0 +1,12 @@
+{
+  "name": "api-proxy",
+  "version": "1.0.0",
+  "description": "API proxy Lambda function for Ignite Market",
+  "type": "module",
+  "main": "index.mjs",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.686.0"
+  }
+}
+
+

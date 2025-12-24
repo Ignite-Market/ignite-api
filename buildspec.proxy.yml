@@ -1,0 +1,23 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo "Preparing Lambda package for api-proxy"
+      - echo "Build started on `date`"
+      - mkdir -p lambda-package
+      - cp src/proxy/api-proxy.mjs lambda-package/index.mjs
+      - cp src/proxy/package.json lambda-package/package.json
+
+  build:
+    commands:
+      - echo "Creating Lambda deployment package"
+      - chmod +x src/proxy/build-package.sh
+      - ./src/proxy/build-package.sh
+
+  post_build:
+    commands:
+      - echo "Deploying Lambda function api-proxy-${ENV}"
+      - chmod +x src/proxy/deploy-proxy.sh
+      - ./src/proxy/deploy-proxy.sh
+      - echo "Deployment completed successfully"

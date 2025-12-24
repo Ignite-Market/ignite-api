@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
 import { env } from '../../config/env';
+import { loadExistingKeys } from '../../lib/api-keys-storage';
 
 @Injectable()
 export class BaseService {
@@ -24,5 +25,26 @@ export class BaseService {
     });
 
     return response.data?.verified ?? false;
+  }
+
+  /**
+   * Fetches encrypted API keys from S3 and returns them in the requested format.
+   * @returns Array of objects with identity_address and encrypted_API_key
+   */
+  async getEncryptedApiKeys(): Promise<Array<{ identity_address: string; encrypted_API_key: string }>> {
+    const bucket = env.API_KEYS_S3_BUCKET;
+    const encryptedKey = env.API_KEYS_ENCRYPTED_S3_KEY;
+
+    if (!bucket || !encryptedKey) {
+      throw new Error('API_KEYS_S3_BUCKET or API_KEYS_ENCRYPTED_S3_KEY environment variable is not set');
+    }
+
+    const { encrypted } = await loadExistingKeys(bucket, encryptedKey); // We only need encrypted keys
+
+    // Convert from object format { "address": "encrypted_key" } to array format
+    return Object.entries(encrypted).map(([identity_address, encrypted_API_key]) => ({
+      identity_address,
+      encrypted_API_key
+    }));
   }
 }

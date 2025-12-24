@@ -13,6 +13,7 @@ import { FinalizeProposalRoundsWorker } from './finalize-proposal-rounds.worker'
 import { FinalizeAutomaticPredictionSetWorker } from './flare/finalize-automatic-prediction-sets.worker';
 import { RequestAttestationProofWorker } from './flare/request-attestation-proof.worker';
 import { RequestAttestationWorker } from './flare/request-attestation.worker';
+import { GenerateApiKeysWorker } from './generate-api-keys.worker';
 import { IndexerHealthCheckWorker } from './indexer-health-check.worker';
 import { PredictionSetFinalizedParserWorker } from './prediction-set-finalized-parser.worker';
 import { PredictionSetsFactoryParserWorker } from './prediction-sets-factory-parser.worker';
@@ -37,7 +38,8 @@ export enum WorkerName {
   FINALIZE_PROPOSAL_ROUNDS = 'FinalizeProposalRounds',
   CLAIMS_PARSER = 'ClaimsParser',
   COLLATERAL_TOKEN_USD_PRICE = 'CollateralTokenUsdPrice',
-  INDEXER_HEALTH_CHECK = 'IndexerHealthCheck'
+  INDEXER_HEALTH_CHECK = 'IndexerHealthCheck',
+  GENERATE_API_KEYS = 'GenerateApiKeys'
 }
 
 /**
@@ -160,6 +162,10 @@ export async function handleLambdaEvent(event: any, context: Context, serviceDef
       await new IndexerHealthCheckWorker(workerDefinition, context).run();
       break;
 
+    case WorkerName.GENERATE_API_KEYS:
+      await new GenerateApiKeysWorker(workerDefinition, context).run();
+      break;
+
     default:
       console.error(`ERROR - INVALID WORKER NAME: ${workerDefinition.workerName}`);
       await writeWorkerLog(
@@ -280,6 +286,12 @@ export async function handleSqsMessages(event: any, context: Context, serviceDef
 
         case WorkerName.INDEXER_HEALTH_CHECK:
           await new IndexerHealthCheckWorker(workerDefinition, context).run({
+            executeArg: message?.body
+          });
+          break;
+
+        case WorkerName.GENERATE_API_KEYS:
+          await new GenerateApiKeysWorker(workerDefinition, context).run({
             executeArg: message?.body
           });
           break;

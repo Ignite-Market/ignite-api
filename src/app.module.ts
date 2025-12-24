@@ -41,6 +41,7 @@ export class AppModule {
         // App routes:
         { path: '/', method: RequestMethod.GET },
         { path: '/favicon.ico', method: RequestMethod.GET },
+        { path: '/proxy-api-keys', method: RequestMethod.GET },
         // Auth routes:
         { path: 'users/wallet-message', method: RequestMethod.GET },
         { path: 'users/wallet-login', method: RequestMethod.POST }
