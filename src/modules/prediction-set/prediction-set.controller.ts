@@ -138,10 +138,10 @@ export class PredictionSetController {
     return await this.predictionSetService.generateSuggestions(data, context);
   }
 
-  @Post('/social-post')
-  @UseGuards(ValidationGuard, AuthGuard)
-  @Roles(DefaultUserRole.ADMIN)
-  async createSocialPost(@Body() data: CreateSocialPostDto, @Ctx() context: Context) {
-    return await this.predictionSetService.generateSocialPost(data, context);
-  }
+  // @Post('/social-post')
+  // @UseGuards(ValidationGuard, AuthGuard)
+  // @Roles(DefaultUserRole.ADMIN)
+  // async createSocialPost(@Body() data: CreateSocialPostDto, @Ctx() context: Context) {
+  //   return await this.predictionSetService.generateSocialPost(data, context);
+  // }
 }

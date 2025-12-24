@@ -6,7 +6,7 @@ phases:
       - echo "Preparing Lambda package for api-proxy"
       - echo "Build started on `date`"
       - mkdir -p lambda-package
-      - cp src/proxy/api-proxy.mjs lambda-package/api-proxy.mjs
+      - cp src/proxy/api-proxy.mjs lambda-package/index.mjs
       - cp src/proxy/package.json lambda-package/package.json
 
   build:
