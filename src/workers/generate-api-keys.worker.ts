@@ -11,6 +11,7 @@ const FLARE_SIGNERS_URL = 'https://flare-systems-explorer-backend.flare.rocks/ap
 
 interface FlareEntity {
   identity_address: string;
+  signing_policy_address?: string | null;
   signing_policy_public_key?: string | null;
 }
 
@@ -139,8 +140,8 @@ export class GenerateApiKeysWorker extends BaseSingleThreadWorker {
   private toSigners(entities: FlareEntity[]): SignerPubkey[] {
     return entities
       .filter((entity) => {
-        // Must have identity address
-        if (!entity.identity_address) {
+        // Must have signing policy address
+        if (!entity.signing_policy_address) {
           return false;
         }
 
@@ -158,7 +159,7 @@ export class GenerateApiKeysWorker extends BaseSingleThreadWorker {
         return hexWithoutPrefix.length >= 64;
       })
       .map((entity) => ({
-        signing_address: entity.identity_address,
+        signing_address: entity.signing_policy_address!,
         recovered_pubkey_hex: entity.signing_policy_public_key!
       }));
   }

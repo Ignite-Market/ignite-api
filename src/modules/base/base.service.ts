@@ -31,7 +31,7 @@ export class BaseService {
    * Fetches encrypted API keys from S3 and returns them in the requested format.
    * @returns Array of objects with identity_address and encrypted_API_key
    */
-  async getEncryptedApiKeys(): Promise<Array<{ identity_address: string; encrypted_API_key: string }>> {
+  async getEncryptedApiKeys(): Promise<Array<{ signing_policy_address: string; encrypted_API_key: string }>> {
     const bucket = env.API_KEYS_S3_BUCKET;
     const encryptedKey = env.API_KEYS_ENCRYPTED_S3_KEY;
 
@@ -42,8 +42,8 @@ export class BaseService {
     const { encrypted } = await loadExistingKeys(bucket, encryptedKey); // We only need encrypted keys
 
     // Convert from object format { "address": "encrypted_key" } to array format
-    return Object.entries(encrypted).map(([identity_address, encrypted_API_key]) => ({
-      identity_address,
+    return Object.entries(encrypted).map(([signing_policy_address, encrypted_API_key]) => ({
+      signing_policy_address,
       encrypted_API_key
     }));
   }

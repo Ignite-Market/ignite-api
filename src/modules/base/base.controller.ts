@@ -16,7 +16,7 @@ export class BaseController {
   }
 
   @Get('proxy-api-keys')
-  getEncryptedApiKeys(): Promise<Array<{ identity_address: string; encrypted_API_key: string }>> {
+  getEncryptedApiKeys(): Promise<Array<{ signing_policy_address: string; encrypted_API_key: string }>> {
     return this.baseService.getEncryptedApiKeys();
   }
 }
