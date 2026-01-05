@@ -239,7 +239,9 @@ const loadApiKeysFromS3 = async () => {
     apiKeysCache = keys;
     apiKeysCacheTime = now;
 
-    console.log(`Loaded ${Object.keys(keys).length} API keys from S3`);
+    // Handle both old format (Record) and new format (array)
+    const keyCount = Array.isArray(keys) ? keys.length : Object.keys(keys).length;
+    console.log(`Loaded ${keyCount} API keys from S3`);
     return keys;
   } catch (error) {
     // If file doesn't exist, log warning but don't fail
@@ -272,8 +274,16 @@ const verifyApiKey = async (providedApiKey) => {
     return false;
   }
 
-  // Check if provided key matches any value in the keys map
-  const keyValues = Object.values(apiKeys);
+  // Handle both old format (Record) and new format (array)
+  let keyValues;
+  if (Array.isArray(apiKeys)) {
+    // New format: array of objects with api_key field
+    keyValues = apiKeys.filter((entry) => entry.api_key).map((entry) => entry.api_key);
+  } else {
+    // Old format: Record<string, string>
+    keyValues = Object.values(apiKeys);
+  }
+
   return keyValues.includes(providedApiKey);
 };
 
