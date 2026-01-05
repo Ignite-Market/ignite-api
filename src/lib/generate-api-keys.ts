@@ -9,12 +9,14 @@ export interface SignerPubkey {
   signing_address?: string;
   voter_signing_address?: string;
   recovered_pubkey_hex: string;
+  network?: 'flare' | 'songbird';
 }
 
 export interface GeneratedApiKey {
   signing_address: string;
   encrypted_api_key: string;
   api_key: string;
+  network: 'flare' | 'songbird';
 }
 
 /**
@@ -130,7 +132,8 @@ export function generateApiKeys(signers: SignerPubkey[]): GeneratedApiKey[] {
     results.push({
       signing_address: signingAddress,
       encrypted_api_key: encrypted,
-      api_key: apiKey
+      api_key: apiKey,
+      network: signer.network || 'flare' // Default to 'flare' for backward compatibility
     });
   }
 

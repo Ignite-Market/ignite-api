@@ -17,6 +17,11 @@ export class BaseController {
 
   @Get('proxy-api-keys')
   getEncryptedApiKeys(): Promise<Array<{ signing_policy_address: string; encrypted_API_key: string }>> {
-    return this.baseService.getEncryptedApiKeys();
+    return this.baseService.getEncryptedApiKeys('flare');
+  }
+
+  @Get('proxy-api-keys/songbird')
+  getEncryptedApiKeysSongbird(): Promise<Array<{ signing_policy_address: string; encrypted_API_key: string }>> {
+    return this.baseService.getEncryptedApiKeys('songbird');
   }
 }
