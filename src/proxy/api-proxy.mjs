@@ -414,7 +414,7 @@ export const handler = async (event) => {
     // Generate cache key for request deduplication
     const cacheKey = generateCacheKey(httpMethod, targetUrl.toString(), queryStringParameters);
 
-    // Check cache for GET requests
+    // For GET requests, check cache and handle deduplication atomically
     if (httpMethod === 'GET') {
       const cachedResponse = getCachedResponse(cacheKey);
 
@@ -423,74 +423,112 @@ export const handler = async (event) => {
         return cachedResponse;
       }
 
-      // Check if there's already an in-flight request for this cache key
-      if (inFlightRequests.has(cacheKey)) {
-        console.log(`Waiting for in-flight request for: ${targetUrl.toString()}`);
-        // Wait for the existing request to complete
-        try {
-          const responseData = await inFlightRequests.get(cacheKey);
-          return responseData;
-        } catch (error) {
-          // If the in-flight request failed, we'll handle it below
-          // Remove from in-flight requests so we can retry if needed
-          inFlightRequests.delete(cacheKey);
-          throw error;
+      // Atomically get or create in-flight request promise
+      // This ensures only the first request creates the promise, others wait for it
+      // Use a double-check locking pattern to ensure atomicity
+      let requestPromise = inFlightRequests.get(cacheKey);
+
+      if (!requestPromise) {
+        // Create promise factory - but don't execute yet
+        // We'll only execute if we successfully set it first
+        let promiseResolve, promiseReject;
+        const deferredPromise = new Promise((resolve, reject) => {
+          promiseResolve = resolve;
+          promiseReject = reject;
+        });
+
+        // Try to set it atomically - if it already exists, another request beat us
+        const existingPromise = inFlightRequests.get(cacheKey);
+        if (existingPromise) {
+          // Another request beat us, use theirs
+          requestPromise = existingPromise;
+          console.log(`Another request already started for: ${targetUrl.toString()}, waiting for it`);
+        } else {
+          // We're the first! Set our placeholder promise immediately
+          inFlightRequests.set(cacheKey, deferredPromise);
+          console.log(`Created new in-flight request for: ${targetUrl.toString()}`);
+
+          // Now execute the actual request and resolve our deferred promise
+          (async () => {
+            try {
+              // Prepare request headers
+              const requestHeaders = {
+                'x-rapidapi-host': apiHost,
+                'x-rapidapi-key': apiKey,
+                'User-Agent': 'Ignite-Market-Proxy/1.0'
+              };
+
+              console.log(`Making request to: ${targetUrl.toString()}`);
+              console.log('Request headers:', JSON.stringify(requestHeaders, null, 2));
+
+              // Make the request
+              const response = await makeRequest(targetUrl.toString(), httpMethod, requestHeaders, body);
+
+              console.log(`Response status: ${response.status}`);
+
+              const responseData = {
+                statusCode: response.status,
+                body: response.data
+              };
+
+              // Cache successful GET responses
+              if (response.status >= 200 && response.status < 300) {
+                setCachedResponse(cacheKey, responseData);
+                console.log(`Cached response for: ${targetUrl.toString()}`);
+              }
+
+              promiseResolve(responseData);
+            } catch (error) {
+              promiseReject(error);
+            } finally {
+              // Remove from in-flight requests when done (success or failure)
+              inFlightRequests.delete(cacheKey);
+            }
+          })();
+
+          requestPromise = deferredPromise;
         }
+      } else {
+        console.log(`Waiting for existing in-flight request for: ${targetUrl.toString()}`);
+      }
+
+      // Wait for the promise (either ours or another request's)
+      try {
+        return await requestPromise;
+      } catch (error) {
+        // If the in-flight request failed, remove it so future requests can retry
+        if (inFlightRequests.get(cacheKey) === requestPromise) {
+          inFlightRequests.delete(cacheKey);
+        }
+        throw error;
       }
     }
 
-    // Create a promise for this request and store it (for GET requests)
-    const executeRequest = async () => {
-      try {
-        // Prepare request headers
-        const requestHeaders = {
-          'x-rapidapi-host': apiHost,
-          'x-rapidapi-key': apiKey,
-          'User-Agent': 'Ignite-Market-Proxy/1.0'
-        };
-
-        // Add content-type if body is present
-        if (body && ['POST', 'PUT', 'PATCH'].includes(httpMethod)) {
-          requestHeaders['Content-Type'] = 'application/json';
-        }
-
-        console.log(`Making request to: ${targetUrl.toString()}`);
-        console.log('Request headers:', JSON.stringify(requestHeaders, null, 2));
-
-        // Make the request
-        const response = await makeRequest(targetUrl.toString(), httpMethod, requestHeaders, body);
-
-        console.log(`Response status: ${response.status}`);
-
-        const responseData = {
-          statusCode: response.status,
-          body: response.data
-        };
-
-        // Cache successful GET responses
-        if (httpMethod === 'GET' && response.status >= 200 && response.status < 300) {
-          setCachedResponse(cacheKey, responseData);
-          console.log(`Cached response for: ${targetUrl.toString()}`);
-        }
-
-        return responseData;
-      } finally {
-        // Remove from in-flight requests when done (success or failure)
-        if (httpMethod === 'GET') {
-          inFlightRequests.delete(cacheKey);
-        }
-      }
+    // For non-GET requests, execute immediately (no caching or deduplication)
+    // Prepare request headers
+    const requestHeaders = {
+      'x-rapidapi-host': apiHost,
+      'x-rapidapi-key': apiKey,
+      'User-Agent': 'Ignite-Market-Proxy/1.0'
     };
 
-    // Store the promise for GET requests so other concurrent requests can wait for it
-    if (httpMethod === 'GET') {
-      const requestPromise = executeRequest();
-      inFlightRequests.set(cacheKey, requestPromise);
-      return await requestPromise;
-    } else {
-      // For non-GET requests, execute immediately (no deduplication needed)
-      return await executeRequest();
+    // Add content-type if body is present
+    if (body && ['POST', 'PUT', 'PATCH'].includes(httpMethod)) {
+      requestHeaders['Content-Type'] = 'application/json';
     }
+
+    console.log(`Making request to: ${targetUrl.toString()}`);
+    console.log('Request headers:', JSON.stringify(requestHeaders, null, 2));
+
+    // Make the request
+    const response = await makeRequest(targetUrl.toString(), httpMethod, requestHeaders, body);
+
+    console.log(`Response status: ${response.status}`);
+
+    return {
+      statusCode: response.status,
+      body: response.data
+    };
   } catch (error) {
     console.error('Proxy error:', error);
     console.error('Error stack:', error.stack);
