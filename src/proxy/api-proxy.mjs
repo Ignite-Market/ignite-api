@@ -30,6 +30,10 @@ let totalCacheMemory = 0;
 let operationCount = 0;
 const CLEANUP_FREQUENCY = 10; // Clean up every 10 cache operations
 
+// Track in-flight requests to deduplicate concurrent requests
+// Maps cache key to a promise that resolves when the request completes
+const inFlightRequests = new Map();
+
 // API Keys cache (loaded from S3)
 let apiKeysCache = null;
 let apiKeysCacheTime = 0;
@@ -407,50 +411,86 @@ export const handler = async (event) => {
       };
     }
 
+    // Generate cache key for request deduplication
+    const cacheKey = generateCacheKey(httpMethod, targetUrl.toString(), queryStringParameters);
+
     // Check cache for GET requests
     if (httpMethod === 'GET') {
-      const cacheKey = generateCacheKey(httpMethod, targetUrl.toString(), queryStringParameters);
       const cachedResponse = getCachedResponse(cacheKey);
 
       if (cachedResponse) {
         console.log(`Returning cached response for: ${targetUrl.toString()}`);
         return cachedResponse;
       }
+
+      // Check if there's already an in-flight request for this cache key
+      if (inFlightRequests.has(cacheKey)) {
+        console.log(`Waiting for in-flight request for: ${targetUrl.toString()}`);
+        // Wait for the existing request to complete
+        try {
+          const responseData = await inFlightRequests.get(cacheKey);
+          return responseData;
+        } catch (error) {
+          // If the in-flight request failed, we'll handle it below
+          // Remove from in-flight requests so we can retry if needed
+          inFlightRequests.delete(cacheKey);
+          throw error;
+        }
+      }
     }
 
-    // Prepare request headers
-    const requestHeaders = {
-      'x-rapidapi-host': apiHost,
-      'x-rapidapi-key': apiKey,
-      'User-Agent': 'Ignite-Market-Proxy/1.0'
+    // Create a promise for this request and store it (for GET requests)
+    const executeRequest = async () => {
+      try {
+        // Prepare request headers
+        const requestHeaders = {
+          'x-rapidapi-host': apiHost,
+          'x-rapidapi-key': apiKey,
+          'User-Agent': 'Ignite-Market-Proxy/1.0'
+        };
+
+        // Add content-type if body is present
+        if (body && ['POST', 'PUT', 'PATCH'].includes(httpMethod)) {
+          requestHeaders['Content-Type'] = 'application/json';
+        }
+
+        console.log(`Making request to: ${targetUrl.toString()}`);
+        console.log('Request headers:', JSON.stringify(requestHeaders, null, 2));
+
+        // Make the request
+        const response = await makeRequest(targetUrl.toString(), httpMethod, requestHeaders, body);
+
+        console.log(`Response status: ${response.status}`);
+
+        const responseData = {
+          statusCode: response.status,
+          body: response.data
+        };
+
+        // Cache successful GET responses
+        if (httpMethod === 'GET' && response.status >= 200 && response.status < 300) {
+          setCachedResponse(cacheKey, responseData);
+          console.log(`Cached response for: ${targetUrl.toString()}`);
+        }
+
+        return responseData;
+      } finally {
+        // Remove from in-flight requests when done (success or failure)
+        if (httpMethod === 'GET') {
+          inFlightRequests.delete(cacheKey);
+        }
+      }
     };
 
-    // Add content-type if body is present
-    if (body && ['POST', 'PUT', 'PATCH'].includes(httpMethod)) {
-      requestHeaders['Content-Type'] = 'application/json';
+    // Store the promise for GET requests so other concurrent requests can wait for it
+    if (httpMethod === 'GET') {
+      const requestPromise = executeRequest();
+      inFlightRequests.set(cacheKey, requestPromise);
+      return await requestPromise;
+    } else {
+      // For non-GET requests, execute immediately (no deduplication needed)
+      return await executeRequest();
     }
-
-    console.log(`Making request to: ${targetUrl.toString()}`);
-    console.log('Request headers:', JSON.stringify(requestHeaders, null, 2));
-
-    // Make the request
-    const response = await makeRequest(targetUrl.toString(), httpMethod, requestHeaders, body);
-
-    console.log(`Response status: ${response.status}`);
-
-    const responseData = {
-      statusCode: response.status,
-      body: response.data
-    };
-
-    // Cache successful GET responses
-    if (httpMethod === 'GET' && response.status >= 200 && response.status < 300) {
-      const cacheKey = generateCacheKey(httpMethod, targetUrl.toString(), queryStringParameters);
-      setCachedResponse(cacheKey, responseData);
-      console.log(`Cached response for: ${targetUrl.toString()}`);
-    }
-
-    return responseData;
   } catch (error) {
     console.error('Proxy error:', error);
     console.error('Error stack:', error.stack);
