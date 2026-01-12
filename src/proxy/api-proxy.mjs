@@ -408,7 +408,7 @@ export const handler = async (event) => {
     if (apiName === 'dummy') {
       // Extract the S3 key from the path: /dummy/{s3-key-path}
       // Or use query parameter 's3_key' if provided
-      const s3Key = queryStringParameters?.s3_key || pathParts.slice(1).join('/');
+      const s3Key = 'dummy/' + (queryStringParameters?.s3_key || pathParts.slice(1).join('/'));
 
       if (!s3Key) {
         return {
