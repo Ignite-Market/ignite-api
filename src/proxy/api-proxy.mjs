@@ -255,6 +255,33 @@ const loadApiKeysFromS3 = async () => {
   }
 };
 
+// Load JSON from S3 for dummy/mock responses
+const loadJsonFromS3 = async (s3Key) => {
+  const bucket = process.env.DUMMY_DATA_S3_BUCKET || process.env.API_KEYS_S3_BUCKET;
+
+  if (!bucket) {
+    throw new Error('DUMMY_DATA_S3_BUCKET or API_KEYS_S3_BUCKET not configured');
+  }
+
+  try {
+    const command = new GetObjectCommand({ Bucket: bucket, Key: s3Key });
+    const response = await s3Client.send(command);
+
+    // Read and parse JSON
+    const text = await consumers.text(response.Body);
+    const data = JSON.parse(text);
+
+    console.log(`Loaded JSON from S3: ${bucket}/${s3Key}`);
+    return data;
+  } catch (error) {
+    if (error.name === 'NoSuchKey' || error.$metadata?.httpStatusCode === 404) {
+      throw new Error(`Dummy data file not found in S3: ${bucket}/${s3Key}`);
+    }
+    console.error('Error loading JSON from S3:', error);
+    throw error;
+  }
+};
+
 // Verify API key - check if it matches any key in S3
 const verifyApiKey = async (providedApiKey) => {
   if (!providedApiKey) {
@@ -372,6 +399,40 @@ export const handler = async (event) => {
     }
 
     const apiName = pathParts[0];
+
+    // Handle dummy path - return JSON from S3 instead of calling API
+    if (apiName === 'dummy') {
+      // Extract the S3 key from the path: /dummy/{s3-key-path}
+      // Or use query parameter 's3_key' if provided
+      const s3Key = 'dummy/' + (queryStringParameters?.s3_key || pathParts.slice(1).join('/'));
+
+      if (!s3Key) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({
+            error: 'Dummy requires key path'
+          })
+        };
+      }
+
+      try {
+        const jsonData = await loadJsonFromS3(s3Key);
+        return {
+          statusCode: 200,
+          body: JSON.stringify(jsonData)
+        };
+      } catch (error) {
+        console.error('Error loading dummy data from S3:', error);
+        return {
+          statusCode: 404,
+          body: JSON.stringify({
+            error: 'Dummy data not found',
+            message: s3Key
+          })
+        };
+      }
+    }
+
     const apiMappings = parseApiMappings();
     const apiHost = apiMappings[apiName];
 
