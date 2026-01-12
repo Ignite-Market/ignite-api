@@ -414,7 +414,7 @@ export const handler = async (event) => {
         return {
           statusCode: 400,
           body: JSON.stringify({
-            error: 'Dummy path requires key path'
+            error: 'Dummy requires key path'
           })
         };
       }
@@ -431,8 +431,7 @@ export const handler = async (event) => {
           statusCode: 404,
           body: JSON.stringify({
             error: 'Dummy data not found',
-            message: error.message,
-            s3Key: s3Key
+            message: s3Key
           })
         };
       }
