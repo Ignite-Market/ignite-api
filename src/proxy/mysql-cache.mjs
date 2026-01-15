@@ -59,7 +59,7 @@ export const getMysqlPool = () => {
       password: process.env.MYSQL_PASSWORD,
       database: process.env.MYSQL_DATABASE,
       waitForConnections: true,
-      connectionLimit: 2, // Small pool for Lambda
+      connectionLimit: 1, // Small pool for Lambda
       queueLimit: 0,
       enableKeepAlive: true,
       keepAliveInitialDelay: 0,
@@ -86,7 +86,7 @@ export const acquireCacheLock = async (cacheKey) => {
     // Try to INSERT a row with status=IN_FLIGHT
     // If duplicate key, use ON DUPLICATE KEY UPDATE to steal expired locks
     const lockTimeoutSeconds = 60; // Lock expires after 60 seconds
-    await pool.execute(
+    const [result] = await pool.execute(
       `INSERT INTO api_proxy_cache (cache_key, status, expires_at, locked_at, created_at)
        VALUES (?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND), NOW(), NOW())
        ON DUPLICATE KEY UPDATE
@@ -98,8 +98,7 @@ export const acquireCacheLock = async (cacheKey) => {
       [cacheKey, ApiProxyCacheStatus.IN_FLIGHT, lockTimeoutSeconds, lockTimeoutSeconds]
     );
 
-    // Verify lock ownership with explicit SELECT (more reliable than affectedRows)
-    // affectedRows can be 0 even when we steal an expired lock if values happen to be the same
+    // Verify lock ownership with explicit SELECT (reliable)
     const [rows] = await pool.execute(
       `SELECT expires_at >= NOW() AND status = ? AS lock_owned
        FROM api_proxy_cache
@@ -109,17 +108,16 @@ export const acquireCacheLock = async (cacheKey) => {
 
     const lockOwned = rows[0]?.lock_owned === 1;
     if (lockOwned) {
-      // Check if we just acquired it (locked_at was just set) vs it was already held
-      const [lockInfo] = await pool.execute(
-        `SELECT locked_at >= DATE_SUB(NOW(), INTERVAL 1 SECOND) AS just_locked
-         FROM api_proxy_cache
-         WHERE cache_key = ?`,
-        [cacheKey]
-      );
-      if (lockInfo[0]?.just_locked === 1) {
+      // Use affectedRows for logging distinction (reliable for new vs stole)
+      // affectedRows = 1: New row inserted (acquired)
+      // affectedRows = 2: Existing row updated (stole expired lock)
+      if (result.affectedRows === 1) {
         console.log(`[MYSQL] Acquired lock for cache key: ${cacheKey.substring(0, 8)}...`);
-      } else {
+      } else if (result.affectedRows === 2) {
         console.log(`[MYSQL] Stole expired lock for cache key: ${cacheKey.substring(0, 8)}...`);
+      } else {
+        // Should not happen, but log it
+        console.log(`[MYSQL] Acquired lock (unexpected affectedRows: ${result.affectedRows}) for cache key: ${cacheKey.substring(0, 8)}...`);
       }
       return { acquired: true };
     } else {
