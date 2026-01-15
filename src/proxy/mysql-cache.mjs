@@ -98,30 +98,36 @@ export const acquireCacheLock = async (cacheKey) => {
       [cacheKey, ApiProxyCacheStatus.IN_FLIGHT, lockTimeoutSeconds, lockTimeoutSeconds]
     );
 
-    // Verify lock ownership with explicit SELECT (reliable)
-    const [rows] = await pool.execute(
-      `SELECT expires_at >= NOW() AND status = ? AS lock_owned
-       FROM api_proxy_cache
-       WHERE cache_key = ?`,
-      [ApiProxyCacheStatus.IN_FLIGHT, cacheKey]
-    );
+    // Check if we actually modified the row
+    // affectedRows = 1: New row inserted (we own it)
+    // affectedRows = 2: Existing row updated - expired lock stolen (we own it)
+    // affectedRows = 0: Row existed but wasn't updated - lock held by active request (we don't own it)
+    console.log(`[MYSQL] Lock acquisition attempt - affectedRows: ${result.affectedRows} for cache key: ${cacheKey.substring(0, 8)}...`);
 
-    const lockOwned = rows[0]?.lock_owned === 1;
-    if (lockOwned) {
-      // Use affectedRows for logging distinction (reliable for new vs stole)
-      // affectedRows = 1: New row inserted (acquired)
-      // affectedRows = 2: Existing row updated (stole expired lock)
-      if (result.affectedRows === 1) {
-        console.log(`[MYSQL] Acquired lock for cache key: ${cacheKey.substring(0, 8)}...`);
-      } else if (result.affectedRows === 2) {
-        console.log(`[MYSQL] Stole expired lock for cache key: ${cacheKey.substring(0, 8)}...`);
+    if (result.affectedRows === 1 || result.affectedRows === 2) {
+      // Verify lock ownership with explicit SELECT (double-check)
+      const [rows] = await pool.execute(
+        `SELECT expires_at >= NOW() AND status = ? AS lock_owned
+         FROM api_proxy_cache
+         WHERE cache_key = ?`,
+        [ApiProxyCacheStatus.IN_FLIGHT, cacheKey]
+      );
+
+      const lockOwned = rows[0]?.lock_owned === 1;
+      if (lockOwned) {
+        if (result.affectedRows === 1) {
+          console.log(`[MYSQL] Acquired lock for cache key: ${cacheKey.substring(0, 8)}...`);
+        } else {
+          console.log(`[MYSQL] Stole expired lock for cache key: ${cacheKey.substring(0, 8)}...`);
+        }
+        return { acquired: true };
       } else {
-        // Should not happen, but log it
-        console.log(`[MYSQL] Acquired lock (unexpected affectedRows: ${result.affectedRows}) for cache key: ${cacheKey.substring(0, 8)}...`);
+        // This shouldn't happen, but log it
+        console.log(`[MYSQL] Lock acquisition failed verification for cache key: ${cacheKey.substring(0, 8)}...`);
+        return { acquired: false };
       }
-      return { acquired: true };
     } else {
-      // Lock is held by another active request (not expired)
+      // affectedRows = 0 means lock is held by another active request (not expired)
       console.log(`[MYSQL] Lock already held for cache key: ${cacheKey.substring(0, 8)}...`);
       return { acquired: false };
     }
