@@ -17,6 +17,7 @@ export enum AppEnvironment {
  */
 export enum DbTables {
   AIRDROP_USER = 'airdrop_user',
+  API_PROXY_CACHE = 'api_proxy_cache',
   BANNER = 'banner',
   CLAIM_TRANSACTION = 'claim_transaction',
   COLLATERAL_TOKEN = 'collateral_token',

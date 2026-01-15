@@ -7,6 +7,8 @@ phases:
       - echo "Build started on `date`"
       - mkdir -p lambda-package
       - cp src/proxy/api-proxy.mjs lambda-package/index.mjs
+      - cp src/proxy/mysql-cache.mjs lambda-package/mysql-cache.mjs
+      - cp src/proxy/local-cache.mjs lambda-package/local-cache.mjs
       - cp src/proxy/package.json lambda-package/package.json
 
   build:
