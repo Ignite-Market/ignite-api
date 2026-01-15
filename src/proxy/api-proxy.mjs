@@ -398,7 +398,7 @@ export const handler = async (event) => {
           console.log(`Cached response for: ${targetUrl.toString()}`);
         } else {
           // If request failed, clean up the in-flight entry
-          if (lockResult?.acquired) {
+          if (lockResult?.acquired && lockResult.lockToken) {
             await cleanupInFlightEntry(cacheKey, lockResult.lockToken);
           }
         }
@@ -406,7 +406,7 @@ export const handler = async (event) => {
         return responseData;
       } catch (error) {
         // If request failed, clean up the in-flight entry
-        if (lockResult?.acquired) {
+        if (lockResult?.acquired && lockResult.lockToken) {
           await cleanupInFlightEntry(cacheKey, lockResult.lockToken);
         }
         throw error;
