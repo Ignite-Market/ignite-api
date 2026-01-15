@@ -1,4 +1,5 @@
 import mysql from 'mysql2/promise';
+import crypto from 'node:crypto';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -78,69 +79,60 @@ export const getMysqlPool = () => {
 export const acquireCacheLock = async (cacheKey) => {
   const pool = getMysqlPool();
   if (!pool) {
-    // MySQL not configured, fall back to in-memory (single instance only)
-    return null;
+    return null; // MySQL not configured
   }
 
+  const lockTimeoutSeconds = 60;
+  const lockToken = crypto.randomUUID();
+
   try {
-    // Try to INSERT a row with status=IN_FLIGHT
-    // If duplicate key, use ON DUPLICATE KEY UPDATE to steal expired locks
-    const lockTimeoutSeconds = 60; // Lock expires after 60 seconds
-    const [result] = await pool.execute(
-      `INSERT INTO api_proxy_cache (cache_key, status, expires_at, locked_at, created_at)
-       VALUES (?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND), NOW(), NOW())
+    // Attempt to acquire or steal the lock
+    await pool.execute(
+      `INSERT INTO api_proxy_cache (
+         cache_key,
+         status,
+         expires_at,
+         locked_at,
+         lock_token,
+         created_at
+       )
+       VALUES (
+         ?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND), NOW(), ?, NOW()
+       )
        ON DUPLICATE KEY UPDATE
-         cache_key = IF(expires_at < NOW(), VALUES(cache_key), cache_key),
-         status = IF(expires_at < NOW(), VALUES(status), status),
-         expires_at = IF(expires_at < NOW(), DATE_ADD(NOW(), INTERVAL ? SECOND), expires_at),
-         locked_at = IF(expires_at < NOW(), NOW(), locked_at),
-         created_at = IF(expires_at < NOW(), NOW(), created_at)`,
-      [cacheKey, ApiProxyCacheStatus.IN_FLIGHT, lockTimeoutSeconds, lockTimeoutSeconds]
+         lock_token = IF(expires_at < NOW(), VALUES(lock_token), lock_token),
+         status     = IF(expires_at < NOW(), VALUES(status), status),
+         expires_at = IF(expires_at < NOW(), VALUES(expires_at), expires_at),
+         locked_at  = IF(expires_at < NOW(), NOW(), locked_at)`,
+      [cacheKey, ApiProxyCacheStatus.IN_FLIGHT, lockTimeoutSeconds, lockToken]
     );
 
-    // Check if we actually modified the row
-    // affectedRows = 1: New row inserted (we own it)
-    // affectedRows = 2: Existing row updated - expired lock stolen (we own it)
-    // affectedRows = 0: Row existed but wasn't updated - lock held by active request (we don't own it)
-    console.log(`[MYSQL] Lock acquisition attempt - affectedRows: ${result.affectedRows} for cache key: ${cacheKey.substring(0, 8)}...`);
+    // Verify ownership explicitly
+    const [rows] = await pool.execute(
+      `SELECT lock_token = ? AS lock_owned
+       FROM api_proxy_cache
+       WHERE cache_key = ?`,
+      [lockToken, cacheKey]
+    );
 
-    if (result.affectedRows === 1 || result.affectedRows === 2) {
-      // Verify lock ownership with explicit SELECT (double-check)
-      const [rows] = await pool.execute(
-        `SELECT expires_at >= NOW() AND status = ? AS lock_owned
-         FROM api_proxy_cache
-         WHERE cache_key = ?`,
-        [ApiProxyCacheStatus.IN_FLIGHT, cacheKey]
-      );
+    const acquired = rows[0]?.lock_owned === 1;
 
-      const lockOwned = rows[0]?.lock_owned === 1;
-      if (lockOwned) {
-        if (result.affectedRows === 1) {
-          console.log(`[MYSQL] Acquired lock for cache key: ${cacheKey.substring(0, 8)}...`);
-        } else {
-          console.log(`[MYSQL] Stole expired lock for cache key: ${cacheKey.substring(0, 8)}...`);
-        }
-        return { acquired: true };
-      } else {
-        // This shouldn't happen, but log it
-        console.log(`[MYSQL] Lock acquisition failed verification for cache key: ${cacheKey.substring(0, 8)}...`);
-        return { acquired: false };
-      }
-    } else {
-      // affectedRows = 0 means lock is held by another active request (not expired)
-      console.log(`[MYSQL] Lock already held for cache key: ${cacheKey.substring(0, 8)}...`);
-      return { acquired: false };
+    if (acquired) {
+      console.log(`[MYSQL] Acquired lock for cache key: ${cacheKey.substring(0, 8)}...`);
+      return { acquired: true, lockToken };
     }
+
+    console.log(`[MYSQL] Lock held by another request: ${cacheKey.substring(0, 8)}...`);
+    return { acquired: false };
   } catch (error) {
     console.error('[MYSQL] Error acquiring lock:', error);
-    // On error, return null to fall back to in-memory behavior
     return null;
   }
 };
 
 // Store result in MySQL for cross-instance sharing
 // Updates the row from IN_FLIGHT to COMPLETED with the response data
-export const storeResultInMysql = async (cacheKey, responseData, ttlSeconds = CACHE_TTL) => {
+export const storeResultInMysql = async (cacheKey, responseData, lockToken, ttlSeconds = CACHE_TTL) => {
   const pool = getMysqlPool();
   if (!pool) {
     return; // MySQL not configured
@@ -154,8 +146,10 @@ export const storeResultInMysql = async (cacheKey, responseData, ttlSeconds = CA
            response_data = ?,
            expires_at = ?,
            completed_at = NOW()
-       WHERE cache_key = ?`,
-      [ApiProxyCacheStatus.COMPLETED, JSON.stringify(responseData), expiresAt, cacheKey]
+       WHERE cache_key = ?
+       AND lock_token = ?
+       `,
+      [ApiProxyCacheStatus.COMPLETED, JSON.stringify(responseData), expiresAt, cacheKey, lockToken]
     );
     console.log(`[MYSQL] Stored result in MySQL for cache key: ${cacheKey.substring(0, 8)}...`);
   } catch (error) {
@@ -194,14 +188,14 @@ export const getResultFromMysql = async (cacheKey) => {
 };
 
 // Clean up in-flight entry (e.g., when request fails)
-export const cleanupInFlightEntry = async (cacheKey) => {
+export const cleanupInFlightEntry = async (cacheKey, lockToken) => {
   const pool = getMysqlPool();
   if (!pool) {
     return;
   }
 
   try {
-    await pool.execute('DELETE FROM api_proxy_cache WHERE cache_key = ?', [cacheKey]);
+    await pool.execute('DELETE FROM api_proxy_cache WHERE cache_key = ? AND lock_token = ?', [cacheKey, lockToken]);
     console.log(`[MYSQL] Cleaned up in-flight entry for cache key: ${cacheKey.substring(0, 8)}...`);
   } catch (error) {
     console.error('[MYSQL] Error cleaning up in-flight entry:', error);
