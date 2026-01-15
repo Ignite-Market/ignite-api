@@ -5,13 +5,18 @@ FUNCTION_NAME="api-proxy-${ENV}"
 
 # Build environment variables JSON in the correct format: {"Variables":{"Key":"Value"}}
 # Note: AWS_REGION is automatically set by Lambda, so we don't include it
-ENV_VARS=$(printf '{"Variables":{"API_KEYS_S3_BUCKET":"%s","API_KEYS_DECRYPTED_S3_KEY":"%s","API_PROXY_KEY":"%s","RAPID_API_KEY":"%s","API_MAPPINGS":"%s","API_PROXY_CACHE_TTL":"%s"}}' \
+ENV_VARS=$(printf '{"Variables":{"API_KEYS_S3_BUCKET":"%s","API_KEYS_DECRYPTED_S3_KEY":"%s","API_PROXY_KEY":"%s","RAPID_API_KEY":"%s","API_MAPPINGS":"%s","API_PROXY_CACHE_TTL":"%s","MYSQL_HOST":"%s","MYSQL_PORT":"%s","MYSQL_USER":"%s","MYSQL_PASSWORD":"%s","MYSQL_DATABASE":"%s"}}' \
   "${API_KEYS_S3_BUCKET}" \
   "${API_KEYS_DECRYPTED_S3_KEY:-api-keys/decrypted-keys.json}" \
   "${API_PROXY_KEY}" \
   "${RAPID_API_KEY}" \
   "${API_MAPPINGS}" \
-  "${API_PROXY_CACHE_TTL:-30}")
+  "${API_PROXY_CACHE_TTL:-30}" \
+  "${MYSQL_HOST:-}" \
+  "${MYSQL_PORT:-3306}" \
+  "${MYSQL_USER:-}" \
+  "${MYSQL_PASSWORD:-}" \
+  "${MYSQL_DATABASE:-}")
 
 # Check if function exists by checking exit code
 if aws lambda get-function --function-name "$FUNCTION_NAME" --region "${AWS_REGION}" >/dev/null 2>&1; then
