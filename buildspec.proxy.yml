@@ -10,6 +10,14 @@ phases:
       - cp src/proxy/mysql-cache.mjs lambda-package/mysql-cache.mjs
       - cp src/proxy/local-cache.mjs lambda-package/local-cache.mjs
       - cp src/proxy/package.json lambda-package/package.json
+      - |
+        if [ -f "src/res/keys/global-bundle.pem" ]; then
+          mkdir -p lambda-package/res/keys
+          cp src/res/keys/global-bundle.pem lambda-package/res/keys/global-bundle.pem
+          echo "Included RDS CA bundle in Lambda package"
+        else
+          echo "Warning: src/res/keys/global-bundle.pem not found, SSL may not work"
+        fi
 
   build:
     commands:

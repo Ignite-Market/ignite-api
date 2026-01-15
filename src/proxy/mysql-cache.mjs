@@ -1,4 +1,11 @@
 import mysql from 'mysql2/promise';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get current directory for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // MySQL connection pool (lazy initialization)
 let mysqlPool = null;
@@ -15,6 +22,36 @@ export const ApiProxyCacheStatus = {
 // Get MySQL connection pool (lazy initialization)
 export const getMysqlPool = () => {
   if (!mysqlPool && process.env.MYSQL_HOST) {
+    // Build SSL configuration if SSL is required
+    let sslConfig = undefined;
+    let caCert = null;
+
+    // First, try to read from bundled file (res/keys/global-bundle.pem)
+    // In Lambda, this will be at /var/task/res/keys/global-bundle.pem
+    // During local development, it might be at a different path
+    const bundledCertPath = path.join(__dirname, 'res', 'keys', 'global-bundle.pem');
+    const lambdaCertPath = '/var/task/res/keys/global-bundle.pem';
+
+    try {
+      if (fs.existsSync(bundledCertPath)) {
+        caCert = fs.readFileSync(bundledCertPath, 'utf-8');
+        console.log('[MYSQL] Using bundled RDS CA certificate');
+      } else if (fs.existsSync(lambdaCertPath)) {
+        caCert = fs.readFileSync(lambdaCertPath, 'utf-8');
+        console.log('[MYSQL] Using bundled RDS CA certificate from Lambda path');
+      }
+    } catch (error) {
+      console.warn('[MYSQL] Could not read bundled certificate file:', error.message);
+    }
+
+    // Configure SSL if we have a CA cert
+    if (caCert) {
+      sslConfig = {
+        ca: caCert,
+        rejectUnauthorized: true
+      };
+    }
+
     mysqlPool = mysql.createPool({
       host: process.env.MYSQL_HOST,
       port: parseInt(process.env.MYSQL_PORT || '3306'),
@@ -25,7 +62,8 @@ export const getMysqlPool = () => {
       connectionLimit: 2, // Small pool for Lambda
       queueLimit: 0,
       enableKeepAlive: true,
-      keepAliveInitialDelay: 0
+      keepAliveInitialDelay: 0,
+      ssl: sslConfig
     });
   }
   return mysqlPool;
