@@ -394,11 +394,13 @@ export const handler = async (event) => {
         if (response.status >= 200 && response.status < 300) {
           setCachedResponse(cacheKey, responseData); // Local cache
           // Store in MySQL (updates status from IN_FLIGHT to COMPLETED)
-          await storeResultInMysql(cacheKey, responseData, lockResult.lockToken, CACHE_TTL); // MySQL cache (shared)
+          if (lockResult?.acquired && lockResult?.lockToken) {
+            await storeResultInMysql(cacheKey, responseData, lockResult.lockToken, CACHE_TTL); // MySQL cache (shared)
+          }
           console.log(`Cached response for: ${targetUrl.toString()}`);
         } else {
           // If request failed, clean up the in-flight entry
-          if (lockResult?.acquired && lockResult.lockToken) {
+          if (lockResult?.acquired && lockResult?.lockToken) {
             await cleanupInFlightEntry(cacheKey, lockResult.lockToken);
           }
         }
@@ -406,7 +408,7 @@ export const handler = async (event) => {
         return responseData;
       } catch (error) {
         // If request failed, clean up the in-flight entry
-        if (lockResult?.acquired && lockResult.lockToken) {
+        if (lockResult?.acquired && lockResult?.lockToken) {
           await cleanupInFlightEntry(cacheKey, lockResult.lockToken);
         }
         throw error;

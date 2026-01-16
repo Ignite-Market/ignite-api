@@ -70,13 +70,29 @@ export const getMysqlPool = () => {
   return mysqlPool;
 };
 
+// Check if error is retryable (connection-related errors)
+const isRetryableError = (error) => {
+  const errorCode = error.code;
+  const errorMessage = error.message || '';
+
+  return (
+    errorCode === 'ER_CON_COUNT_ERROR' || // Too many connections
+    errorCode === 'ECONNREFUSED' ||
+    errorCode === 'ETIMEDOUT' ||
+    errorCode === 'PROTOCOL_CONNECTION_LOST' ||
+    errorCode === 'PROTOCOL_ENQUEUE_AFTER_QUIT' ||
+    errorMessage.includes('Too many connections') ||
+    errorMessage.includes('Connection lost')
+  );
+};
+
 // Acquire cache lock using INSERT (row-level locking)
 // INSERT with status=IN_FLIGHT acts as the lock
 // Automatically steals expired locks to prevent stale entries
 // Returns { acquired: true } if lock acquired,
 // { acquired: false } if another request has it (not expired),
 // null if MySQL not configured
-export const acquireCacheLock = async (cacheKey) => {
+export const acquireCacheLock = async (cacheKey, retry = false) => {
   const pool = getMysqlPool();
   if (!pool) {
     return null; // MySQL not configured
@@ -125,6 +141,13 @@ export const acquireCacheLock = async (cacheKey) => {
     console.log(`[MYSQL] Lock held by another request: ${cacheKey.substring(0, 8)}...`);
     return { acquired: false };
   } catch (error) {
+    // Retry once if it's a retryable error and we haven't retried yet
+    if (!retry && isRetryableError(error)) {
+      console.warn(`[MYSQL] Retryable error acquiring lock, retrying once: ${error.message}`);
+      // Small delay with jitter before retry (100-200ms)
+      await new Promise((resolve) => setTimeout(resolve, 100 + Math.random() * 100));
+      return await acquireCacheLock(cacheKey, true);
+    }
     console.error('[MYSQL] Error acquiring lock:', error);
     return null;
   }
