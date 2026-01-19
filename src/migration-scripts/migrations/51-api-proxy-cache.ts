@@ -19,7 +19,7 @@ export const upgrade = async (queryFn: (query: string, values?: any[]) => Promis
       \`created_at\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       \`locked_at\` DATETIME NULL,
       \`completed_at\` DATETIME NULL,
-      \`lock_token\` CHAR(36) NULL,
+      \`lock_token\` CHAR(36) NULL UNIQUE,
       INDEX \`idx_expires_at\` (\`expires_at\`),
       INDEX \`idx_status\` (\`status\`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4

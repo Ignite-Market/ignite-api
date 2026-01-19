@@ -264,6 +264,18 @@ export class PredictionSet extends AdvancedSQLModel {
   imgUrl: string;
 
   /**
+   * Hide - Controls if prediction is visible to non-admin users.
+   */
+  @prop({
+    parser: { resolver: booleanParser() },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER],
+    defaultValue: () => false,
+    emptyValue: () => false
+  })
+  public hide: boolean;
+
+  /**
    * Prediction set's outcomes virtual property definition.
    */
   @prop({
@@ -1177,6 +1189,7 @@ export class PredictionSet extends AdvancedSQLModel {
           OR FIND_IN_SET(p.setStatus, @status)
         )
         AND (@isAdmin = 1 OR p.setStatus != ${PredictionSetStatus.FUNDING} OR psft.id IS NOT NULL)
+        AND (@isAdmin = 1 OR p.hide = 0)
         AND (@search IS NULL
           OR p.question LIKE CONCAT('%', @search, '%')
         )
