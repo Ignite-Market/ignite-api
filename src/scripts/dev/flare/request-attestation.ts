@@ -85,14 +85,17 @@ const dataSources = [
     abi: 'bool'
   },
   {
-    endpoint: 'https://api-proxy-dev.ignitemarket.xyz/coinbase/v2/prices/BTC-USD/spot',
+    endpoint: 'https://api-proxy-dev.ignitemarket.xyz/cryptocompare/data/v2/histominute',
     httpMethod: 'GET',
     queryParams: {
-      date: attestationTime.utc().format('YYYY-MM-DD')
+      fsym: 'BTC',
+      tsym: 'USD',
+      limit: '1',
+      toTs: attestationTime.unix()
     },
-    jqQuery: `(.data.amount | tonumber) ${comparisonOp} ${priceGoal}`,
+    jqQuery: `(.Data.Data[-1].close) ${comparisonOp} ${priceGoal}`,
     abi: 'bool'
-  }
+  },
 ];
 
 const abi = 'bool';

@@ -1,3 +1,4 @@
+import { env } from '../../../config/env';
 import { addPredictionSet } from '../../../lib/blockchain';
 import { createContext } from '../../../lib/utils';
 import { DataSource } from '../../../modules/prediction-set/models/data-source.model';
@@ -48,6 +49,7 @@ const data = {
   resolutionType: ResolutionType.AUTOMATIC,
   consensusThreshold: 60,
   hide: isHidden,
+  marketCapPercent: 30,
   imgUrl: 'https://images.ignitemarket.xyz/prediction-sets/bitcoin.webp',
   predictionOutcomes: [
     {
@@ -70,6 +72,7 @@ const dataSources = [
       days: '1'
     },
     jqQuery: `(.prices | map(select(.[0] >= ${attestationTime.unix() * 1000})) | sort_by(.[0]) | .[0][1]) ${comparisonOp} ${priceGoal}`,
+    headers: { 'x-api-key': env.PROXY_API_KEY},
     abi: 'bool'
   },
   {
@@ -82,17 +85,32 @@ const dataSources = [
       toTs: attestationTime.unix()
     },
     jqQuery: `(.Data.Data[-1].close) ${comparisonOp} ${priceGoal}`,
+    headers: { 'x-api-key': env.PROXY_API_KEY},
     abi: 'bool'
   },
   {
-    endpoint: 'https://api-proxy-dev.ignitemarket.xyz/coinbase/v2/prices/BTC-USD/spot',
+    endpoint: 'https://api-proxy-dev.ignitemarket.xyz/cryptocompare/data/v2/histominute',
     httpMethod: 'GET',
     queryParams: {
-      date: attestationTime.utc().format('YYYY-MM-DD')
+      fsym: 'BTC',
+      tsym: 'USD',
+      limit: '1',
+      toTs: attestationTime.unix()
     },
-    jqQuery: `(.data.amount | tonumber) ${comparisonOp} ${priceGoal}`,
+    jqQuery: `(.Data.Data[-1].close) ${comparisonOp} ${priceGoal}`,
+    headers: { 'x-api-key': env.PROXY_API_KEY},
     abi: 'bool'
-  }
+  },
+  // {
+  //   endpoint: 'https://api-proxy-dev.ignitemarket.xyz/coinbase/v2/prices/BTC-USD/spot',
+  //   httpMethod: 'GET',
+  //   queryParams: {
+  //     date: attestationTime.utc().format('YYYY-MM-DD')
+  //   },
+  //   jqQuery: `(.data.amount | tonumber) ${comparisonOp} ${priceGoal}`,
+  //   headers: { 'x-api-key': env.PROXY_API_KEY},
+  //   abi: 'bool'
+  // }
 ];
 
 const processPredictionSet = async () => {

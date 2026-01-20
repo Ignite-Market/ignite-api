@@ -128,7 +128,8 @@ export async function addPredictionSet(predictionSet: PredictionSet, context: Co
         'uint256', // treasuryPercent
         'address', // treasury
         'uint256', // fundingThreshold
-        'uint256' // endTime
+        'uint256', // endTime
+        'uint256' // buySellCapPercent
       ],
       [
         signer.address,
@@ -141,7 +142,8 @@ export async function addPredictionSet(predictionSet: PredictionSet, context: Co
         env.MARKET_TREASURY_PERCENT,
         env.MARKET_TREASURY_ADDRESS,
         BigInt(collateralToken.fundingThreshold),
-        Math.ceil(Number(predictionSet.endTime) / 1000)
+        Math.ceil(Number(predictionSet.endTime) / 1000),
+        predictionSet.marketCapPercent || env.MARKET_CAP_PERCENT
       ]
     )
   );
@@ -158,6 +160,7 @@ export async function addPredictionSet(predictionSet: PredictionSet, context: Co
       env.MARKET_TREASURY_ADDRESS,
       BigInt(collateralToken.fundingThreshold),
       Math.ceil(Number(predictionSet.endTime) / 1000),
+      predictionSet.marketCapPercent || env.MARKET_CAP_PERCENT,
       salt
     );
     const txReceipt = await createTx.wait();

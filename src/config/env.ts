@@ -86,6 +86,7 @@ export interface IEnv {
   MARKET_FEE_PERCENT: string;
   MARKET_TREASURY_PERCENT: number;
   MARKET_TREASURY_ADDRESS: string;
+  MARKET_CAP_PERCENT: number;
 
   MOCK_RESULTS_API_ENDPOINT: string;
 
@@ -109,6 +110,7 @@ export interface IEnv {
   API_KEYS_S3_BUCKET: string;
   API_KEYS_ENCRYPTED_S3_KEY: string;
   API_KEYS_DECRYPTED_S3_KEY: string;
+  PROXY_API_KEY: string;
 }
 
 dotenv.config();
@@ -213,6 +215,7 @@ export let env: IEnv = {
   MARKET_FEE_PERCENT: process.env['MARKET_FEE_PERCENT'] || '0.015', // Fee factor in ETH (18 decimals) - 0.03 -> 3%
   MARKET_TREASURY_PERCENT: parseInt(process.env['MARKET_TREASURY_PERCENT']) || 1000, // 100 -> 1% (6 decimals)
   MARKET_TREASURY_ADDRESS: process.env['MARKET_TREASURY_ADDRESS'],
+  MARKET_CAP_PERCENT: parseInt(process.env['MARKET_CAP_PERCENT']) || 30, // 30 -> 30%
 
   MOCK_RESULTS_API_ENDPOINT: process.env['MOCK_RESULTS_API_ENDPOINT'],
 
@@ -235,7 +238,8 @@ export let env: IEnv = {
 
   API_KEYS_S3_BUCKET: process.env['API_KEYS_S3_BUCKET'],
   API_KEYS_ENCRYPTED_S3_KEY: process.env['API_KEYS_ENCRYPTED_S3_KEY'] || 'api-keys/encrypted-keys.json',
-  API_KEYS_DECRYPTED_S3_KEY: process.env['API_KEYS_DECRYPTED_S3_KEY'] || 'api-keys/decrypted-keys.json'
+  API_KEYS_DECRYPTED_S3_KEY: process.env['API_KEYS_DECRYPTED_S3_KEY'] || 'api-keys/decrypted-keys.json',
+  PROXY_API_KEY: process.env['PROXY_API_KEY']
 };
 
 /**
