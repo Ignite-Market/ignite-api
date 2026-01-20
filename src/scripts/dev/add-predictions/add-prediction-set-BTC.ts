@@ -13,13 +13,15 @@ dayjs.extend(utc);
 
 // Configuration: Set comparisonType to 'above' or 'below'
 const comparisonType: 'above' | 'below' = 'below'; // Change to 'above' for above comparison
-const priceGoal = 2.01;
+const priceGoal = 100000;
 
-// const attestationTime = dayjs('2025-07-01T10:00:00Z');
-const attestationTime = dayjs.utc().endOf('isoWeek');
+const attestationTime = dayjs('2026-01-19T13:00:00Z');
+// const attestationTime = dayjs.utc().endOf('isoWeek');
 const attestationTimeFormatted = dayjs(attestationTime).utc().format('MMM D, YYYY HH:mm');
 const endTime = dayjs(attestationTime).toDate();
 const resolutionTime = dayjs(attestationTime).add(1, 'hour').toDate();
+
+const isHidden = true;
 
 // Helper function to generate comparison operator based on comparison type
 const getComparisonOperator = (type: 'above' | 'below'): string => {
@@ -36,8 +38,8 @@ const comparisonText = getComparisonText(comparisonType);
 
 const data = {
   collateral_token_id: 1,
-  question: `Will the XRP market price be ${comparisonText} $${priceGoal.toFixed(2)} at the end of this Sunday?`,
-  outcomeResolutionDef: `This market will resolve to "Yes" if the price of XRP is ${comparisonText} $${priceGoal.toFixed(2)} at the end of this Sunday (${attestationTimeFormatted}).
+  question: `Will the BTC market price be ${comparisonText} $${priceGoal.toLocaleString()} at the end of this Sunday?`,
+  outcomeResolutionDef: `This market will resolve to "Yes" if the price of BTC is ${comparisonText} $${priceGoal.toLocaleString()} at the end of this Sunday (${attestationTimeFormatted}).
   The resolution sources will be: CoinGecko, CryptoCompare and Coinbase.`,
   startTime: new Date(Number(new Date())),
   endTime,
@@ -45,7 +47,8 @@ const data = {
   resolutionTime,
   resolutionType: ResolutionType.AUTOMATIC,
   consensusThreshold: 60,
-  imgUrl: 'https://images.ignitemarket.xyz/prediction-sets/xrp.jpg',
+  hide: isHidden,
+  imgUrl: 'https://images.ignitemarket.xyz/prediction-sets/bitcoin.webp',
   predictionOutcomes: [
     {
       name: 'No',
@@ -60,35 +63,35 @@ const data = {
 
 const dataSources = [
   {
-    endpoint: 'https://api.coingecko.com/api/v3/coins/ripple/market_chart',
+    endpoint: 'https://api-proxy-dev.ignitemarket.xyz/coingecko/api/v3/coins/bitcoin/market_chart',
     httpMethod: 'GET',
     queryParams: {
       vs_currency: 'usd',
       days: '1'
     },
-    jqQuery: `[1, 0][((.prices | map(.[0] as $ts | [$ts, .[1], ($ts - ${attestationTime.unix() * 1000} | fabs)]) | sort_by(.[2]) | .[0][1]) ${comparisonOp} ${priceGoal}) | if . then 0 else 1 end]`,
-    abi: 'uint256'
+    jqQuery: `(.prices | map(select(.[0] >= ${attestationTime.unix() * 1000})) | sort_by(.[0]) | .[0][1]) ${comparisonOp} ${priceGoal}`,
+    abi: 'bool'
   },
   {
-    endpoint: 'https://min-api.cryptocompare.com/data/v2/histominute',
+    endpoint: 'https://api-proxy-dev.ignitemarket.xyz/cryptocompare/data/v2/histominute',
     httpMethod: 'GET',
     queryParams: {
-      fsym: 'XRP',
+      fsym: 'BTC',
       tsym: 'USD',
       limit: '1',
       toTs: attestationTime.unix()
     },
-    jqQuery: `[1, 0][((.Data.Data[-1].close) ${comparisonOp} ${priceGoal}) | if . then 0 else 1 end]`,
-    abi: 'uint256'
+    jqQuery: `(.Data.Data[-1].close) ${comparisonOp} ${priceGoal}`,
+    abi: 'bool'
   },
   {
-    endpoint: 'https://api.coinbase.com/v2/prices/XRP-USD/spot',
+    endpoint: 'https://api-proxy-dev.ignitemarket.xyz/coinbase/v2/prices/BTC-USD/spot',
     httpMethod: 'GET',
     queryParams: {
       date: attestationTime.utc().format('YYYY-MM-DD')
     },
-    jqQuery: `[1, 0][((.data.amount | tonumber) ${comparisonOp} ${priceGoal}) | if . then 0 else 1 end]`,
-    abi: 'uint256'
+    jqQuery: `(.data.amount | tonumber) ${comparisonOp} ${priceGoal}`,
+    abi: 'bool'
   }
 ];
 
@@ -112,7 +115,7 @@ const processPredictionSet = async () => {
 
     // Create prediction set.
     const predictionSet = await service.createPredictionSet(ps, dataSourceIds, context);
-    await service.addPredictionCategory(predictionSet.id, 'XRP', context);
+    await service.addPredictionCategory(predictionSet.id, 'Finance', context);
 
     // Add prediction set to blockchain.
     await addPredictionSet(predictionSet, context);

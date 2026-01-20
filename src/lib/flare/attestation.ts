@@ -4,6 +4,7 @@ import { AttestationProof } from '../../modules/prediction-set/models/prediction
 import { CONTRACT_REGISTRY_ABI } from './abis';
 import { ContractName, EncodedAttestationRequest, ProtocolIds } from './types';
 import { deepCloneAbiCoderResult, getABI, getProxyImplementationAddress, toUtf8HexString } from './utils';
+import { AppEnvironment } from '../../config/types';
 
 /**
  * Inits provider and base Flare contracts.
@@ -60,7 +61,7 @@ export async function prepareAttestationRequest(
 ): Promise<EncodedAttestationRequest> {
   const attestationRequest = {
     attestationType: toUtf8HexString('Web2Json'),
-    sourceId: toUtf8HexString('PublicWeb2'),
+    sourceId: toUtf8HexString(env.APP_ENV === AppEnvironment.PROD ? 'Ignite' : 'testIgnite'),
     requestBody: {
       url,
       postProcessJq: jq,
