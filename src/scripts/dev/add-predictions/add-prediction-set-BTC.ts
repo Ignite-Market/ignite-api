@@ -16,7 +16,7 @@ dayjs.extend(utc);
 const comparisonType: 'above' | 'below' = 'below'; // Change to 'above' for above comparison
 const priceGoal = 100000;
 
-const attestationTime = dayjs('2026-01-19T13:00:00Z');
+const attestationTime = dayjs('2026-01-20T15:00:00Z');
 // const attestationTime = dayjs.utc().endOf('isoWeek');
 const attestationTimeFormatted = dayjs(attestationTime).utc().format('MMM D, YYYY HH:mm');
 const endTime = dayjs(attestationTime).toDate();
@@ -72,7 +72,7 @@ const dataSources = [
       days: '1'
     },
     jqQuery: `(.prices | map(select(.[0] >= ${attestationTime.unix() * 1000})) | sort_by(.[0]) | .[0][1]) ${comparisonOp} ${priceGoal}`,
-    headers: { 'x-api-key': env.PROXY_API_KEY},
+    headers: { 'x-api-key': env.PROXY_API_KEY },
     abi: 'bool'
   },
   {
@@ -85,7 +85,7 @@ const dataSources = [
       toTs: attestationTime.unix()
     },
     jqQuery: `(.Data.Data[-1].close) ${comparisonOp} ${priceGoal}`,
-    headers: { 'x-api-key': env.PROXY_API_KEY},
+    headers: { 'x-api-key': env.PROXY_API_KEY },
     abi: 'bool'
   },
   {
@@ -97,10 +97,10 @@ const dataSources = [
       limit: '1',
       toTs: attestationTime.unix()
     },
-    jqQuery: `(.Data.Data[-1].close) ${comparisonOp} ${priceGoal}`,
-    headers: { 'x-api-key': env.PROXY_API_KEY},
-    abi: 'bool'
-  },
+    jqQuery: `[1, 0][((.Data.Data[-1].close) ${comparisonOp} ${priceGoal}) | if . then 0 else 1 end]`,
+    headers: { 'x-api-key': env.PROXY_API_KEY },
+    abi: 'uint256'
+  }
   // {
   //   endpoint: 'https://api-proxy-dev.ignitemarket.xyz/coinbase/v2/prices/BTC-USD/spot',
   //   httpMethod: 'GET',
