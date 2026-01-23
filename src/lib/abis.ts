@@ -497,7 +497,8 @@ export const FPMM_FACTORY_ABI = [
       { 'indexed': false, 'internalType': 'uint256', 'name': 'treasuryPercent', 'type': 'uint256' },
       { 'indexed': false, 'internalType': 'address', 'name': 'treasury', 'type': 'address' },
       { 'indexed': false, 'internalType': 'uint256', 'name': 'fundingThreshold', 'type': 'uint256' },
-      { 'indexed': false, 'internalType': 'uint256', 'name': 'endTime', 'type': 'uint256' }
+      { 'indexed': false, 'internalType': 'uint256', 'name': 'endTime', 'type': 'uint256' },
+      { 'indexed': false, 'internalType': 'uint256', 'name': 'buySellCapPercent', 'type': 'uint256' }
     ],
     'name': 'FixedProductMarketMakerCreation',
     'type': 'event'
@@ -519,6 +520,7 @@ export const FPMM_FACTORY_ABI = [
       { 'internalType': 'address', 'name': 'treasury_', 'type': 'address' },
       { 'internalType': 'uint256', 'name': 'fundingThreshold_', 'type': 'uint256' },
       { 'internalType': 'uint256', 'name': 'endTime_', 'type': 'uint256' },
+      { 'internalType': 'uint256', 'name': 'buySellCapPercent_', 'type': 'uint256' },
       { 'internalType': 'bytes32', 'name': 'salt', 'type': 'bytes32' }
     ],
     'name': 'createFixedProductMarketMaker',

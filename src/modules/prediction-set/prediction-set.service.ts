@@ -3,6 +3,7 @@ import { env } from '../../config/env';
 import {
   BadRequestErrorCode,
   DbTables,
+  DefaultUserRole,
   PopulateFrom,
   ResourceNotFoundErrorCode,
   SerializeFor,
@@ -414,6 +415,17 @@ export class PredictionSetService {
     });
 
     if (!predictionSet.exists() || !predictionSet.isEnabled()) {
+      throw new CodeException({
+        code: ResourceNotFoundErrorCode.PREDICTION_SET_DOES_NOT_EXISTS,
+        errorCodes: ResourceNotFoundErrorCode,
+        status: HttpStatus.NOT_FOUND,
+        sourceFunction: `${this.constructor.name}/getPredictionById`,
+        context
+      });
+    }
+
+    // Check if prediction is hidden and user is not admin
+    if (predictionSet.hide === true && !(await context.hasRole(DefaultUserRole.ADMIN))) {
       throw new CodeException({
         code: ResourceNotFoundErrorCode.PREDICTION_SET_DOES_NOT_EXISTS,
         errorCodes: ResourceNotFoundErrorCode,

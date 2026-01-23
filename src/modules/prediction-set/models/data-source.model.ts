@@ -55,7 +55,7 @@ export class DataSource extends AdvancedSQLModel {
    */
   @prop({
     parser: {
-      resolver: JSONParser()
+      resolver: stringParser()
     },
     serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.UPDATE_DB, SerializeFor.INSERT_DB],
     populatable: [PopulateFrom.DB, PopulateFrom.USER],
@@ -66,7 +66,7 @@ export class DataSource extends AdvancedSQLModel {
       }
     ]
   })
-  abi: any;
+  abi: string;
 
   /**
    * HTTP method for the API request.

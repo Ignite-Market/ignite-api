@@ -22,6 +22,7 @@ import { ShareTransactionType } from './transactions/outcome-share-transaction.m
 import { FundingTransactionType } from './transactions/prediction-set-funding-transaction.model';
 import { UserWatchlist } from './user-watchlist';
 import { User } from '../../user/models/user.model';
+import { env } from '../../../config/env';
 
 /**
  * Prediction set resolution type.
@@ -262,6 +263,30 @@ export class PredictionSet extends AdvancedSQLModel {
     emptyValue: () => 'https://images.ignitemarket.xyz/logo.png'
   })
   imgUrl: string;
+
+  /**
+   * Hide - Controls if prediction is visible to non-admin users.
+   */
+  @prop({
+    parser: { resolver: booleanParser() },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER],
+    defaultValue: () => false,
+    emptyValue: () => false
+  })
+  public hide: boolean;
+
+  /**
+   * Market cap percent - Market cap percentage for the prediction set.
+   */
+  @prop({
+    parser: { resolver: integerParser() },
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB],
+    populatable: [PopulateFrom.DB, PopulateFrom.USER],
+    defaultValue: () => env.MARKET_CAP_PERCENT || 30,
+    emptyValue: () => env.MARKET_CAP_PERCENT || 30
+  })
+  public marketCapPercent: number;
 
   /**
    * Prediction set's outcomes virtual property definition.
@@ -1177,6 +1202,7 @@ export class PredictionSet extends AdvancedSQLModel {
           OR FIND_IN_SET(p.setStatus, @status)
         )
         AND (@isAdmin = 1 OR p.setStatus != ${PredictionSetStatus.FUNDING} OR psft.id IS NOT NULL)
+        AND (@isAdmin = 1 OR p.hide = 0)
         AND (@search IS NULL
           OR p.question LIKE CONCAT('%', @search, '%')
         )

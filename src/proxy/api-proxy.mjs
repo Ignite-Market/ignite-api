@@ -3,32 +3,11 @@ import { URL } from 'node:url';
 import crypto from 'node:crypto';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import * as consumers from 'node:stream/consumers';
+import { acquireCacheLock, storeResultInMysql, getResultFromMysql, cleanupInFlightEntry } from './mysql-cache.mjs';
+import { getCachedResponse, setCachedResponse, waitForInFlightRequestLocal } from './local-cache.mjs';
 
 // Cache TTL in seconds (default: 30 seconds)
 const CACHE_TTL = parseInt(process.env.API_PROXY_CACHE_TTL) || 30;
-
-// Maximum number of cache entries (default: 50)
-// Prevents memory exhaustion with many unique requests
-const MAX_CACHE_ENTRIES = parseInt(process.env.API_PROXY_MAX_CACHE_ENTRIES) || 50;
-
-// Maximum response size to cache in bytes (default: 2MB)
-// Prevents caching extremely large responses that could cause memory issues
-const MAX_CACHE_RESPONSE_SIZE = parseInt(process.env.API_PROXY_MAX_CACHE_SIZE) || 2 * 1024 * 1024;
-
-// Maximum total cache memory in bytes (default: 30MB)
-// Conservative limit to leave room for Lambda runtime (~30-50MB), code (~10-20MB), and request handling
-// Set to ~25% of 128MB Lambda memory to be safe
-const MAX_TOTAL_CACHE_MEMORY = parseInt(process.env.API_PROXY_MAX_TOTAL_CACHE_MEMORY) || 30 * 1024 * 1024;
-
-// Simple in-memory cache with TTL and LRU eviction (using only built-in Node.js modules)
-const cache = new Map();
-// Track access order for LRU eviction
-const accessOrder = [];
-// Track total estimated memory usage
-let totalCacheMemory = 0;
-// Counter for periodic cleanup (cleanup every N operations to avoid performance impact)
-let operationCount = 0;
-const CLEANUP_FREQUENCY = 10; // Clean up every 10 cache operations
 
 // API Keys cache (loaded from S3)
 let apiKeysCache = null;
@@ -47,127 +26,6 @@ console.log('API Proxy module loaded successfully');
 const generateCacheKey = (method, url, queryParams) => {
   const keyData = `${method}:${url}:${JSON.stringify(queryParams || {})}`;
   return crypto.createHash('md5').update(keyData).digest('hex');
-};
-
-// Get cached response if available and not expired
-const getCachedResponse = (key) => {
-  // Periodic cleanup (Lambda-friendly, no background intervals)
-  operationCount++;
-  if (operationCount % CLEANUP_FREQUENCY === 0) {
-    cleanupExpiredEntries();
-  }
-
-  const cached = cache.get(key);
-  if (!cached) {
-    return null;
-  }
-
-  const now = Date.now();
-  if (now > cached.expiresAt) {
-    // Remove from memory tracking
-    const entrySize = estimateResponseSize(cached.data);
-    totalCacheMemory -= entrySize;
-
-    cache.delete(key);
-    // Remove from access order
-    const index = accessOrder.indexOf(key);
-    if (index > -1) {
-      accessOrder.splice(index, 1);
-    }
-    return null;
-  }
-
-  // Update access order for LRU (move to end)
-  const index = accessOrder.indexOf(key);
-  if (index > -1) {
-    accessOrder.splice(index, 1);
-  }
-  accessOrder.push(key);
-
-  return cached.data;
-};
-
-// Estimate response size in bytes (rough approximation)
-const estimateResponseSize = (responseData) => {
-  try {
-    return JSON.stringify(responseData).length;
-  } catch {
-    // Fallback: estimate based on body length
-    return (responseData.body || '').length;
-  }
-};
-
-// Store response in cache with size limits and LRU eviction
-const setCachedResponse = (key, data) => {
-  // Check if response is too large to cache
-  const estimatedSize = estimateResponseSize(data);
-  if (estimatedSize > MAX_CACHE_RESPONSE_SIZE) {
-    console.log(`Skipping cache for large response: ${estimatedSize} bytes (max: ${MAX_CACHE_RESPONSE_SIZE})`);
-    return;
-  }
-
-  // Evict oldest entries until we have room (by count or memory)
-  while (cache.size >= MAX_CACHE_ENTRIES || (totalCacheMemory + estimatedSize > MAX_TOTAL_CACHE_MEMORY && cache.size > 0)) {
-    // Remove oldest entry (first in access order)
-    const oldestKey = accessOrder.shift();
-    if (oldestKey) {
-      const oldestEntry = cache.get(oldestKey);
-      if (oldestEntry) {
-        const oldestSize = estimateResponseSize(oldestEntry.data);
-        totalCacheMemory -= oldestSize;
-      }
-      cache.delete(oldestKey);
-      console.log(`Evicted oldest cache entry (entries: ${cache.size}, memory: ${Math.round(totalCacheMemory / 1024 / 1024)}MB)`);
-    } else {
-      break; // No more entries to evict
-    }
-  }
-
-  // Check if we still don't have enough room after eviction
-  if (totalCacheMemory + estimatedSize > MAX_TOTAL_CACHE_MEMORY) {
-    console.log(
-      `Skipping cache: would exceed memory limit (current: ${Math.round(totalCacheMemory / 1024 / 1024)}MB, adding: ${Math.round(estimatedSize / 1024 / 1024)}MB, max: ${Math.round(MAX_TOTAL_CACHE_MEMORY / 1024 / 1024)}MB)`
-    );
-    return;
-  }
-
-  const expiresAt = Date.now() + CACHE_TTL * 1000;
-  cache.set(key, { data, expiresAt });
-  totalCacheMemory += estimatedSize;
-
-  // Add to end of access order (most recently used)
-  accessOrder.push(key);
-};
-
-// Clean expired cache entries on-demand (Lambda-friendly)
-// This is called during cache operations to avoid background intervals
-const cleanupExpiredEntries = () => {
-  const now = Date.now();
-  const keysToDelete = [];
-
-  for (const [key, value] of cache.entries()) {
-    if (now > value.expiresAt) {
-      keysToDelete.push(key);
-    }
-  }
-
-  // Remove expired entries from both cache and access order
-  keysToDelete.forEach((key) => {
-    const entry = cache.get(key);
-    if (entry) {
-      const entrySize = estimateResponseSize(entry.data);
-      totalCacheMemory -= entrySize;
-    }
-    cache.delete(key);
-    const index = accessOrder.indexOf(key);
-    if (index > -1) {
-      accessOrder.splice(index, 1);
-    }
-  });
-
-  if (keysToDelete.length > 0) {
-    console.log(`Cleaned up ${keysToDelete.length} expired cache entries`);
-  }
 };
 
 // Parse API mappings from environment variable
@@ -468,17 +326,96 @@ export const handler = async (event) => {
       };
     }
 
-    // Check cache for GET requests
+    // For GET requests, use MySQL locking for cross-instance deduplication
     if (httpMethod === 'GET') {
-      const cacheKey = generateCacheKey(httpMethod, targetUrl.toString(), queryStringParameters);
-      const cachedResponse = getCachedResponse(cacheKey);
+      // Extract base URL without query params to avoid duplication
+      // targetUrl.toString() already includes query params, so we extract the base URL
+      const baseUrl = `${targetUrl.protocol}//${targetUrl.host}${targetUrl.pathname}`;
+      const cacheKey = generateCacheKey(httpMethod, baseUrl, queryStringParameters);
 
+      // Check local cache first
+      const cachedResponse = getCachedResponse(cacheKey);
       if (cachedResponse) {
         console.log(`Returning cached response for: ${targetUrl.toString()}`);
         return cachedResponse;
       }
+
+      // Also check MySQL cache (shared across instances)
+      const mysqlCached = await getResultFromMysql(cacheKey);
+      if (mysqlCached) {
+        // Cache locally for faster access
+        setCachedResponse(cacheKey, mysqlCached);
+        console.log(`Returning MySQL cached response for: ${targetUrl.toString()}`);
+        return mysqlCached;
+      }
+
+      // Try to acquire cache lock using INSERT (row-level locking)
+      const lockResult = await acquireCacheLock(cacheKey);
+
+      if (lockResult === null) {
+        // MySQL not configured, proceed without cross-instance deduplication
+        console.log(`[MYSQL] MySQL not configured, proceeding without lock for: ${targetUrl.toString()}`);
+      } else if (!lockResult.acquired) {
+        // Another request is handling this, wait for it to complete
+        // Use local deduplication - only one poller per Lambda instance
+        console.log(`[MYSQL] Waiting for in-flight request: ${targetUrl.toString()}`);
+        try {
+          const responseData = await waitForInFlightRequestLocal(cacheKey);
+          return responseData;
+        } catch (error) {
+          console.error(`[MYSQL] Error waiting for in-flight request:`, error);
+          // Fall through to make the request ourselves
+        }
+      }
+      // If lock acquired, we're the first - proceed to make the request
+
+      // Prepare request headers
+      const requestHeaders = {
+        'x-rapidapi-host': apiHost,
+        'x-rapidapi-key': apiKey,
+        'User-Agent': 'Ignite-Market-Proxy/1.0'
+      };
+
+      console.log(`Making request to: ${targetUrl.toString()}`);
+      console.log('Request headers:', JSON.stringify(requestHeaders, null, 2));
+
+      try {
+        // Make the request
+        const response = await makeRequest(targetUrl.toString(), httpMethod, requestHeaders, body);
+
+        console.log(`Response status: ${response.status}`);
+
+        const responseData = {
+          statusCode: response.status,
+          body: response.data
+        };
+
+        // Cache successful GET responses (both local and MySQL)
+        if (response.status >= 200 && response.status < 300) {
+          setCachedResponse(cacheKey, responseData); // Local cache
+          // Store in MySQL (updates status from IN_FLIGHT to COMPLETED)
+          if (lockResult?.acquired && lockResult?.lockToken) {
+            await storeResultInMysql(cacheKey, responseData, lockResult.lockToken, CACHE_TTL); // MySQL cache (shared)
+          }
+          console.log(`Cached response for: ${targetUrl.toString()}`);
+        } else {
+          // If request failed, clean up the in-flight entry
+          if (lockResult?.acquired && lockResult?.lockToken) {
+            await cleanupInFlightEntry(cacheKey, lockResult.lockToken);
+          }
+        }
+
+        return responseData;
+      } catch (error) {
+        // If request failed, clean up the in-flight entry
+        if (lockResult?.acquired && lockResult?.lockToken) {
+          await cleanupInFlightEntry(cacheKey, lockResult.lockToken);
+        }
+        throw error;
+      }
     }
 
+    // For non-GET requests, execute immediately (no caching or deduplication)
     // Prepare request headers
     const requestHeaders = {
       'x-rapidapi-host': apiHost,
@@ -499,19 +436,10 @@ export const handler = async (event) => {
 
     console.log(`Response status: ${response.status}`);
 
-    const responseData = {
+    return {
       statusCode: response.status,
       body: response.data
     };
-
-    // Cache successful GET responses
-    if (httpMethod === 'GET' && response.status >= 200 && response.status < 300) {
-      const cacheKey = generateCacheKey(httpMethod, targetUrl.toString(), queryStringParameters);
-      setCachedResponse(cacheKey, responseData);
-      console.log(`Cached response for: ${targetUrl.toString()}`);
-    }
-
-    return responseData;
   } catch (error) {
     console.error('Proxy error:', error);
     console.error('Error stack:', error.stack);

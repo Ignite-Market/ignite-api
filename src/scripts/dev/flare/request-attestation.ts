@@ -46,94 +46,73 @@ const comparedPrice = 24000; // Variable for the price threshold
 //   'x-rapidapi-key': env.RAPID_API_KEY
 // };
 
-// Market close time: 08:00:00 / 16:00:00 ChinaST
-const attestationTime = dayjs('2025-07-02T23:59:59Z');
-// const endTime = dayjs(attestationTime).subtract(1, 'day').toDate();
-const endTime = dayjs('2025-07-01T09:30:00Z');
+// BTC Prediction configuration
+// Set comparisonType to 'above' or 'below' to test different scenarios
+const comparisonType: 'above' | 'below' = 'below'; // Change to 'above' for above comparison
+const attestationTime = dayjs('2026-01-19T13:00:00Z');
 const attestationTimeUnix = dayjs(attestationTime).unix();
 const attestationTimeFormatted = dayjs(attestationTime).utc().format('YYYY-MM-DD HH:mm:ss');
-const priceGoal = 2.243;
+const priceGoal = 100000;
 
+// Helper function to generate comparison operator based on comparison type
+const getComparisonOperator = (type: 'above' | 'below'): string => {
+  return type === 'above' ? '>=' : '<';
+};
+
+// Generate jq queries dynamically based on comparison type
+const comparisonOp = getComparisonOperator(comparisonType);
 const dataSources = [
   {
-    endpoint: 'https://api.coingecko.com/api/v3/coins/ripple/market_chart',
+    endpoint: 'https://api-proxy-dev.ignitemarket.xyz/coingecko/api/v3/coins/bitcoin/market_chart',
     httpMethod: 'GET',
     queryParams: {
       vs_currency: 'usd',
       days: '1'
     },
-    jqQuery: `{ "outcomeIdx": [1, 0][(.prices | map(.[0] as $ts | [$ts, .[1], ($ts - ${attestationTime.unix() * 1000} | fabs)]) | sort_by(.[2]) | .[0][1] >= ${priceGoal}) | if . then 0 else 1 end] }`,
-    abi: {
-      'components': [
-        {
-          'internalType': 'uint256',
-          'name': 'outcomeIdx',
-          'type': 'uint256'
-        }
-      ],
-      'type': 'tuple'
-    }
+    jqQuery: `(.prices | map(select(.[0] >= ${attestationTime.unix() * 1000})) | sort_by(.[0]) | .[0][1]) ${comparisonOp} ${priceGoal}`,
+    abi: 'bool'
   },
   {
-    endpoint: 'https://min-api.cryptocompare.com/data/v2/histominute',
+    endpoint: 'https://api-proxy-dev.ignitemarket.xyz/cryptocompare/data/v2/histominute',
     httpMethod: 'GET',
     queryParams: {
-      fsym: 'XRP',
+      fsym: 'BTC',
       tsym: 'USD',
       limit: '1',
       toTs: attestationTime.unix()
     },
-    jqQuery: `{ "outcomeIdx": [1, 0][(.Data.Data[-1].close >= ${priceGoal}) | if . then 0 else 1 end] }`,
-    abi: {
-      'components': [
-        {
-          'internalType': 'uint256',
-          'name': 'outcomeIdx',
-          'type': 'uint256'
-        }
-      ],
-      'type': 'tuple'
-    }
+    jqQuery: `(.Data.Data[-1].close) ${comparisonOp} ${priceGoal}`,
+    abi: 'bool'
   },
   {
-    endpoint: 'https://api.coinbase.com/v2/prices/XRP-USD/spot',
+    endpoint: 'https://api-proxy-dev.ignitemarket.xyz/cryptocompare/data/v2/histominute',
     httpMethod: 'GET',
     queryParams: {
-      date: attestationTime.utc().format('YYYY-MM-DD')
+      fsym: 'BTC',
+      tsym: 'USD',
+      limit: '1',
+      toTs: attestationTime.unix()
     },
-    jqQuery: `{ "outcomeIdx": [1, 0][(.data.amount | tonumber >= ${priceGoal}) | if . then 0 else 1 end] }`,
-    abi: {
-      'components': [
-        {
-          'internalType': 'uint256',
-          'name': 'outcomeIdx',
-          'type': 'uint256'
-        }
-      ],
-      'type': 'tuple'
-    }
-  }
+    jqQuery: `(.Data.Data[-1].close) ${comparisonOp} ${priceGoal}`,
+    abi: 'bool'
+  },
 ];
 
-const abi = {
-  'components': [
-    {
-      'internalType': 'uint256',
-      'name': 'outcomeIdx',
-      'type': 'uint256'
-    }
-  ],
-  'type': 'tuple'
-};
+const abi = 'bool';
 
 (async () => {
+  console.log(`\n=== Testing BTC Prediction: ${comparisonType.toUpperCase()} $${priceGoal.toLocaleString()} ===`);
+  console.log(`Attestation Time: ${attestationTimeFormatted} UTC\n`);
+  
   for (const dataSource of dataSources) {
     const endpoint = dataSource.endpoint;
     const httpMethod = dataSource.httpMethod;
     const queryParams = dataSource.queryParams;
     const jqQuery = dataSource.jqQuery;
     // const headers = dataSource?.headers;
-    const headers = null;
+    const headers = {
+      'x-api-key': 'zeqjv3IoLeN0ZYdiIr5sFm01CvHRt4TBvSJG3T9Y2Mk'
+    };
 
     const test = await axios(endpoint, {
       method: httpMethod,

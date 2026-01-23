@@ -54,3 +54,5 @@ tmp/
 .serverless/
 
 bin/deploy/env/env.dev*
+
+src/lib/proxy
