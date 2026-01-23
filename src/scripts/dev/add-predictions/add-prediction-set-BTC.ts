@@ -14,15 +14,14 @@ dayjs.extend(utc);
 
 // Configuration: Set comparisonType to 'above' or 'below'
 const comparisonType: 'above' | 'below' = 'below'; // Change to 'above' for above comparison
-const priceGoal = 100000;
+const priceGoal = 90000;
 
-const attestationTime = dayjs('2026-01-20T15:00:00Z');
+const attestationTime = dayjs('2026-01-23T12:00:00Z');
 // const attestationTime = dayjs.utc().endOf('isoWeek');
 const attestationTimeFormatted = dayjs(attestationTime).utc().format('MMM D, YYYY HH:mm');
 const endTime = dayjs(attestationTime).toDate();
 const resolutionTime = dayjs(attestationTime).add(1, 'hour').toDate();
 
-const isHidden = true;
 
 // Helper function to generate comparison operator based on comparison type
 const getComparisonOperator = (type: 'above' | 'below'): string => {
@@ -39,8 +38,8 @@ const comparisonText = getComparisonText(comparisonType);
 
 const data = {
   collateral_token_id: 1,
-  question: `Will the BTC market price be ${comparisonText} $${priceGoal.toLocaleString()} at the end of this Sunday?`,
-  outcomeResolutionDef: `This market will resolve to "Yes" if the price of BTC is ${comparisonText} $${priceGoal.toLocaleString()} at the end of this Sunday (${attestationTimeFormatted}).
+  question: `Will the BTC market price be ${comparisonText} $${priceGoal.toLocaleString()} on ${attestationTimeFormatted}?`,
+  outcomeResolutionDef: `This market will resolve to "Yes" if the price of BTC is ${comparisonText} $${priceGoal.toLocaleString()} on ${attestationTimeFormatted}.
   The resolution sources will be: CoinGecko, CryptoCompare and Coinbase.`,
   startTime: new Date(Number(new Date())),
   endTime,
@@ -48,9 +47,9 @@ const data = {
   resolutionTime,
   resolutionType: ResolutionType.AUTOMATIC,
   consensusThreshold: 60,
-  hide: isHidden,
+  hide: false,
   marketCapPercent: 30,
-  imgUrl: 'https://images.ignitemarket.xyz/prediction-sets/bitcoin.webp',
+  imgUrl: 'https://images.ignitemarket.xyz/upload/prediction-sets/bitcoin.webp',
   predictionOutcomes: [
     {
       name: 'No',
