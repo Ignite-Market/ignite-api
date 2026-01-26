@@ -87,39 +87,41 @@ export class RequestAttestationProofWorker extends BaseSingleThreadWorker {
             console.log('Round is not yet finalized.');
           }
         } catch (error) {
+          // Do not resubmit for now, since attestations have high fees
+          //
           // If we get HTTP 400, it means the request wasn't in the Merkle tree - we need to resubmit the attestation request.
-          if (error.status === 400 || (error.response && error.response.status === 400)) {
-            try {
-              const newRoundId = await submitAttestationRequest({
-                status: AttestationVerifierStatus.VALID,
-                abiEncodedRequest: attestation.abiEncodedRequest
-              });
+          // if (error.status === 400 || (error.response && error.response.status === 400)) {
+          //   try {
+          //     const newRoundId = await submitAttestationRequest({
+          //       status: AttestationVerifierStatus.VALID,
+          //       abiEncodedRequest: attestation.abiEncodedRequest
+          //     });
 
-              attestation.roundId = newRoundId;
-              attestation.proof = null;
-              await attestation.update();
-            } catch (resubmitError) {
-              await this.writeLogToDb(
-                WorkerLogStatus.ERROR,
-                `Error while resubmitting attestation request`,
-                {
-                  predictionSetId: predictionSet.id,
-                  attestationId: attestation.id
-                },
-                resubmitError
-              );
-            }
-          } else {
-            await this.writeLogToDb(
-              WorkerLogStatus.ERROR,
-              `Error while requesting attestation proof`,
-              {
-                predictionSetId: predictionSet.id,
-                attestationId: attestation.id
-              },
-              error
-            );
-          }
+          //     attestation.roundId = newRoundId;
+          //     attestation.proof = null;
+          //     await attestation.update();
+          //   } catch (resubmitError) {
+          //     await this.writeLogToDb(
+          //       WorkerLogStatus.ERROR,
+          //       `Error while resubmitting attestation request`,
+          //       {
+          //         predictionSetId: predictionSet.id,
+          //         attestationId: attestation.id
+          //       },
+          //       resubmitError
+          //     );
+          //   }
+          // } else {
+          await this.writeLogToDb(
+            WorkerLogStatus.ERROR,
+            `Error while requesting attestation proof`,
+            {
+              predictionSetId: predictionSet.id,
+              attestationId: attestation.id
+            },
+            error
+          );
+          // }
           continue;
         }
       }
