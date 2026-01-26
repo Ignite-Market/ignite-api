@@ -175,7 +175,7 @@ export async function verifyProof(attestationProof: AttestationProof): Promise<{
   // Create verifier contract with proxy address and verifier ABI.
   const verifier = new ethers.Contract(verifierProxyAddress, verifierAbi, signer);
 
-  const functionAbi = verifierAbi.find((el: any) => el.name === 'verifyJsonApi');
+  const functionAbi = verifierAbi.find((el: any) => el.name === 'verifyWeb2Json');
   const responseType = functionAbi.inputs[0].components[1];
   const abiCoder = ethers.AbiCoder.defaultAbiCoder();
   const decodedResponse = abiCoder.decode([responseType], attestationProof.response_hex)[0];
@@ -185,7 +185,7 @@ export async function verifyProof(attestationProof: AttestationProof): Promise<{
     data: deepCloneAbiCoderResult(decodedResponse)
   };
 
-  const verified = await verifier.verifyJsonApi(proofData);
+  const verified = await verifier.verifyWeb2Json(proofData);
 
   return { verified, proofData };
 }
