@@ -558,6 +558,29 @@ export class PredictionSetService {
   }
 
   /**
+   * Get prediction set data sources.
+   *
+   * @param predictionSetId Prediction set ID.
+   * @param context Application context.
+   * @returns Prediction set data sources.
+   */
+  public async getPredictionSetDataSources(predictionSetId: number, context: Context) {
+    const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId);
+
+    if (!predictionSet.exists() || !predictionSet.isEnabled()) {
+      throw new CodeException({
+        code: ResourceNotFoundErrorCode.PREDICTION_SET_DOES_NOT_EXISTS,
+        errorCodes: ResourceNotFoundErrorCode,
+        status: HttpStatus.NOT_FOUND,
+        sourceFunction: `${this.constructor.name}/getPredictionSetDataSources`,
+        context
+      });
+    }
+
+    return await predictionSet.getDataSources();
+  }
+
+  /**
    * Add user watchlist.
    *
    * @param predictionSetId Prediction set ID.

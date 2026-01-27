@@ -92,6 +92,13 @@ export class PredictionSetController {
     return await this.predictionSetService.getPredictionChanceHistory(id, query, context);
   }
 
+  @Get('/:id/data-sources')
+  @Validation({ dto: HoldersQueryFilter, validateFor: ValidateFor.QUERY })
+  @UseGuards(ValidationGuard)
+  async getPredictionSetDataSources(@Param('id', ParseIntPipe) predictionSetId: number, @Ctx() context: Context) {
+    return await this.predictionSetService.getPredictionSetDataSources(predictionSetId, context);
+  }
+
   @Put('/:id')
   @Validation({ dto: PredictionSetDto })
   @UseGuards(ValidationGuard, AuthGuard)
