@@ -184,6 +184,7 @@ export async function addPredictionSet(predictionSet: PredictionSet, context: Co
       prediction_set_id: predictionSet.id,
       questionId,
       conditionId,
+      oracleContract: env.ORACLE_CONTRACT,
       lastProcessedBlock: receiptBlock,
       parseBlockSize: env.FPMM_PARSE_BLOCK_SIZE
     },

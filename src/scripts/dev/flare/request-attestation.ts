@@ -49,7 +49,7 @@ const comparedPrice = 24000; // Variable for the price threshold
 // BTC Prediction configuration
 // Set comparisonType to 'above' or 'below' to test different scenarios
 const comparisonType: 'above' | 'below' = 'below'; // Change to 'above' for above comparison
-const attestationTime = dayjs('2026-01-19T13:00:00Z');
+const attestationTime = dayjs('2026-01-26T13:00:00Z');
 const attestationTimeUnix = dayjs(attestationTime).unix();
 const attestationTimeFormatted = dayjs(attestationTime).utc().format('YYYY-MM-DD HH:mm:ss');
 const priceGoal = 100000;
@@ -69,8 +69,17 @@ const dataSources = [
       vs_currency: 'usd',
       days: '1'
     },
-    jqQuery: `(.prices | map(select(.[0] >= ${attestationTime.unix() * 1000})) | sort_by(.[0]) | .[0][1]) ${comparisonOp} ${priceGoal}`,
-    abi: 'bool'
+    jqQuery: `{ "outcomeIdx": [1, 0][((.prices | map(select(.[0] >= ${attestationTime.unix() * 1000})) | sort_by(.[0]) | .[0][1]) ${comparisonOp} ${priceGoal}) | if . then 0 else 1 end] }`,
+    abi: {
+      'components': [
+        {
+          'internalType': 'uint256',
+          'name': 'outcomeIdx',
+          'type': 'uint256'
+        }
+      ],
+      'type': 'tuple'
+    }
   },
   {
     endpoint: 'https://api-proxy-dev.ignitemarket.xyz/cryptocompare/data/v2/histominute',
@@ -81,8 +90,17 @@ const dataSources = [
       limit: '1',
       toTs: attestationTime.unix()
     },
-    jqQuery: `(.Data.Data[-1].close) ${comparisonOp} ${priceGoal}`,
-    abi: 'bool'
+    jqQuery: `{ "outcomeIdx": [1, 0][((.Data.Data[-1].close) ${comparisonOp} ${priceGoal}) | if . then 0 else 1 end] }`,
+    abi: {
+      'components': [
+        {
+          'internalType': 'uint256',
+          'name': 'outcomeIdx',
+          'type': 'uint256'
+        }
+      ],
+      'type': 'tuple'
+    }
   },
   {
     endpoint: 'https://api-proxy-dev.ignitemarket.xyz/cryptocompare/data/v2/histominute',
@@ -93,30 +111,39 @@ const dataSources = [
       limit: '1',
       toTs: attestationTime.unix()
     },
-    jqQuery: `(.Data.Data[-1].close) ${comparisonOp} ${priceGoal}`,
-    abi: 'bool'
-  },
+    jqQuery: `{ "outcomeIdx": [1, 0][((.Data.Data[-1].close | .) ${comparisonOp} ${priceGoal}) | if . then 0 else 1 end] }`,
+    abi: {
+      'components': [
+        {
+          'internalType': 'uint256',
+          'name': 'outcomeIdx',
+          'type': 'uint256'
+        }
+      ],
+      'type': 'tuple'
+    }
+  }
 ];
-
-const abi = 'bool';
 
 (async () => {
   console.log(`\n=== Testing BTC Prediction: ${comparisonType.toUpperCase()} $${priceGoal.toLocaleString()} ===`);
   console.log(`Attestation Time: ${attestationTimeFormatted} UTC\n`);
-  
+
   for (const dataSource of dataSources) {
     const endpoint = dataSource.endpoint;
     const httpMethod = dataSource.httpMethod;
     const queryParams = dataSource.queryParams;
     const jqQuery = dataSource.jqQuery;
-    // const headers = dataSource?.headers;
-    const headers = {
+    const headers = null;
+    const abi = dataSource?.abi;
+
+    const proxyHeaders = {
       'x-api-key': 'zeqjv3IoLeN0ZYdiIr5sFm01CvHRt4TBvSJG3T9Y2Mk'
     };
 
     const test = await axios(endpoint, {
       method: httpMethod,
-      headers: headers,
+      headers: proxyHeaders,
       params: queryParams
     });
     const data = test.data;
