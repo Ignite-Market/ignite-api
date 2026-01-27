@@ -1,9 +1,10 @@
-import { env, exit } from 'process';
+import { exit } from 'process';
 import { prepareAttestationRequest } from '../../../lib/flare/attestation';
 import axios from 'axios';
 import * as jq from 'node-jq';
 import * as dayjs from 'dayjs';
 import * as utc from 'dayjs/plugin/utc';
+import { env } from '../../../config/env';
 
 dayjs.extend(utc);
 
@@ -138,7 +139,7 @@ const dataSources = [
     const abi = dataSource?.abi;
 
     const proxyHeaders = {
-      'x-api-key': 'zeqjv3IoLeN0ZYdiIr5sFm01CvHRt4TBvSJG3T9Y2Mk'
+      'x-api-key': env.PROXY_API_KEY
     };
 
     const test = await axios(endpoint, {
