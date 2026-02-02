@@ -1,4 +1,5 @@
 const axios = require('axios');
+import { env } from '../../../config/env';
 
 const API_URL = 'https://api-proxy-dev.ignitemarket.xyz/bloomberg/market/get-chart?id=SPX:ind&interval=d1';
 const TOTAL_CALLS = 30;
@@ -8,7 +9,7 @@ function callApi() {
   return axios
     .get(API_URL, {
       headers: {
-        'x-api-key': 'zeqjv3IoLeN0ZYdiIr5sFm01CvHRt4TBvSJG3T9Y2Mk'
+        'x-api-key': env.PROXY_API_KEY
       }
     })
     .then((response) => {

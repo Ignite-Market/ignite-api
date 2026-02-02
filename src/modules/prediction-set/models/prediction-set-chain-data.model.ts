@@ -64,6 +64,16 @@ export class PredictionSetChainData extends AdvancedSQLModel {
   public contractAddress: string;
 
   /**
+   * Oracle contract address.
+   */
+  @prop({
+    parser: { resolver: stringParser() },
+    populatable: [PopulateFrom.DB],
+    serializable: [SerializeFor.USER, SerializeFor.SELECT_DB, SerializeFor.INSERT_DB, SerializeFor.UPDATE_DB]
+  })
+  public oracleContract: string;
+
+  /**
    * Last processed block.
    */
   @prop({

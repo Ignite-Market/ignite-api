@@ -66,8 +66,17 @@ const dataSources = [
       vs_currency: 'usd',
       days: '1'
     },
-    jqQuery: `[1, 0][((.prices | map(.[0] as $ts | [$ts, .[1], ($ts - ${attestationTime.unix() * 1000} | fabs)]) | sort_by(.[2]) | .[0][1]) ${comparisonOp} ${priceGoal}) | if . then 0 else 1 end]`,
-    abi: 'uint256'
+    jqQuery: `{ "outcomeIdx": [1, 0][((.prices | map(.[0] as $ts | [$ts, .[1], ($ts - ${attestationTime.unix() * 1000} | fabs)]) | sort_by(.[2]) | .[0][1]) ${comparisonOp} ${priceGoal}) | if . then 0 else 1 end] }`,
+    abi: {
+      'components': [
+        {
+          'internalType': 'uint256',
+          'name': 'outcomeIdx',
+          'type': 'uint256'
+        }
+      ],
+      'type': 'tuple'
+    }
   },
   {
     endpoint: 'https://min-api.cryptocompare.com/data/v2/histominute',
@@ -78,8 +87,17 @@ const dataSources = [
       limit: '1',
       toTs: attestationTime.unix()
     },
-    jqQuery: `[1, 0][((.Data.Data[-1].close) ${comparisonOp} ${priceGoal}) | if . then 0 else 1 end]`,
-    abi: 'uint256'
+    jqQuery: `{ "outcomeIdx": [1, 0][((.Data.Data[-1].close) ${comparisonOp} ${priceGoal}) | if . then 0 else 1 end] }`,
+    abi: {
+      'components': [
+        {
+          'internalType': 'uint256',
+          'name': 'outcomeIdx',
+          'type': 'uint256'
+        }
+      ],
+      'type': 'tuple'
+    }
   },
   {
     endpoint: 'https://api.coinbase.com/v2/prices/XRP-USD/spot',
@@ -87,8 +105,17 @@ const dataSources = [
     queryParams: {
       date: attestationTime.utc().format('YYYY-MM-DD')
     },
-    jqQuery: `[1, 0][((.data.amount | tonumber) ${comparisonOp} ${priceGoal}) | if . then 0 else 1 end]`,
-    abi: 'uint256'
+    jqQuery: `{ "outcomeIdx": [1, 0][((.data.amount | tonumber) ${comparisonOp} ${priceGoal}) | if . then 0 else 1 end] }`,
+    abi: {
+      'components': [
+        {
+          'internalType': 'uint256',
+          'name': 'outcomeIdx',
+          'type': 'uint256'
+        }
+      ],
+      'type': 'tuple'
+    }
   }
 ];
 

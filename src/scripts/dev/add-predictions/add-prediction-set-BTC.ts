@@ -12,16 +12,15 @@ import * as utc from 'dayjs/plugin/utc';
 dayjs.extend(isoWeek);
 dayjs.extend(utc);
 
-// Configuration: Set comparisonType to 'above' or 'below'
-const comparisonType: 'above' | 'below' = 'below'; // Change to 'above' for above comparison
+const isDev = false;
+const comparisonType: 'above' | 'below' = 'below';
 const priceGoal = 90000;
 
-const attestationTime = dayjs('2026-01-23T12:00:00Z');
+const attestationTime = dayjs('2026-01-26T14:30:00Z');
 // const attestationTime = dayjs.utc().endOf('isoWeek');
 const attestationTimeFormatted = dayjs(attestationTime).utc().format('MMM D, YYYY HH:mm');
 const endTime = dayjs(attestationTime).toDate();
-const resolutionTime = dayjs(attestationTime).add(1, 'hour').toDate();
-
+const resolutionTime = dayjs(attestationTime).add(0.5, 'hour').toDate();
 
 // Helper function to generate comparison operator based on comparison type
 const getComparisonOperator = (type: 'above' | 'below'): string => {
@@ -47,7 +46,7 @@ const data = {
   resolutionTime,
   resolutionType: ResolutionType.AUTOMATIC,
   consensusThreshold: 60,
-  hide: false,
+  hide: true,
   marketCapPercent: 30,
   imgUrl: 'https://images.ignitemarket.xyz/upload/prediction-sets/bitcoin.webp',
   predictionOutcomes: [
@@ -64,18 +63,27 @@ const data = {
 
 const dataSources = [
   {
-    endpoint: 'https://api-proxy-dev.ignitemarket.xyz/coingecko/api/v3/coins/bitcoin/market_chart',
+    endpoint: `https://api-proxy${isDev ? '-dev' : ''}.ignitemarket.xyz/coingecko/api/v3/coins/bitcoin/market_chart`,
     httpMethod: 'GET',
     queryParams: {
       vs_currency: 'usd',
       days: '1'
     },
-    jqQuery: `(.prices | map(select(.[0] >= ${attestationTime.unix() * 1000})) | sort_by(.[0]) | .[0][1]) ${comparisonOp} ${priceGoal}`,
-    headers: { 'x-api-key': env.PROXY_API_KEY },
-    abi: 'bool'
+    jqQuery: `{ "outcomeIdx": [1, 0][((.prices | map(select(.[0] >= ${attestationTime.unix() * 1000})) | sort_by(.[0]) | .[0][1]) ${comparisonOp} ${priceGoal}) | if . then 0 else 1 end] }`,
+    // headers: { 'x-api-key': env.PROXY_API_KEY },
+    abi: {
+      'components': [
+        {
+          'internalType': 'uint256',
+          'name': 'outcomeIdx',
+          'type': 'uint256'
+        }
+      ],
+      'type': 'tuple'
+    }
   },
   {
-    endpoint: 'https://api-proxy-dev.ignitemarket.xyz/cryptocompare/data/v2/histominute',
+    endpoint: `https://api-proxy${isDev ? '-dev' : ''}.ignitemarket.xyz/cryptocompare/data/v2/histominute`,
     httpMethod: 'GET',
     queryParams: {
       fsym: 'BTC',
@@ -83,12 +91,21 @@ const dataSources = [
       limit: '1',
       toTs: attestationTime.unix()
     },
-    jqQuery: `(.Data.Data[-1].close) ${comparisonOp} ${priceGoal}`,
-    headers: { 'x-api-key': env.PROXY_API_KEY },
-    abi: 'bool'
+    jqQuery: `{ "outcomeIdx": [1, 0][((.Data.Data[-1].close) ${comparisonOp} ${priceGoal}) | if . then 0 else 1 end] }`,
+    // headers: { 'x-api-key': env.PROXY_API_KEY },
+    abi: {
+      'components': [
+        {
+          'internalType': 'uint256',
+          'name': 'outcomeIdx',
+          'type': 'uint256'
+        }
+      ],
+      'type': 'tuple'
+    }
   },
   {
-    endpoint: 'https://api-proxy-dev.ignitemarket.xyz/cryptocompare/data/v2/histominute',
+    endpoint: `https://api-proxy${isDev ? '-dev' : ''}.ignitemarket.xyz/cryptocompare/data/v2/histominute`,
     httpMethod: 'GET',
     queryParams: {
       fsym: 'BTC',
@@ -96,19 +113,37 @@ const dataSources = [
       limit: '1',
       toTs: attestationTime.unix()
     },
-    jqQuery: `[1, 0][((.Data.Data[-1].close) ${comparisonOp} ${priceGoal}) | if . then 0 else 1 end]`,
-    headers: { 'x-api-key': env.PROXY_API_KEY },
-    abi: 'uint256'
+    jqQuery: `{ "outcomeIdx": [1, 0][((.Data.Data[-1].close | .) ${comparisonOp} ${priceGoal}) | if . then 0 else 1 end] }`,
+    // headers: { 'x-api-key': env.PROXY_API_KEY },
+    abi: {
+      'components': [
+        {
+          'internalType': 'uint256',
+          'name': 'outcomeIdx',
+          'type': 'uint256'
+        }
+      ],
+      'type': 'tuple'
+    }
   }
   // {
-  //   endpoint: 'https://api-proxy-dev.ignitemarket.xyz/coinbase/v2/prices/BTC-USD/spot',
+  //   endpoint: `https://api-proxy${isDev ? '-dev' : ''}.ignitemarket.xyz/coinbase/v2/prices/BTC-USD/spot`,
   //   httpMethod: 'GET',
   //   queryParams: {
   //     date: attestationTime.utc().format('YYYY-MM-DD')
   //   },
-  //   jqQuery: `(.data.amount | tonumber) ${comparisonOp} ${priceGoal}`,
+  //   jqQuery: `{ "outcomeIdx": [1, 0][((.data.amount | tonumber) ${comparisonOp} ${priceGoal}) | if . then 0 else 1 end] }`,
   //   headers: { 'x-api-key': env.PROXY_API_KEY},
-  //   abi: 'bool'
+  //   abi: {
+  //     'components': [
+  //       {
+  //         'internalType': 'uint256',
+  //         'name': 'outcomeIdx',
+  //         'type': 'uint256'
+  //       }
+  //     ],
+  //     'type': 'tuple'
+  //   }
   // }
 ];
 

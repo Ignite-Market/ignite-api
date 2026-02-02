@@ -182,7 +182,7 @@ export let env: IEnv = {
   MYSQL_PORT_TEST: parseInt(process.env['MYSQL_PORT_TEST']),
   MYSQL_USER_TEST: process.env['MYSQL_USER_TEST'],
 
-  PREDICTION_SET_MINIMAL_DATA_SOURCES: parseInt(process.env['PREDICTION_SET_MINIMAL_DATA_SOURCES']) || 3,
+  PREDICTION_SET_MINIMAL_DATA_SOURCES: parseInt(process.env['PREDICTION_SET_MINIMAL_DATA_SOURCES']) || 2,
 
   /**
    * Fixed product market maker & conditional token contracts.

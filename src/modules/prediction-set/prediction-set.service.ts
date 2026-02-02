@@ -387,6 +387,31 @@ export class PredictionSetService {
   }
 
   /**
+   * Update prediction hide status.
+   *
+   * @param id Prediction set ID.
+   * @param hide Hide state.
+   * @param context Application context.
+   * @returns Updated prediction set.
+   */
+  public async updatePredictionHide(id: number, hide: boolean, context: Context) {
+    const predictionSet = await new PredictionSet({}, context).populateById(id);
+    if (!predictionSet.exists() || !predictionSet.isEnabled()) {
+      throw new CodeException({
+        code: ResourceNotFoundErrorCode.PREDICTION_SET_DOES_NOT_EXISTS,
+        errorCodes: ResourceNotFoundErrorCode,
+        status: HttpStatus.NOT_FOUND,
+        sourceFunction: `${this.constructor.name}/updatePredictionHide`,
+        context
+      });
+    }
+
+    predictionSet.hide = hide;
+    await predictionSet.update();
+    return predictionSet;
+  }
+
+  /**
    * Returns listing of prediction.
    *
    * @param query Filtering query.
@@ -555,6 +580,29 @@ export class PredictionSetService {
     }
 
     return await predictionSet.getChanceHistory(query);
+  }
+
+  /**
+   * Get prediction set data sources.
+   *
+   * @param predictionSetId Prediction set ID.
+   * @param context Application context.
+   * @returns Prediction set data sources.
+   */
+  public async getPredictionSetDataSources(predictionSetId: number, context: Context) {
+    const predictionSet = await new PredictionSet({}, context).populateById(predictionSetId);
+
+    if (!predictionSet.exists() || !predictionSet.isEnabled()) {
+      throw new CodeException({
+        code: ResourceNotFoundErrorCode.PREDICTION_SET_DOES_NOT_EXISTS,
+        errorCodes: ResourceNotFoundErrorCode,
+        status: HttpStatus.NOT_FOUND,
+        sourceFunction: `${this.constructor.name}/getPredictionSetDataSources`,
+        context
+      });
+    }
+
+    return await predictionSet.getDataSources();
   }
 
   /**

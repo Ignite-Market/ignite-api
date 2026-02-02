@@ -13,6 +13,8 @@ import { UserModule } from './modules/user/user.module';
 import { FileModule } from './modules/file/file.module';
 import { AirdropModule } from './modules/airdrop/airdrop.module';
 import { BannerModule } from './modules/banner/banner.module';
+import { DataSourceModule } from './modules/data-source/data-source.module';
+import { PredictionTemplateModule } from './modules/prediction-template/prediction-template.module';
 
 @Module({
   imports: [
@@ -27,7 +29,9 @@ import { BannerModule } from './modules/banner/banner.module';
     StatsModule,
     FileModule,
     AirdropModule,
-    BannerModule
+    BannerModule,
+    DataSourceModule,
+    PredictionTemplateModule
   ],
   controllers: [],
   providers: []
