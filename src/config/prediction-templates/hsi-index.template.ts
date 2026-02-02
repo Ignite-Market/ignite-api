@@ -10,10 +10,10 @@ export const hsiIndexTemplate = {
     attestationTime: { type: 'datetime', label: 'Market Close Time (UTC)', required: true }
   },
 
-  questionTemplate: 'Will the Hang Seng Index be above {{goal}} at market close on {{attestationTime}}?',
+  questionTemplate: 'Will the Hang Seng Index be above {{goalFormatted}} at market close on {{attestationTime}}?',
 
   outcomeResolutionTemplate:
-    "This market will resolve to 'Yes' if the official closing value of the Hang Seng Index on {{attestationTime}}, as reported by a reliable financial source, is strictly greater than {{goal}}. Otherwise, it will resolve to 'No'. The resolution sources will be: Bloomberg, Yahoo finance and Google finance.",
+    "This market will resolve to 'Yes' if the official closing value of the Hang Seng Index on {{attestationTime}}, as reported by a reliable financial source, is strictly greater than {{goalFormatted}}. Otherwise, it will resolve to 'No'. The resolution sources will be: Bloomberg, Yahoo finance and Google finance.",
 
   dataSourceTemplates: [
     {
