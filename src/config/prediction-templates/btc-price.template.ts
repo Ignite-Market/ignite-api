@@ -19,10 +19,10 @@ export const btcPriceTemplate = {
     attestationTime: { type: 'datetime', label: 'Attestation Time', required: true }
   },
 
-  questionTemplate: 'Will the BTC market price be {{comparisonType}} ${{price}} on {{attestationTime}}?',
+  questionTemplate: 'Will the BTC market price be {{comparisonType}} ${{priceFormatted}} on {{attestationTime}}?',
 
   outcomeResolutionTemplate:
-    'This market will resolve to "Yes" if the price of BTC is {{comparisonType}} ${{price}} on {{attestationTime}}. The resolution sources will be: CoinGecko, CryptoCompare and Coinbase.',
+    'This market will resolve to "Yes" if the price of BTC is {{comparisonType}} ${{priceFormatted}} on {{attestationTime}}. The resolution sources will be: CoinGecko, CryptoCompare and Coinbase.',
 
   dataSourceTemplates: [
     {
