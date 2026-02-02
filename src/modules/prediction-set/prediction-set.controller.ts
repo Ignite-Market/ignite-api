@@ -15,6 +15,7 @@ import { PredictionSetChanceHistoryQueryFilter } from './dtos/prediction-set-cha
 import { ActivityQueryFilter } from './dtos/activity-query-filter';
 import { HoldersQueryFilter } from './dtos/holders-query-filter';
 import { GenerateSuggestionsDto } from './dtos/generate-suggestions.dto';
+import { UpdateHideStateDto } from './dtos/update-hide-state.dto';
 
 @Controller('prediction-sets')
 export class PredictionSetController {
@@ -119,6 +120,14 @@ export class PredictionSetController {
   @Roles(DefaultUserRole.ADMIN)
   async processPredictionSet(@Param('id', ParseIntPipe) predictionSetId: number, @Ctx() context: Context) {
     return await this.predictionSetService.processPredictionSet(predictionSetId, context);
+  }
+
+  @Patch('/:id/hide')
+  @Validation({ dto: UpdateHideStateDto })
+  @UseGuards(ValidationGuard, AuthGuard)
+  @Roles(DefaultUserRole.ADMIN)
+  async updatePredictionHide(@Param('id', ParseIntPipe) id: number, @Body() data: UpdateHideStateDto, @Ctx() context: Context) {
+    return (await this.predictionSetService.updatePredictionHide(id, data.hide, context)).serialize(SerializeFor.USER);
   }
 
   @Post('/:id/watchlist')

@@ -68,7 +68,7 @@ export class PredictionTemplateService {
 
     // Prepare replacement values
     const replacements: Record<string, any> = {
-      price: variables.price,
+      price: variables.price.toLocaleString(),
       goal: variables.goal,
       comparisonType: variables.comparisonType || 'above',
       attestationTime: attestationTime.utc().format('MMM D, YYYY HH:mm'),

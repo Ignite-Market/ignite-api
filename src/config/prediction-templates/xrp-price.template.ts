@@ -65,25 +65,25 @@ export const xrpPriceTemplate = {
         ],
         type: 'tuple'
       }
-    },
-    {
-      endpoint: '{{apiProxyPrefix}}coinbase/v2/prices/XRP-USD/spot',
-      httpMethod: 'GET',
-      queryParams: {
-        date: '{{attestationTimeDate}}'
-      },
-      jqQuery: '{ "outcomeIdx": [1, 0][((.data.amount | tonumber) {{comparisonOp}} {{price}}) | if . then 0 else 1 end] }',
-      abi: {
-        components: [
-          {
-            internalType: 'uint256',
-            name: 'outcomeIdx',
-            type: 'uint256'
-          }
-        ],
-        type: 'tuple'
-      }
     }
+    // {
+    //   endpoint: '{{apiProxyPrefix}}coinbase/v2/prices/XRP-USD/spot',
+    //   httpMethod: 'GET',
+    //   queryParams: {
+    //     date: '{{attestationTimeDate}}'
+    //   },
+    //   jqQuery: '{ "outcomeIdx": [1, 0][((.data.amount | tonumber) {{comparisonOp}} {{price}}) | if . then 0 else 1 end] }',
+    //   abi: {
+    //     components: [
+    //       {
+    //         internalType: 'uint256',
+    //         name: 'outcomeIdx',
+    //         type: 'uint256'
+    //       }
+    //     ],
+    //     type: 'tuple'
+    //   }
+    // }
   ],
 
   defaults: {

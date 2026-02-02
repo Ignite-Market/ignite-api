@@ -65,28 +65,28 @@ export const btcPriceTemplate = {
         ],
         type: 'tuple'
       }
-    },
-    {
-      endpoint: '{{apiProxyPrefix}}cryptocompare/data/v2/histominute',
-      httpMethod: 'GET',
-      queryParams: {
-        fsym: 'BTC',
-        tsym: 'USD',
-        limit: '1',
-        toTs: '{{attestationTimeUnix}}'
-      },
-      jqQuery: '{ "outcomeIdx": [1, 0][((.Data.Data[-1].close | .) {{comparisonOp}} {{price}}) | if . then 0 else 1 end] }',
-      abi: {
-        components: [
-          {
-            internalType: 'uint256',
-            name: 'outcomeIdx',
-            type: 'uint256'
-          }
-        ],
-        type: 'tuple'
-      }
     }
+    // {
+    //   endpoint: '{{apiProxyPrefix}}cryptocompare/data/v2/histominute',
+    //   httpMethod: 'GET',
+    //   queryParams: {
+    //     fsym: 'BTC',
+    //     tsym: 'USD',
+    //     limit: '1',
+    //     toTs: '{{attestationTimeUnix}}'
+    //   },
+    //   jqQuery: '{ "outcomeIdx": [1, 0][((.Data.Data[-1].close | .) {{comparisonOp}} {{price}}) | if . then 0 else 1 end] }',
+    //   abi: {
+    //     components: [
+    //       {
+    //         internalType: 'uint256',
+    //         name: 'outcomeIdx',
+    //         type: 'uint256'
+    //       }
+    //     ],
+    //     type: 'tuple'
+    //   }
+    // }
   ],
 
   defaults: {
