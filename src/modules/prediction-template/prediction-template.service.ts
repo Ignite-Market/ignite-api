@@ -79,7 +79,13 @@ export class PredictionTemplateService {
       attestationTimeDate: attestationTime.utc().format('YYYY-MM-DD'),
       attestationTimeFormatted: attestationTime.tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss'),
       comparisonOp: variables.comparisonType === 'below' ? '<' : '>=',
-      apiProxyPrefix: apiProxyPrefix
+      apiProxyPrefix: apiProxyPrefix,
+      homeTeamName: variables.homeTeamName,
+      awayTeamName: variables.awayTeamName,
+      sofascoreMatchId: variables.sofascoreMatchId,
+      livescoreEid: variables.livescoreEid,
+      livescoreCategory: variables.livescoreCategory || 'basketball',
+      matchDateFormatted: attestationTime.utc().format('MMMM D, YYYY')
     };
 
     // Replace placeholders in question
