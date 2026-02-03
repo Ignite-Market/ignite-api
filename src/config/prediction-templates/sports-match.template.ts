@@ -28,7 +28,7 @@ export const sportsMatchTemplate = {
   questionTemplate: 'Will {{homeTeamName}} win against {{awayTeamName}} on {{matchDateFormatted}}?',
 
   outcomeResolutionTemplate:
-    'This market resolves to "Yes" if {{homeTeamName}} (home) wins on {{matchDateFormatted}}. "No" if {{awayTeamName}} (away) wins or the match is a tie. Non-completed matches cause resolution to fail. Resolution sources: Sofascore and LiveScore (RapidAPI).',
+    'This market resolves to "Yes" if {{homeTeamName}} (home) wins on {{matchDateFormatted}}. "No" if {{awayTeamName}} (away) wins or the match is a tie. Resolution sources: Sofascore and LiveScore.',
 
   dataSourceTemplates: [
     {
