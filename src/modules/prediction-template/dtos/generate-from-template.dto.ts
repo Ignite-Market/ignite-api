@@ -28,4 +28,34 @@ export class GenerateFromTemplateDto extends ModelBase {
     populatable: [PopulateFrom.USER]
   })
   public attestationTime?: string;
+
+  @prop({
+    parser: { resolver: stringParser() },
+    populatable: [PopulateFrom.USER]
+  })
+  public homeTeamName?: string;
+
+  @prop({
+    parser: { resolver: stringParser() },
+    populatable: [PopulateFrom.USER]
+  })
+  public awayTeamName?: string;
+
+  @prop({
+    parser: { resolver: integerParser() },
+    populatable: [PopulateFrom.USER]
+  })
+  public sofascoreMatchId?: number;
+
+  @prop({
+    parser: { resolver: integerParser() },
+    populatable: [PopulateFrom.USER]
+  })
+  public livescoreEid?: number;
+
+  @prop({
+    parser: { resolver: stringParser() },
+    populatable: [PopulateFrom.USER]
+  })
+  public livescoreCategory?: string;
 }

@@ -64,13 +64,10 @@ const getComparisonOperator = (type: 'above' | 'below'): string => {
 const comparisonOp = getComparisonOperator(comparisonType);
 const dataSources = [
   {
-    endpoint: 'https://api-proxy-dev.ignitemarket.xyz/coingecko/api/v3/coins/bitcoin/market_chart',
+    endpoint: `https://api-proxy-dev.ignitemarket.xyz/sofascore/matches/detail`,
     httpMethod: 'GET',
-    queryParams: {
-      vs_currency: 'usd',
-      days: '1'
-    },
-    jqQuery: `{ "outcomeIdx": [1, 0][((.prices | map(select(.[0] >= ${attestationTime.unix() * 1000})) | sort_by(.[0]) | .[0][1]) ${comparisonOp} ${priceGoal}) | if . then 0 else 1 end] }`,
+    queryParams: { matchId: '14442226' },
+    jqQuery: '{ "outcomeIdx": (if .event.winnerCode == 1 then 0 elif (.event.winnerCode == 2 or .event.winnerCode == 3) then 1 else "" end) }',
     abi: {
       'components': [
         {
@@ -83,36 +80,13 @@ const dataSources = [
     }
   },
   {
-    endpoint: 'https://api-proxy-dev.ignitemarket.xyz/cryptocompare/data/v2/histominute',
+    endpoint: `https://api-proxy-dev.ignitemarket.xyz/livescore/matches/v2/get-scoreboard`,
     httpMethod: 'GET',
     queryParams: {
-      fsym: 'BTC',
-      tsym: 'USD',
-      limit: '1',
-      toTs: attestationTime.unix()
+      Eid: '1620549',
+      Category: 'basketball'
     },
-    jqQuery: `{ "outcomeIdx": [1, 0][((.Data.Data[-1].close) ${comparisonOp} ${priceGoal}) | if . then 0 else 1 end] }`,
-    abi: {
-      'components': [
-        {
-          'internalType': 'uint256',
-          'name': 'outcomeIdx',
-          'type': 'uint256'
-        }
-      ],
-      'type': 'tuple'
-    }
-  },
-  {
-    endpoint: 'https://api-proxy-dev.ignitemarket.xyz/cryptocompare/data/v2/histominute',
-    httpMethod: 'GET',
-    queryParams: {
-      fsym: 'BTC',
-      tsym: 'USD',
-      limit: '1',
-      toTs: attestationTime.unix()
-    },
-    jqQuery: `{ "outcomeIdx": [1, 0][((.Data.Data[-1].close | .) ${comparisonOp} ${priceGoal}) | if . then 0 else 1 end] }`,
+    jqQuery: '{ "outcomeIdx": (if .Ewt == 1 then 0 elif (.Ewt == 2 or .Ewt == 0) then 1 else "" end) }',
     abi: {
       'components': [
         {
@@ -124,6 +98,67 @@ const dataSources = [
       'type': 'tuple'
     }
   }
+  // {
+  //   endpoint: 'https://api-proxy-dev.ignitemarket.xyz/coingecko/api/v3/coins/bitcoin/market_chart',
+  //   httpMethod: 'GET',
+  //   queryParams: {
+  //     vs_currency: 'usd',
+  //     days: '1'
+  //   },
+  //   jqQuery: `{ "outcomeIdx": [1, 0][((.prices | map(select(.[0] >= ${attestationTime.unix() * 1000})) | sort_by(.[0]) | .[0][1]) ${comparisonOp} ${priceGoal}) | if . then 0 else 1 end] }`,
+  //   abi: {
+  //     'components': [
+  //       {
+  //         'internalType': 'uint256',
+  //         'name': 'outcomeIdx',
+  //         'type': 'uint256'
+  //       }
+  //     ],
+  //     'type': 'tuple'
+  //   }
+  // },
+  // {
+  //   endpoint: 'https://api-proxy-dev.ignitemarket.xyz/cryptocompare/data/v2/histominute',
+  //   httpMethod: 'GET',
+  //   queryParams: {
+  //     fsym: 'BTC',
+  //     tsym: 'USD',
+  //     limit: '1',
+  //     toTs: attestationTime.unix()
+  //   },
+  //   jqQuery: `{ "outcomeIdx": [1, 0][((.Data.Data[-1].close) ${comparisonOp} ${priceGoal}) | if . then 0 else 1 end] }`,
+  //   abi: {
+  //     'components': [
+  //       {
+  //         'internalType': 'uint256',
+  //         'name': 'outcomeIdx',
+  //         'type': 'uint256'
+  //       }
+  //     ],
+  //     'type': 'tuple'
+  //   }
+  // },
+  // {
+  //   endpoint: 'https://api-proxy-dev.ignitemarket.xyz/cryptocompare/data/v2/histominute',
+  //   httpMethod: 'GET',
+  //   queryParams: {
+  //     fsym: 'BTC',
+  //     tsym: 'USD',
+  //     limit: '1',
+  //     toTs: attestationTime.unix()
+  //   },
+  //   jqQuery: `{ "outcomeIdx": [1, 0][((.Data.Data[-1].close | .) ${comparisonOp} ${priceGoal}) | if . then 0 else 1 end] }`,
+  //   abi: {
+  //     'components': [
+  //       {
+  //         'internalType': 'uint256',
+  //         'name': 'outcomeIdx',
+  //         'type': 'uint256'
+  //       }
+  //     ],
+  //     'type': 'tuple'
+  //   }
+  // }
 ];
 
 (async () => {
