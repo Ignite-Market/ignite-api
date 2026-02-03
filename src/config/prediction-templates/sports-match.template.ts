@@ -8,11 +8,11 @@ export const sportsMatchTemplate = {
   variables: {
     homeTeamName: { type: 'string', label: 'Home Team Name', required: true },
     awayTeamName: { type: 'string', label: 'Away Team Name', required: true },
-    attestationTime: { type: 'datetime', label: 'Match Date / Attestation Time', required: true },
-    sofascoreMatchId: { type: 'number', label: 'Sofascore Match ID', required: true },
-    livescoreEid: { type: 'number', label: 'LiveScore Event ID (Eid)', required: true },
+    attestationTime: { type: 'datetime', label: 'Match Date', required: true },
+    sofascoreMatchId: { type: 'number', label: 'Sofascore Match ID', link: 'https://www.sofascore.com/', required: true, precision: 0 },
+    livescoreEid: { type: 'number', label: 'LiveScore Event ID', link: 'https://livescore.com/', required: true, precision: 0 },
     livescoreCategory: {
-      type: 'string',
+      type: 'select',
       label: 'Sport Category',
       default: 'basketball',
       options: [
