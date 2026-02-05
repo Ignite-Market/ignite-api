@@ -1202,6 +1202,7 @@ export class PredictionSet extends AdvancedSQLModel {
           OR FIND_IN_SET(p.setStatus, @status)
         )
         AND (@isAdmin = 1 OR p.setStatus != ${PredictionSetStatus.FUNDING} OR psft.id IS NOT NULL)
+        AND (@admin = 1 OR (p.setStatus != ${PredictionSetStatus.FUNDING} OR p.endTime < NOW()))
         AND (@isAdmin = 1 OR p.hide = 0)
         AND (@search IS NULL
           OR p.question LIKE CONCAT('%', @search, '%')
