@@ -85,7 +85,7 @@ export class PredictionTemplateService {
       sofascoreMatchId: variables.sofascoreMatchId,
       livescoreEid: variables.livescoreEid,
       livescoreCategory: variables.livescoreCategory || 'basketball',
-      matchDateFormatted: attestationTime.utc().format('MMMM D, YYYY')
+      matchDateFormatted: attestationTime.utc().format('MMMM D, YYYY HH:mm:ss')
     };
 
     // Replace placeholders in question
