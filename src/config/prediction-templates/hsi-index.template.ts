@@ -13,7 +13,7 @@ export const hsiIndexTemplate = {
   questionTemplate: 'Will the Hang Seng Index be above {{goalFormatted}} at market close on {{attestationTime}}?',
 
   outcomeResolutionTemplate:
-    "This market will resolve to 'Yes' if the official closing value of the Hang Seng Index on {{attestationTime}}, as reported by a reliable financial source, is strictly greater than {{goalFormatted}}. Otherwise, it will resolve to 'No'. Resolution sources: Bloomberg, Yahoo finance and Google finance. The market resolution is backed by Flare unique FDC Web2 connector.",
+    "This market will resolve to 'Yes' if the official closing value of the Hang Seng Index on {{attestationTime}}, as reported by a reliable financial source, is strictly greater than {{goalFormatted}}. Otherwise, it will resolve to 'No'. \nResolution sources: Bloomberg, Yahoo finance and Google finance. \nThe market resolution is backed by Flare unique FDC Web2 connector.",
 
   dataSourceTemplates: [
     {

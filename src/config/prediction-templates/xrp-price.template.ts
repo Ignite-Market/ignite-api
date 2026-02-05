@@ -22,7 +22,7 @@ export const xrpPriceTemplate = {
   questionTemplate: 'Will the XRP market price be {{comparisonType}} ${{priceFormatted}} on {{attestationTime}}?',
 
   outcomeResolutionTemplate:
-    'This market will resolve to "Yes" if the price of XRP is {{comparisonType}} ${{priceFormatted}} on {{attestationTime}}. Resolution sources: CoinGecko, CryptoCompare and Coinbase. The market resolution is backed by Flare unique FDC Web2 connector.',
+    'This market will resolve to "Yes" if the price of XRP is {{comparisonType}} ${{priceFormatted}} on {{attestationTime}}. \nResolution sources: CoinGecko, CryptoCompare and Coinbase. \nThe market resolution is backed by Flare unique FDC Web2 connector.',
 
   dataSourceTemplates: [
     {
