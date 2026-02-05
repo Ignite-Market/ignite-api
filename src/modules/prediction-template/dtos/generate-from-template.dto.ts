@@ -1,18 +1,18 @@
 import { prop } from '@rawmodel/core';
-import { integerParser, stringParser } from '@rawmodel/parsers';
+import { floatParser, integerParser, stringParser } from '@rawmodel/parsers';
 import { PopulateFrom } from '../../../config/types';
 import { ModelBase } from '../../../lib/base-models/base';
 import { JSONParser } from '../../../lib/parsers';
 
 export class GenerateFromTemplateDto extends ModelBase {
   @prop({
-    parser: { resolver: integerParser() },
+    parser: { resolver: floatParser() },
     populatable: [PopulateFrom.USER]
   })
   public price?: number;
 
   @prop({
-    parser: { resolver: integerParser() },
+    parser: { resolver: floatParser() },
     populatable: [PopulateFrom.USER]
   })
   public goal?: number;

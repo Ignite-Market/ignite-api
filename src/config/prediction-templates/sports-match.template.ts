@@ -28,7 +28,7 @@ export const sportsMatchTemplate = {
   questionTemplate: 'Will {{homeTeamName}} win against {{awayTeamName}} on {{matchDateFormatted}}?',
 
   outcomeResolutionTemplate:
-    'This market resolves to "Yes" if {{homeTeamName}} (home) wins on {{matchDateFormatted}}. "No" if {{awayTeamName}} (away) wins or the match is a tie. Resolution sources: Sofascore and LiveScore.',
+    'This market resolves to "Yes" if {{homeTeamName}} (home) wins on {{matchDateFormatted}}. "No" if {{awayTeamName}} (away) wins or the match is a tie, or the match is canceled or postponed. Resolution sources: Sofascore and LiveScore. The market resolution is backed by Flare unique FDC Web2 connector.',
 
   dataSourceTemplates: [
     {
