@@ -1,9 +1,9 @@
-export const xrpPriceTemplate = {
-  id: 'xrp-price',
-  name: 'XRP Price Prediction',
-  description: 'Predict if XRP price will be above/below a target price at a specific time',
+export const flrPriceTemplate = {
+  id: 'flr-price',
+  name: 'FLR Price Prediction',
+  description: 'Predict if FLR price will be above/below a target price at a specific time',
   category: 'Finance',
-  imgUrl: 'https://images.ignitemarket.xyz/prediction-sets/xrp.jpg',
+  imgUrl: 'https://images.ignitemarket.xyz/prediction-sets/flr.jpg',
 
   variables: {
     price: { type: 'number', label: 'Price Target (USD)', required: true, precision: 4 },
@@ -19,14 +19,14 @@ export const xrpPriceTemplate = {
     attestationTime: { type: 'datetime', label: 'Attestation Time', required: true }
   },
 
-  questionTemplate: 'Will the XRP market price be {{comparisonType}} ${{priceFormatted}} on {{attestationTime}}?',
+  questionTemplate: 'Will the FLR market price be {{comparisonType}} ${{priceFormatted}} on {{attestationTime}}?',
 
   outcomeResolutionTemplate:
-    'This market will resolve to "Yes" if the price of XRP is {{comparisonType}} ${{priceFormatted}} on {{attestationTime}}. \nResolution sources: CoinGecko, CryptoCompare and Coinbase. \nThe market resolution is backed by Flare unique FDC Web2 connector.',
+    'This market will resolve to "Yes" if the price of FLR is {{comparisonType}} ${{priceFormatted}} on {{attestationTime}}. \nResolution sources: CoinGecko, CryptoCompare and Coinbase. \nThe market resolution is backed by Flare unique FDC Web2 connector.',
 
   dataSourceTemplates: [
     {
-      endpoint: '{{apiProxyPrefix}}coingecko/api/v3/coins/ripple/market_chart',
+      endpoint: '{{apiProxyPrefix}}coingecko/api/v3/coins/flare-networks/market_chart',
       httpMethod: 'GET',
       queryParams: {
         vs_currency: 'usd',
@@ -49,7 +49,7 @@ export const xrpPriceTemplate = {
       endpoint: '{{apiProxyPrefix}}cryptocompare/data/v2/histominute',
       httpMethod: 'GET',
       queryParams: {
-        fsym: 'XRP',
+        fsym: 'FLR',
         tsym: 'USD',
         limit: '1',
         toTs: '{{attestationTimeUnix}}'
@@ -71,7 +71,7 @@ export const xrpPriceTemplate = {
       httpMethod: 'GET',
       queryParams: {
         market: 'coinbase',
-        instrument: 'XRP-USD',
+        instrument: 'FLR-USD',
         limit: '1',
         to_ts: '{{attestationTimeUnix}}'
       },
@@ -87,24 +87,6 @@ export const xrpPriceTemplate = {
         type: 'tuple'
       }
     }
-    // {
-    //   endpoint: '{{apiProxyPrefix}}coinbase/v2/prices/XRP-USD/spot',
-    //   httpMethod: 'GET',
-    //   queryParams: {
-    //     date: '{{attestationTimeDate}}'
-    //   },
-    //   jqQuery: '{ "outcomeIdx": [1, 0][((.data.amount | tonumber) {{comparisonOp}} {{price}}) | if . then 0 else 1 end] }',
-    //   abi: {
-    //     components: [
-    //       {
-    //         internalType: 'uint256',
-    //         name: 'outcomeIdx',
-    //         type: 'uint256'
-    //       }
-    //     ],
-    //     type: 'tuple'
-    //   }
-    // }
   ],
 
   defaults: {
