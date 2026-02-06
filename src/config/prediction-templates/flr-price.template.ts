@@ -6,7 +6,7 @@ export const flrPriceTemplate = {
   imgUrl: 'https://images.ignitemarket.xyz/prediction-sets/flr.jpg',
 
   variables: {
-    price: { type: 'number', label: 'Price Target (USD)', required: true },
+    price: { type: 'number', label: 'Price Target (USD)', required: true, precision: 4 },
     comparisonType: {
       type: 'select',
       label: 'Comparison Type',
@@ -26,14 +26,14 @@ export const flrPriceTemplate = {
 
   dataSourceTemplates: [
     {
-      endpoint: '{{apiProxyPrefix}}coingecko/api/v3/coins/flare/market_chart',
+      endpoint: '{{apiProxyPrefix}}coingecko/api/v3/coins/flare-networks/market_chart',
       httpMethod: 'GET',
       queryParams: {
         vs_currency: 'usd',
         days: '1'
       },
       jqQuery:
-        '{ "outcomeIdx": [1, 0][((.prices | map(.[0] as $ts | [$ts, .[1], ($ts - {{attestationTimeUnixMs}} | fabs)]) | sort_by(.[2]) | .[0][1]) {{comparisonOp}} {{price}}) | if . then 0 else 1 end] }',
+        '{ "outcomeIdx": [1, 0][((.prices | map(select(.[0] >= {{attestationTimeUnixMs}})) | sort_by(.[0]) | .[0][1]) {{comparisonOp}} {{price}}) | if . then 0 else 1 end] }',
       abi: {
         components: [
           {
@@ -55,6 +55,27 @@ export const flrPriceTemplate = {
         toTs: '{{attestationTimeUnix}}'
       },
       jqQuery: '{ "outcomeIdx": [1, 0][((.Data.Data[-1].close) {{comparisonOp}} {{price}}) | if . then 0 else 1 end] }',
+      abi: {
+        components: [
+          {
+            internalType: 'uint256',
+            name: 'outcomeIdx',
+            type: 'uint256'
+          }
+        ],
+        type: 'tuple'
+      }
+    },
+    {
+      endpoint: '{{apiProxyPrefix}}coindesk/spot/v1/historical/minutes',
+      httpMethod: 'GET',
+      queryParams: {
+        market: 'coinbase',
+        instrument: 'FLR-USD',
+        limit: '1',
+        to_ts: '{{attestationTimeUnix}}'
+      },
+      jqQuery: '{ "outcomeIdx": [1, 0][((.Data[0].CLOSE) {{comparisonOp}} {{price}}) | if . then 0 else 1 end] }',
       abi: {
         components: [
           {
