@@ -111,6 +111,14 @@ export interface IEnv {
   API_KEYS_ENCRYPTED_S3_KEY: string;
   API_KEYS_DECRYPTED_S3_KEY: string;
   PROXY_API_KEY: string;
+
+  TWITTER_CLIENT_ID: string;
+  TWITTER_CLIENT_SECRET: string;
+  TWITTER_ACCESS_TOKEN: string;
+  TWITTER_REFRESH_TOKEN: string;
+  TWITTER_REDIRECT_URI: string;
+  TWITTER_TOKENS_SECRET_ID: string;
+  DISCORD_WEBHOOK_URL: string;
 }
 
 dotenv.config();
@@ -239,7 +247,15 @@ export let env: IEnv = {
   API_KEYS_S3_BUCKET: process.env['API_KEYS_S3_BUCKET'],
   API_KEYS_ENCRYPTED_S3_KEY: process.env['API_KEYS_ENCRYPTED_S3_KEY'] || 'api-keys/encrypted-keys.json',
   API_KEYS_DECRYPTED_S3_KEY: process.env['API_KEYS_DECRYPTED_S3_KEY'] || 'api-keys/decrypted-keys.json',
-  PROXY_API_KEY: process.env['PROXY_API_KEY']
+  PROXY_API_KEY: process.env['PROXY_API_KEY'],
+
+  TWITTER_CLIENT_ID: process.env['TWITTER_CLIENT_ID'],
+  TWITTER_CLIENT_SECRET: process.env['TWITTER_CLIENT_SECRET'],
+  TWITTER_ACCESS_TOKEN: process.env['TWITTER_ACCESS_TOKEN'],
+  TWITTER_REFRESH_TOKEN: process.env['TWITTER_REFRESH_TOKEN'],
+  TWITTER_REDIRECT_URI: process.env['TWITTER_REDIRECT_URI'] || 'http://localhost:3000/auth/twitter/callback',
+  TWITTER_TOKENS_SECRET_ID: process.env['TWITTER_TOKENS_SECRET_ID'],
+  DISCORD_WEBHOOK_URL: process.env['DISCORD_WEBHOOK_URL']
 };
 
 /**

@@ -27,8 +27,10 @@ import { PredictionSet, PredictionSetStatus, ResolutionType } from './models/pre
 import { UserWatchlist } from './models/user-watchlist';
 import { CollateralToken } from '../collateral-token/models/collateral-token.model';
 import { GenerateSuggestionsDto } from './dtos/generate-suggestions.dto';
+import { CreateSocialPostDto } from './dtos/create-social-post.dto';
 import { OpenAI } from 'openai';
 import { PoolConnection } from 'mysql2/promise';
+import { postToTwitter, postToDiscord } from '../../lib/social-media/social-media';
 
 @Injectable()
 export class PredictionSetService {
@@ -760,5 +762,50 @@ Example response: {"items": [{"question": "Will the Hang Seng Index be above 24,
         context
       });
     }
+  }
+
+  /**
+   * Create social media posts on selected platforms.
+   *
+   * @param data Social post data including message, image link, and selected platforms.
+   * @param context Application context.
+   * @returns Object with results for each platform.
+   */
+  public async createSocialPost(data: CreateSocialPostDto, context: Context) {
+    const results: Record<string, { success: boolean; tweetId?: string; error?: string }> = {};
+
+    // Validate social media platforms
+    const validPlatforms = ['x', 'discord'];
+    const invalidPlatforms = data.socialMedias.filter((platform) => !validPlatforms.includes(platform.toLowerCase()));
+
+    if (invalidPlatforms.length > 0) {
+      throw new CodeException({
+        code: BadRequestErrorCode.DEFAULT_BAD_REQUEST_ERROR,
+        status: HttpStatus.BAD_REQUEST,
+        sourceFunction: `${this.constructor.name}/createSocialPost`,
+        errorMessage: `Invalid social media platforms: ${invalidPlatforms.join(', ')}. Supported platforms: ${validPlatforms.join(', ')}`,
+        context
+      });
+    }
+
+    // Post to each selected platform
+    for (const platform of data.socialMedias) {
+      const platformLower = platform.toLowerCase();
+
+      try {
+        if (platformLower === 'x') {
+          results.x = await postToTwitter(data.message, data.imgLink);
+        } else if (platformLower === 'discord') {
+          results.discord = await postToDiscord(data.message, data.imgLink);
+        }
+      } catch (error) {
+        results[platformLower] = {
+          success: false,
+          error: error.message || 'Unknown error occurred'
+        };
+      }
+    }
+
+    return results;
   }
 }
