@@ -16,6 +16,7 @@ import { ActivityQueryFilter } from './dtos/activity-query-filter';
 import { HoldersQueryFilter } from './dtos/holders-query-filter';
 import { GenerateSuggestionsDto } from './dtos/generate-suggestions.dto';
 import { UpdateHideStateDto } from './dtos/update-hide-state.dto';
+import { CreateSocialPostDto } from './dtos/create-social-post.dto';
 
 @Controller('prediction-sets')
 export class PredictionSetController {
@@ -154,10 +155,11 @@ export class PredictionSetController {
     return await this.predictionSetService.generateSuggestions(data, context);
   }
 
-  // @Post('/social-post')
-  // @UseGuards(ValidationGuard, AuthGuard)
-  // @Roles(DefaultUserRole.ADMIN)
-  // async createSocialPost(@Body() data: CreateSocialPostDto, @Ctx() context: Context) {
-  //   return await this.predictionSetService.generateSocialPost(data, context);
-  // }
+  @Post('/social-post')
+  @Validation({ dto: CreateSocialPostDto })
+  @UseGuards(ValidationGuard, AuthGuard)
+  @Roles(DefaultUserRole.ADMIN)
+  async createSocialPost(@Body() data: CreateSocialPostDto, @Ctx() context: Context) {
+    return await this.predictionSetService.createSocialPost(data, context);
+  }
 }
