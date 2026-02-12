@@ -117,6 +117,7 @@ export interface IEnv {
   TWITTER_ACCESS_TOKEN: string;
   TWITTER_REFRESH_TOKEN: string;
   TWITTER_REDIRECT_URI: string;
+  TWITTER_TOKENS_SECRET_ID: string;
   DISCORD_WEBHOOK_URL: string;
 }
 
@@ -253,6 +254,7 @@ export let env: IEnv = {
   TWITTER_ACCESS_TOKEN: process.env['TWITTER_ACCESS_TOKEN'],
   TWITTER_REFRESH_TOKEN: process.env['TWITTER_REFRESH_TOKEN'],
   TWITTER_REDIRECT_URI: process.env['TWITTER_REDIRECT_URI'] || 'http://localhost:3000/auth/twitter/callback',
+  TWITTER_TOKENS_SECRET_ID: process.env['TWITTER_TOKENS_SECRET_ID'],
   DISCORD_WEBHOOK_URL: process.env['DISCORD_WEBHOOK_URL']
 };
 

@@ -2,9 +2,12 @@ import { Logger } from '@nestjs/common';
 import axios from 'axios';
 import { TwitterApi } from 'twitter-api-v2';
 import { env } from '../../config/env';
+import { getTwitterTokens, refreshTwitterToken, persistTwitterTokens } from './twitter-oauth';
 
 /**
  * Posts a message and optional image to Twitter/X using OAuth 2.0.
+ * Reads tokens from AWS Secrets Manager and auto-refreshes on expiry.
+ *
  * @param message The text content to post.
  * @param imgLink Optional URL to an image.
  * @returns Object with success status and tweet ID or error message.
@@ -13,15 +16,39 @@ export async function postToTwitter(message: string, imgLink?: string): Promise<
   const logger = new Logger('social-media/postToTwitter');
 
   try {
-    3;
-    if (!env.TWITTER_CLIENT_ID || !env.TWITTER_CLIENT_SECRET || !env.TWITTER_ACCESS_TOKEN) {
+    if (!env.TWITTER_CLIENT_ID || !env.TWITTER_CLIENT_SECRET) {
       throw new Error('Twitter OAuth 2.0 credentials are not configured');
     }
 
-    // Use OAuth 2.0 User Context - pass access token directly
-    // The access token should be obtained via OAuth 2.0 flow (see get-twitter-token script)
-    const client = new TwitterApi(env.TWITTER_ACCESS_TOKEN);
+    // Read tokens from Secrets Manager (falls back to env)
+    const tokens = await getTwitterTokens();
+    if (!tokens.accessToken) {
+      throw new Error('Twitter access token is not available. Run get-twitter-token script first.');
+    }
 
+    return await postTweet(tokens.accessToken, message, imgLink, tokens.refreshToken);
+  } catch (error) {
+    logger.error(`Failed to post to Twitter: ${error.message}`, error);
+    return {
+      success: false,
+      error: error.message || 'Unknown error occurred while posting to Twitter'
+    };
+  }
+}
+
+/**
+ * Internal function that posts a tweet. Handles token refresh on 401.
+ */
+async function postTweet(
+  accessToken: string,
+  message: string,
+  imgLink?: string,
+  refreshToken?: string
+): Promise<{ success: boolean; tweetId?: string; error?: string }> {
+  const logger = new Logger('social-media/postTweet');
+
+  try {
+    const client = new TwitterApi(accessToken);
     const rwClient = client.readWrite;
 
     let mediaId: string | undefined;
@@ -29,13 +56,11 @@ export async function postToTwitter(message: string, imgLink?: string): Promise<
     // If image link is provided, download and upload it
     if (imgLink) {
       try {
-        // Download the image
         const imageResponse = await axios.get(imgLink, {
           responseType: 'arraybuffer',
           timeout: 10000
         });
 
-        // Upload media to Twitter
         const mediaIdResponse = await rwClient.v2.uploadMedia(Buffer.from(imageResponse.data), {
           media_type: imageResponse.headers['content-type'] || 'image/jpeg'
         });
@@ -47,60 +72,42 @@ export async function postToTwitter(message: string, imgLink?: string): Promise<
       }
     }
 
-    // Create tweet with text and optional media
-    const tweetOptions: any = {
-      text: message
-    };
-
+    // Create tweet
+    const tweetOptions: any = { text: message };
     if (mediaId) {
-      tweetOptions.media = {
-        media_ids: [mediaId]
-      };
+      tweetOptions.media = { media_ids: [mediaId] };
     }
 
     const tweet = await rwClient.v2.tweet(tweetOptions);
 
     logger.log(`Successfully posted to Twitter. Tweet ID: ${tweet.data.id}`);
-    return {
-      success: true,
-      tweetId: tweet.data.id
-    };
+    return { success: true, tweetId: tweet.data.id };
   } catch (error: any) {
-    // If token expired, try to refresh it
-    if ((error.code === 401 || error.status === 401) && env.TWITTER_REFRESH_TOKEN) {
+    // If token expired and we have a refresh token, try refreshing
+    if ((error.code === 401 || error.status === 401) && refreshToken) {
+      logger.log('Access token expired, refreshing...');
+
       try {
-        logger.log('Access token expired, attempting to refresh...');
-        const { refreshTwitterToken } = await import('./twitter-oauth');
-        const { accessToken: newAccessToken, refreshToken: newRefreshToken } = await refreshTwitterToken(env.TWITTER_REFRESH_TOKEN);
+        const newTokens = await refreshTwitterToken(refreshToken);
 
-        // Update environment (note: in production, you'd want to persist this)
-        env.TWITTER_ACCESS_TOKEN = newAccessToken;
-        if (newRefreshToken) {
-          env.TWITTER_REFRESH_TOKEN = newRefreshToken;
-        }
-
-        logger.log('Token refreshed successfully, retrying post...');
-        // Retry the post with new token
-        return await postToTwitter(message, imgLink);
+        logger.log('Token refreshed and persisted. Retrying post...');
+        return await postTweet(newTokens.accessToken, message, imgLink);
       } catch (refreshError: any) {
-        logger.error(`Failed to refresh token: ${refreshError.message}`, refreshError);
+        logger.error(`Token refresh failed: ${refreshError.message}`, refreshError);
         return {
           success: false,
-          error: 'Token expired and refresh failed. Please run get-twitter-token script to get a new token.'
+          error: 'Token expired and refresh failed. Run get-twitter-token script to re-authorize.'
         };
       }
     }
 
-    logger.error(`Failed to post to Twitter: ${error.message}`, error);
-    return {
-      success: false,
-      error: error.message || 'Unknown error occurred while posting to Twitter'
-    };
+    throw error;
   }
 }
 
 /**
  * Posts a message and optional image to Discord using webhook.
+ *
  * @param message The text content to post.
  * @param imgLink Optional URL to an image.
  * @returns Object with success status or error message.
@@ -117,7 +124,6 @@ export async function postToDiscord(message: string, imgLink?: string): Promise<
       content: message
     };
 
-    // If image link is provided, add it as an embed
     if (imgLink) {
       payload.embeds = [
         {
@@ -137,9 +143,7 @@ export async function postToDiscord(message: string, imgLink?: string): Promise<
 
     if (response.status >= 200 && response.status < 300) {
       logger.log('Successfully posted to Discord');
-      return {
-        success: true
-      };
+      return { success: true };
     } else {
       throw new Error(`Discord webhook returned status ${response.status}`);
     }
