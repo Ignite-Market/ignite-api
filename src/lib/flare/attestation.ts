@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
 import { env } from '../../config/env';
 import { AttestationProof } from '../../modules/prediction-set/models/prediction-set-attestation.model';
-import { CONTRACT_REGISTRY_ABI } from './abis';
+import { CONTRACT_REGISTRY_ABI, FLARE_RELAY_ABI } from './abis';
 import { ContractName, EncodedAttestationRequest, ProtocolIds } from './types';
 import { deepCloneAbiCoderResult, getABI, getProxyImplementationAddress, toUtf8HexString } from './utils';
 import { AppEnvironment } from '../../config/types';
@@ -33,7 +33,12 @@ export async function getContract(
   signer: ethers.Wallet | ethers.JsonRpcProvider
 ): Promise<ethers.Contract> {
   const address = await registry.getContractAddressByName(name);
-  const abi = await getABI(address);
+  let abi;
+  if (name === ContractName.RELAY) {
+    abi = FLARE_RELAY_ABI;
+  } else {
+    abi = await getABI(address);
+  }
 
   return new ethers.Contract(address, abi, signer);
 }
