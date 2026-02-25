@@ -20,6 +20,20 @@ export class PredictionTemplateController {
     return await this.templateService.getTemplates();
   }
 
+  @Get('pandascore/videogames')
+  @UseGuards(AuthGuard)
+  @Roles(DefaultUserRole.ADMIN)
+  async getPandascoreVideogames(@Ctx() context: Context) {
+    return await this.templateService.getPandascoreVideogames(context);
+  }
+
+  @Get('pandascore/leagues/:id/matches')
+  @UseGuards(AuthGuard)
+  @Roles(DefaultUserRole.ADMIN)
+  async getPandascoreMatches(@Param('id') id: string, @Ctx() context: Context) {
+    return await this.templateService.getPandascoreMatches(id, context);
+  }
+
   @Get(':id')
   @UseGuards(AuthGuard)
   @Roles(DefaultUserRole.ADMIN)
