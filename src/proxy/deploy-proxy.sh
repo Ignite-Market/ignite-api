@@ -18,6 +18,7 @@ ENV_VARS=$(jq -n \
   --arg mysql_user "${MYSQL_USER:-}" \
   --arg mysql_password "${MYSQL_PASSWORD:-}" \
   --arg mysql_database "${MYSQL_DATABASE:-}" \
+  --arg pandascore_api_key "${PANDASCORE_API_KEY:-}" \
   '{
     Variables: {
       API_KEYS_S3_BUCKET: $api_keys_s3_bucket,
@@ -30,7 +31,8 @@ ENV_VARS=$(jq -n \
       MYSQL_PORT: $mysql_port,
       MYSQL_USER: $mysql_user,
       MYSQL_PASSWORD: $mysql_password,
-      MYSQL_DATABASE: $mysql_database
+      MYSQL_DATABASE: $mysql_database,
+      PANDASCORE_API_KEY: $pandascore_api_key
     }
   }')
 
