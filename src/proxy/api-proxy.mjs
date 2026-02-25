@@ -304,15 +304,30 @@ export const handler = async (event) => {
       };
     }
 
-    // Get API key from environment
-    const apiKey = process.env.RAPID_API_KEY;
-    if (!apiKey) {
-      return {
-        statusCode: 500,
-        body: JSON.stringify({
-          error: 'API key not configured in environment'
-        })
-      };
+    // Prepare request headers based on API type
+    const requestHeaders = {
+      'User-Agent': 'Ignite-Market-Proxy/1.0'
+    };
+
+    if (apiHost.includes('rapidapi.com')) {
+      const rapidApiKey = process.env.RAPID_API_KEY;
+      if (!rapidApiKey) {
+        return {
+          statusCode: 500,
+          body: JSON.stringify({ error: 'RAPID_API_KEY not configured in environment' })
+        };
+      }
+      requestHeaders['x-rapidapi-host'] = apiHost;
+      requestHeaders['x-rapidapi-key'] = rapidApiKey;
+    } else if (apiHost.includes('pandascore.co')) {
+      const pandascoreKey = process.env.PANDASCORE_API_KEY;
+      if (!pandascoreKey) {
+        return {
+          statusCode: 500,
+          body: JSON.stringify({ error: 'PANDASCORE_API_KEY not configured in environment' })
+        };
+      }
+      requestHeaders['Authorization'] = `Bearer ${pandascoreKey}`;
     }
 
     // Build target URL
@@ -369,13 +384,6 @@ export const handler = async (event) => {
       }
       // If lock acquired, we're the first - proceed to make the request
 
-      // Prepare request headers
-      const requestHeaders = {
-        'x-rapidapi-host': apiHost,
-        'x-rapidapi-key': apiKey,
-        'User-Agent': 'Ignite-Market-Proxy/1.0'
-      };
-
       console.log(`Making request to: ${targetUrl.toString()}`);
       console.log('Request headers:', JSON.stringify(requestHeaders, null, 2));
 
@@ -416,12 +424,6 @@ export const handler = async (event) => {
     }
 
     // For non-GET requests, execute immediately (no caching or deduplication)
-    // Prepare request headers
-    const requestHeaders = {
-      'x-rapidapi-host': apiHost,
-      'x-rapidapi-key': apiKey,
-      'User-Agent': 'Ignite-Market-Proxy/1.0'
-    };
 
     // Add content-type if body is present
     if (body && ['POST', 'PUT', 'PATCH'].includes(httpMethod)) {
