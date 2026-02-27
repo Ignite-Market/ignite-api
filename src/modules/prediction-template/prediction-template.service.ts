@@ -1,4 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
+import axios from 'axios';
 import * as dayjs from 'dayjs';
 import * as utc from 'dayjs/plugin/utc';
 import * as timezone from 'dayjs/plugin/timezone';
@@ -83,6 +84,7 @@ export class PredictionTemplateService {
       homeTeamName: variables.homeTeamName,
       awayTeamName: variables.awayTeamName,
       sofascoreMatchId: variables.sofascoreMatchId,
+      pandascoreMatchId: variables.pandascoreMatchId,
       livescoreEid: variables.livescoreEid,
       livescoreCategory: variables.livescoreCategory || 'basketball',
       matchDateFormatted: attestationTime.utc().format('MMMM D, YYYY HH:mm:ss')
@@ -126,6 +128,61 @@ export class PredictionTemplateService {
       dataSources,
       defaults: template.defaults
     };
+  }
+
+  /**
+   * Get pandascore videogames via proxy.
+   */
+  public async getPandascoreVideogames(context: any) {
+    const apiProxyPrefix = this.getApiProxyPrefix();
+    const url = `${apiProxyPrefix}pandascore/videogames?per_page=100`;
+
+    try {
+      const response = await axios.get(url, {
+        headers: {
+          'x-api-key': env.PROXY_API_KEY
+        }
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new CodeException({
+        code: 'PANDASCORE_PROXY_ERROR',
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        sourceFunction: `${this.constructor.name}/getPandascoreVideogames`,
+        errorMessage: error?.message || 'Failed to fetch videogames from proxy',
+        context
+      });
+    }
+  }
+
+  /**
+   * Get pandascore matches for a league via proxy.
+   */
+  public async getPandascoreMatches(leagueId: string, context: any) {
+    const apiProxyPrefix = this.getApiProxyPrefix();
+    const baseUrl = `${apiProxyPrefix}pandascore/leagues/${encodeURIComponent(leagueId)}/matches`;
+
+    try {
+      const response = await axios.get(baseUrl, {
+        params: {
+          sort: 'begin_at',
+          'filter[status]': 'not_started,running'
+        },
+        paramsSerializer: (params) => new URLSearchParams(params).toString(),
+        headers: {
+          'x-api-key': env.PROXY_API_KEY
+        }
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new CodeException({
+        code: 'PANDASCORE_PROXY_ERROR',
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        sourceFunction: `${this.constructor.name}/getPandascoreMatches`,
+        errorMessage: error?.message || 'Failed to fetch matches from proxy',
+        context
+      });
+    }
   }
 
   /**

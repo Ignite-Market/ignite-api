@@ -58,4 +58,10 @@ export class GenerateFromTemplateDto extends ModelBase {
     populatable: [PopulateFrom.USER]
   })
   public livescoreCategory?: string;
+
+  @prop({
+    parser: { resolver: integerParser() },
+    populatable: [PopulateFrom.USER]
+  })
+  public pandascoreMatchId?: number;
 }
