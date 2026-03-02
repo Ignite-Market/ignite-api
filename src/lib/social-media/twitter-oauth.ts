@@ -113,7 +113,11 @@ export async function exchangeTwitterCodeForToken(code: string, codeVerifier: st
   };
 
   // Persist tokens to Secrets Manager
-  await persistTwitterTokens(tokens);
+  try {
+    await persistTwitterTokens(tokens);
+  } catch (error) {
+    logger.error(`Failed to persist refreshed Twitter tokens to Secrets Manager: ${error.message}`, error);
+  }
 
   return tokens;
 }
@@ -207,7 +211,7 @@ export async function getTwitterTokenInteractive(): Promise<void> {
 
     rl.close();
   } catch (error) {
-    console.error('\nError:', error.message);
+    console.error('\nError:', error);
     if (error.response) {
       console.error('Response:', error.response.data);
     }
