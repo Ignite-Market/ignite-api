@@ -82,7 +82,10 @@ async function main() {
         }
 
         if (fromBlock > toBlock) {
-          Logger.error('ROLLING BACK: Block not reached yet.', 'prediction-set-parser.ts/cycle');
+          Logger.error(
+            `ROLLING BACK: Block not reached yet. fromBlock: ${fromBlock}, toBlock: ${toBlock}, currentBlock: ${currentBlock}`,
+            'prediction-set-parser.ts/cycle'
+          );
           await context.mysql.rollback(conn);
 
           await sleep(1000);

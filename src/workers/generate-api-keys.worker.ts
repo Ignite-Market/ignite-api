@@ -8,9 +8,9 @@ import { env } from '../config/env';
 import { AppEnvironment } from '../config/types';
 import { Job } from '../modules/job/job.model';
 
-const FLARE_SIGNERS_URL = 'https://flare-systems-explorer-backend.flare.rocks/api/v0/lts/ignite/entities';
+const FLARE_SIGNERS_URL = 'https://flare-systems-explorer-backend.flare.rocks/api/v0/lts/ignite/entities?format=json';
 
-const FLARE_SONGBIRD_SIGNERS_URL = 'https://songbird-systems-explorer-backend.flare.rocks/api/v0/lts/ignite/entities';
+const FLARE_SONGBIRD_SIGNERS_URL = 'https://songbird-systems-explorer-backend.flare.rocks/api/v0/lts/ignite/entities?format=json';
 
 interface FlareEntity {
   identity_address: string;
