@@ -117,8 +117,11 @@ export class PredictionSetsFactoryParserWorker extends BaseSingleThreadWorker {
         const signer = new ethers.Wallet(env.SIGNER_PRIVATE_KEY, provider);
         const fpmmContract = new ethers.Contract(chainData.contractAddress, FPMM_ABI, signer);
 
-        const finalizeTx = await fpmmContract.finalizeSetup();
-        await finalizeTx.wait();
+        const isSetupComplete = await fpmmContract.isSetupComplete();
+        if (!isSetupComplete) {
+          const finalizeTx = await fpmmContract.finalizeSetup();
+          await finalizeTx.wait();
+        }
 
         // Obtain and update outcome position IDs.
         for (const outcome of predictionSet.outcomes) {
